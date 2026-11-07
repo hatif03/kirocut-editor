@@ -1,0 +1,10 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "style-match",
+  "displayName": "Style match",
+  "version": "0.1.0",
+  "description": "Measure how a set of reference videos is edited and save that as a style.",
+  "author": { "name": "KiroCut" },
+  "license": "MIT",
+  "keywords": ["video", "style", "captions", "transcription"]
+}
