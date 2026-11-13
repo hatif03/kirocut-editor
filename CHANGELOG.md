@@ -4,6 +4,44 @@ What changed for every user.
 
 ## Unreleased
 
+- No half-cut text at the frame edge (backlog Now 1). `record.mjs --states` records each state's
+  text line boxes from the DOM (Range.getClientRects per text node, one box per line inside one
+  block, overflow-clipped and hidden text left out) and its pictures' boxes; OCR reads text inside
+  pictures, and whole states recorded before this. Each held framing keeps every line wholly in
+  frame or out: the focus grows to the lines it holds part of, then the camera shifts or widens within
+  the key's limits and the resolution floor, never onto emptier ground (`journey.text_guard`); a
+  line it cannot clear, off the focus, fades out at that edge (`journey.edge_fades`, drawn by
+  Journey.tsx); a cut line on the focus FAILs the plan. `product.py check` reads the render with OCR at
+  2 fps: a word running into the frame edge is a WARN, on the focus a FAIL. Style-edit captures:
+  `capture.mjs` grows a shot's clip so no line crosses its edge (`snapClip`) and lists the PNG's
+  line boxes; a sticker's crop keeps every line whole (`plan.py whole_lines`) and `check.py` FAILs a
+  crop that cuts one. Tests: `journey.py demo` (a framing that cuts a line fails, the guard re-frames
+  it, an unclearable line gets an edge fade, the OCR edge rule), `check.py demo` (a sticker trim that
+  cuts two lines fails, the planned crop passes), `tests/test_record.mjs` (snapClip; the DOM line
+  boxes on a page with two columns, an overflow clip and hidden text). linear.app 16:9 and the sample
+  9:16 re-rendered as v7: cut-text WARNs 6 to 0 and 6 to 1 (a filter chip the page scrolls under its
+  own edge), 0 FAIL, meter inside the Linear bar (judder 0, stops 0.4 and 0.23 per 10 s, jerk p95
+  1888 and 1436). Where a paragraph sat beside the focus, the framing is now wider, so the type is
+  smaller.
+
+- Product films, v6 (backlog item 9). Sparse dark sites: the plan estimates how much of each framing
+  is product (edge cells of the states on screen, the measure `check` uses) and re-frames any under
+  50% tighter onto the busy part, its focus kept whole and above the words (`journey.fill_guard`); a
+  flow whose first action is far down its page starts there instead of the camera falling thousands
+  of px down it. linear.app, re-crawled and run end to end with the beats flow, passes the fill check
+  (0 FAIL; the old shot film filled 12-44%). Resolution: states were already 3x on desktop and phone;
+  every layer now records its picture's own px per page px and the per-frame framing FAILs any frame
+  that shows a state past it (`journey.py demo` covers it); after the plan each state is cut to what
+  the camera shows of it (`journey.crop_layers`, Journey.tsx draws the crop). The score follows the
+  cut: a section per story beat (pads on the hook, the groove on actions and results, the fullest on
+  the payoff), the chord changing where a beat starts, voice-led pads, a bass line that steps into
+  each change, brushed ticks under 3.5 kHz, pads breathing with the sub, a riser into the payoff and
+  the tonic ringing over a low tonic and a bell on the logo; typing ticks 6 dB louder (`sound.py demo`
+  checks the hook has no pulse, the groove arrives with the first action, the tone sits in Linear's
+  trailer's bands, and voice leading). The fade to the logo no longer repeats a frame: the ground
+  fades in on a straight ramp and the canvas out on sine.in, so no ease-out tail rounds to a held
+  frame (meter: judder 0).
+
 - Pinned everywhere. The matting image on Modal (`matte.py --modal`) installed numpy, opencv and
   onnxruntime unpinned; it now installs requirements.lock's lines for them and what they pull in,
   hash-checked (`--no-deps --require-hashes`), built by the new `lib/kirocut/lock.py`
