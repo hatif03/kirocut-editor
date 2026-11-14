@@ -4,6 +4,341 @@ What changed for every user.
 
 ## Unreleased
 
+- A download that failed (YouTube 403, TikTok "unexpected response") was printed and skipped, so the teardown
+  silently measured 4 videos of 5. Each download now retries once and a failure ends with the ids and the
+  `--ids` retry line, exit 1. Both failures from the measured runs recovered on the retry.
+- A private TikTok account (or one TikTok hides from yt-dlp) and a misspelt handle both said "update yt-dlp".
+  The hint now names the cause: private, missing account, rate limit, Instagram login wall. Test: `fetch.py demo`.
+- Gemini: a 429 after the retries said only `Gemini HTTP 429`, and a network drop was a traceback. Both now say
+  what to do (wait a minute and rerun, cached videos are skipped; check the connection).
+- Blending creators: `camera` stayed with the heaviest creator even when `--pace` named another, `hook` and
+  `sound` belonged to no part, and kind percentages averaged only where both had the key (cut kinds summed to
+  114%). `camera` goes with pace, `hook` with visuals, `--sound` is a part, and a missing kind counts as 0%.
+  Test: `editplan.py demo`.
+
+- Skills ran the venv as `~/.kirocut/venv/bin/python` (ignoring `KIROCUT_HOME`) or
+  `%USERPROFILE%\...\python.exe` (which Git Bash does not expand). Every skill now runs scripts with
+  `python3 "${CLAUDE_PLUGIN_ROOT}/lib/kirocut/run.py" <script>` (`py` on Windows; style-match ships the
+  same `run.py` in its scripts), which finds the venv under `KIROCUT_HOME` and falls back to the running Python
+  with a note before setup. style-match's own venv fix line prints the real folder, quoted. Test:
+  `check_plugins.py` FAILs a SKILL.md, reference or agent that hardcodes `~/.kirocut/venv` or
+  `%USERPROFILE%`, and the two `run.py` copies differing; `run.py demo`.
+- style-edit's where-to-render question marked no option recommended, against PRINCIPLES.md "Asking". Both now
+  say it is the one exception (only the user knows their time and money).
+- "No Chrome Headless Shell" (style-edit table, `capture.mjs`) said run `edit.py stills`, which needs a plan
+  that does not exist at step 3. Both now point at `setup.py remotion`, which installs it.
+- `route.py` crashed with a traceback on a rejected key or a TypeSafe outage. Picks are left null with the
+  error printed, as with no key, and a highlight falls back to the printed blocks. Test: `route.py demo` (a 401
+  leaves every pick null and no highlight).
+- style-match quick mode said "about a minute per creator". It now lists exactly what it runs (Step 1
+  `list`, Step 2 with `--top 5`, Step 3b, Step 3c; no `metrics.py` or written passes, which settles the clash
+  with Step 3's "always run") and the measured time (now about 3 minutes, see the parallel entry above).
+- `agents/template-filler.md` read `${CLAUDE_PLUGIN_ROOT}/...`, which may reach an agent unexpanded. The caller
+  (style-edit step 3) now passes the full path of `shapes.md`. Test: `check_plugins.py` FAILs an agent that uses
+  `${CLAUDE_...}`.
+- A rejected TypeSafe key (401/403) exited 4 like "no key", so the cut told the user a key would help. It now
+  exits 5 with "TypeSafe rejected the saved key ... save a new one"; an outage stays 4. Test: `test_retakes.py`
+  (401 exits 5, 503 exits 4, both write candidates.md).
+- `candidates.md` flagged "like" in "models like Kiro" as a filler and "a lot of tokens and" before "a lot of
+  money and time" as a retake. "like" is a filler candidate only when set off (a pause or comma, after
+  "and"/"so"/"was", or opening a clause); a repeat whose first run finished its item and ends in "and"/"or" is a
+  list. On the sample: both gone, every other candidate unchanged. Test: `test_retakes.py` (the sample's words).
+- A network error during Scribe transcription ended in a traceback. It now prints "ElevenLabs unreachable ...
+  or use --engine whisper" and exits 3. Test: `test_media.py` (a URLError exits 3 with the message).
+- Whisper could fold a spoken repeat into one stretched label, so no span could quote it and only verify saw it.
+  `transcribe.py` now lists every label holding far more voiced audio than its word (`build_timeline.unheard`:
+  more than twice a speech-rate length and that length plus 0.5 s), transcribes that stretch again on its own and splices in the
+  words when it hears more than one; when it hears none (or on CrisperWhisper), the word keeps `unheard_s` and
+  transcript.txt shows `[N.Ns of speech not transcribed]` after it (`retake-detection.md` says what to do). On
+  the sample: "AI" over 51.18-52.66 s came back as the hidden restart "I'm up. Jeff is just new a -". Test:
+  `test_build_timeline.py` (the sample's "content" over 117.7-119.4 s is listed and re-heard; a long label over
+  silence is not; nothing re-heard is marked; one word back is a drawn-out word).
+- `login.mjs` found Chrome only at fixed paths, and `check()` then spawned nothing with no message. It now also
+  looks on PATH (snap and distro Chromium, a portable install), at Chromium and Edge on a Mac, and at Edge on
+  Windows, and says what is missing. Test: `tests/test_record.mjs` (PATH on Linux, snap, Edge and PATH on Windows).
+- Linux fix lines were apt-only. setup and style-match now print the dnf (Fedora) or pacman (Arch) line
+  when that is the package manager on the computer. Test: `setup.py demo`, `fetch.py demo`.
+- The cut render's concat list broke on a `'` in the temp path (a user name like O'Brien). It is quoted the way
+  ffmpeg reads it. Test: `test_media.py` (a render through a temp folder named `it's tmp`).
+- System yt-dlp preferred over the pinned venv copy: already fixed (`links.ytdlp`, `fetch.ytdlp` take the venv's
+  first).
+- `setup.py doctor` said FIX "installed before version pins" on a working install with no `env.json` and sent
+  the user to `repair`, a full reinstall. When what is installed matches the lock (every unconditional pin
+  present, every installed pinned package at a pinned version; remotion at its pin), doctor records it in
+  `env.json` instead; real drift is still a FIX. Test: `setup.py demo` (a lock-exact install is recorded and
+  shows no drift; a wrong yt-dlp or a missing one is not recorded).
+- Captions went back to white about 0.3 s before a leaving scene's paper was gone (the ink ended halfway
+  through the exit). The ink now holds until the scene's ground is gone from under the captions, per exit
+  (iris, match, push, wipe, block, fade; `remotion/src/ground.ts`); a scene held under the next keeps it to its
+  end. quality.py skips inked pages up to the scene's end. Test: `tests/test_record.mjs` (halfway through an
+  iris out the ground still covers a caption at 75%; nearly closed it does not).
+
+- Caption pages wrapped to two lines and mixed sizes inside one page (the sample's "down competitor ads",
+  "for one substitute"): the stressed word was drawn 1.15x bigger and a page could wrap to two lines. Now a
+  page is one line at one size (`max_lines` defaults to 1, fitted at the stressed weight with room for the
+  active word's pop, never wrapped); the stressed word draws in the emphasis colour and one weight heavier,
+  never bigger (`emphasis_scale` is no longer read). `check.py render` counts the lines of every page and
+  FAILs one over `max_lines`. On the sample: 6 of 58 pages on two lines before, 0 of 57 after. Test:
+  `quality.py demo` (a page on one line reads 1, wrapped reads 2); `caption_lines` on the old sample
+  render finds the 6 pages.
+- The opening card was the site's headline as a sticker with its lines touching and a kicker too small to
+  read. capture.mjs re-sets a sticker sentence at leading 1.2 or more and drops the page's emoji; plan.py
+  leaves a line under 28 px x-height out of a sticker cut from a shot; `check.py plan` FAILs a sticker that
+  still shows one, and a capture on the hook (first 3 s) with no `find` mark. plan.py now keeps each mark's
+  `find` in the plan for that check. Test: `tests/test_record.mjs` (a 0.85 line-height headline with an
+  emoji: leading 1.20, no emoji), `check.py demo` (the sample page's 58 px kicker over its 212 px headline is
+  left out of the crop; a hook capture without `find` FAILs, with it passes, also after planning).
+- Two pacing rules contradicted each other in style-edit ("a card every 4-6 s", "most sentences get
+  nothing") and the sample had 11.5 s (10.6-22.1 s) with no card. One rule now: a card where a sentence names
+  something real, never two at once; no stretch without a card over `card_gap_s` (10 s, or twice a copied
+  creator's measured gap, `120 / graphics.per_min`). In a longer stretch that names nothing, plan.py adds a
+  zoom change at least every 5 s instead of a made-up visual, and prints what was named there from
+  beats.json; `check.py plan` WARNs a longer stretch that names something or holds still over 5 s. On the
+  sample the "decisions" and "40 to 200 times faster" lines now show the TypeSafe pages that say them:
+  longest stretch with no card 11.5 s before, 8.4 s after; 5.3 cards a minute before, 6.6 after. Test:
+  `plan.py demo` (a sparse creator's zooms get a change every 5 s inside a quiet stretch, untouched outside;
+  `card_gaps`, `card_gap_s`), `check.py demo` (a named thing in a long gap WARNs, a moving frame with nothing
+  named passes, a still one WARNs).
+- `check.py render` WARNed caption contrast (4.36:1 at 20.77 s) that "plan again" never fixed: plan.py aimed
+  at 3.3:1 (the FAIL line) while the render WARNs under 4.5:1. plan.py now aims at 4.7:1. On the sample the
+  worst caption reads 11.7:1, no WARN. Test: `plan.py demo` (mid-grey footage at 4.48:1 gets a treatment).
+
+- Explaining cards on vertical rendered small and off centre (backlog Now 1). plan.py placed a `flow` as a
+  box in the 21%-tall band above the head (its cards pushed right, `check.py render` FAILed it at +5.6% while
+  `check.py plan` passed), and a `logo_cluster`'s logos at about 6% of the width at the frame edges. Now on
+  vertical a `flow` is always a full-frame scene (an `icon_burst` sits in the split panel), as style-edit
+  step 3 says; the diagram centres its cards and, in a portrait box, stacks the task chips over the source
+  instead of a lane to its left and lets the cards grow to 340 px (from 240). A vertical `logo_cluster` gets `band` [17, 83] and `size` 20: logos 20% of
+  the width, spread over a band centred on the frame, above the head. A `logo` card leaves when its sentence
+  ends. `check.py plan` estimates where a vertical flow or logo_cluster draws (the renderer's layout) and FAILs
+  one under 60% of the width or off centre; `check.py render` FAILs the same, and both point the fix at the plan.
+  While a scene is landing or leaving, captions keep their own colour (the scene's ink only once its
+  transition is half done), and quality.py does not read inked scene captions as white ones. Logos: Simple
+  Icons, then the site's own SVG or apple-touch icon, before the 256 px favicon service (the sample's
+  TypeSafe logo is now its 400 px PNG). Test: `check.py demo` (the sample's flow in the band FAILs with a
+  plan fix; as a scene it passes; a cluster without its band FAILs, with it passes), `plan.py demo` (layouts,
+  the band, a logo off at its sentence end), `tests/test_record.mjs` (logo source order).
+- `profile.py style edits/<name>` crashed with `FileNotFoundError` on every first video, because start runs it
+  before cut makes the folder (backlog Now 2). It now creates the folder. Test: `profile.py demo` (a missing
+  `edits/new` exits 0 and holds `style.json`).
+- Whisper's stretched word labels sent the cut into a false loop (backlog Now 3). A label far longer than the
+  word can be said in (over twice a speech-rate length; an "if" at 0.7 s, an "I" at 3 s) is fitted to where
+  the audio has energy in or just after it, so a pause cut no longer "clips" a word the render plays.
+  `build_timeline.py` prints the fitted labels and keeps them in `report.json`; `paper-edit.md`, `words.json`
+  and `verify_cut.py` all judge the fitted words, so they agree. Alternate hooks match on the word sequence:
+  a take whose first word Whisper hung on the phrase before it ("more tips I | built a model router") is
+  found, and no other candidate reaches into it. Test: `test_build_timeline.py` (a 3 s label ahead of its
+  audio: a false CLIPPED before fitting, none after, the paper edit plays the kept words) and
+  `test_retakes.py` (the sample's Whisper words, `testdata/sample-whisper.json`: the late hook run is found
+  from 179 s with the stray "I" attached).
+
+- `login.mjs logout ..` deleted the whole editor folder, and `logout /` every saved login (backlog Now 1).
+  `domainOf` fell back to the raw text. Now a site must be a plain hostname (or an http(s) URL whose host is
+  one), and the profile folder must sit directly inside `<home>/browser/`; anything else (`..`, `/`, empty,
+  `.`, `a/b`, a drive letter, `%2e%2e`) exits 2 and deletes nothing. `where`, `check` and `login` use the
+  same check. Audit of every other delete in the repo (`rmSync`, `rmtree`, `unlink`, `os.remove`): each
+  works on a temp folder or a fixed name inside the edit folder; none takes a path from the user. Test:
+  `tests/test_record.mjs` (in a temp `KIROCUT_HOME`, 12 bad names exit non-zero and the home and both
+  profiles survive; `logout https://www.example.com/settings` removes only `browser/example.com`).
+- An ordinary download error asked for the browser login (backlog Now 2). `links.py`'s `LOGIN` matched
+  the bare "age" in "webpage", "image" and "storage". It now matches whole words and real gate messages
+  (sign in, login, private, members-only, age-restricted, confirm your age). Test: `links.py demo`
+  ("Unable to download webpage: HTTP Error 404" is not a login; "age-restricted" and "Log in for access" are).
+- The product-video music step ran a bare `yt-dlp` with `--cookies-from-browser chrome` behind
+  `--yt-cookies`. It now runs the venv's pinned yt-dlp (`links.ytdlp()`, which also prefers the venv over a
+  copy on PATH now), never passes cookies by default, and stops with `LOGIN:` when the site wants a login,
+  so the skill asks in the question box before `--cookies-from-browser <browser>`. Test: `product.py demo`
+  (the default command has no cookies flag; the named browser goes through only when given).
+- Keys from the working folder (backlog Privacy). `keys.py` and style-match's `transcribe.py` read a
+  `.env` in whatever folder Kiro started in, so another project's key could be billed. Now only the
+  environment variable and the key file (`$KIROCUT_HOME/.env`, else the shared one). Test: `keys.py` and
+  `fetch.py demo` (a `.env` with a key in the working folder is not read).
+- Key files are created readable by the user only (0600) instead of written and then chmodded: `keys.py`
+  (`write_private`), `setup.py awskey` (aws.env) and style-match `fetch.py setkey`. Test: `keys.py`,
+  `setup.py demo`, `fetch.py demo` (umask 0 and chmod disabled: a new file is still 0600).
+- GitHub renders no longer run `gh auth setup-git`, which rewrote the user's global git credential helper.
+  The render repo gets its own `credential.helper` (`git config --local`, cleared, then `!gh auth
+  git-credential`). Test: `edit.py demo` (no `setup-git` in `github_push`; every credential command is
+  `--local`).
+- Cloud renders delete the uploaded footage after the download. GitHub: `github-fetch` deletes the `media`
+  release (and tag) and the run's artifacts; the video artifact is kept 1 day, not 7. Lambda: `render.mjs
+  lambda --cleanup` deletes the deployed site (the footage) and the render's objects from S3. style-edit
+  asks once "Delete the uploaded footage from <GitHub|AWS> after rendering?" (Yes recommended) and keeps
+  the answer as `cloud_cleanup` in the profile; with no, the run says where the footage is. Modal already
+  deleted its volume folder. Test: `edit.py demo` (a mocked `gh` deletes the release and both artifacts,
+  never the repo) and `tests/test_record.mjs` (a mocked Lambda client gets `deleteRender` and `deleteSite`,
+  called only after `downloadMedia`).
+- Saved logins are shown: `setup.py doctor` lists each logged-in browser profile with when it was last used
+  and how to delete it ("log me out of <site>"), and setup asks whether to delete them. product-video says
+  where the login is kept at the end of a logged-in run and offers `logout` once the video is approved.
+  Test: `setup.py demo` (two profiles listed with their age, a folder with no profile left out).
+- Linux captures kept Chrome's sandbox off on every site. `capture.mjs` and `record.mjs` now launch with the
+  sandbox and turn it off only when a probe launch fails with a sandbox or namespace error (blocked user
+  namespaces, running as root), and say so. Test: `tests/test_record.mjs` (`noSandbox`: on for a working
+  sandbox and for an unrelated crash, off only for a sandbox error on Linux, never off on Mac or Windows).
+  The Remotion renderer, which opens only the local bundle, is unchanged.
+- The live preview took requests from any page. `preview.py` now binds 127.0.0.1 only (checked) and puts a
+  random token in the URL; the page gets it as an HttpOnly, SameSite=Strict cookie, and every request
+  without it (page, script, state, media, changes, Render) gets 403. Test: `preview.py demo` (a real
+  server: no token is 403 on every path and writes nothing; the token then reads and writes).
+
+- Alternate hooks recorded after the call to action stay out of the main cut (backlog Next). A take that
+  ends with more takes of the opening line had "last take wins" moving the hook to the end. `retakes.py
+  propose` now finds them (more than 40 s after the opening, at the end of the recording, each under 30
+  words), cuts each from the main cut as `alt_hook` (never judged as a retake), keeps the hook at the start
+  (its last good take there, as before) and lists them in `hooks.json`; `candidates.md` lists them without
+  a key. After the cut is approved the cut skill asks once whether to render one version per hook:
+  `retakes.py hook edits/<name> <n>` writes `edits/<name>-hook<n>/` (same body, the opening cut, that
+  alternate kept) with `lead.json`, which `build_timeline.py` plays first. Test: `test_retakes.py`
+  (opening, body, call to action, then two more takes of the opening: the hook stays first, both late
+  takes are one `alt_hook` span, the main cut ends on the call to action, and the hook-2 variant opens on
+  the body with alternate 2 kept and the others cut; `lead_first` moves and splits frame ranges).
+- Key paths with `KIROCUT_HOME` set (backlog Next): README troubleshooting no longer gives
+  `plugins/kirocut/...` paths that exist only in a cloned folder; it says what to ask Kiro, with the
+  path for Way 1 marked as such, and a "Where are my keys?" row. `style-edit/references/contracts.md`,
+  the `gemini.py` docstring and the cut `transcribe.py` docstring say `$KIROCUT_HOME/.env` when it is
+  set; the transcribe "no ElevenLabs key" error names the file it actually read.
+- Opt-in loudness fix (backlog Next): the sample take plays at -24.7 LUFS and every first render WARNed
+  with no fix. When `check.py render` WARNs on loudness, style-edit asks once, default "leave my audio as it
+  is"; on yes, `quality.py normalize <render>` writes `<render>-normalized.mp4` with one gain to -14 LUFS,
+  never past a -1 dBTP peak, no compression, limiter or denoise, the original left as it is. Test:
+  `quality.py demo` (`gain_db`, and a -30 dB tone normalized to -14 +-0.5 LUFS).
+- doctor's key lines say `Say "add my <name> key": setup saves it from your clipboard`, the same one
+  instruction as setup step 5, instead of "Run in a terminal: ... setkey" (backlog Next). Test:
+  `setup.py demo` (`key_line`).
+
+- Fewer bytes before the first step (backlog Next, cost). Each skill's required reads (SKILL.md plus every
+  file it says to "Read ... first") now fit a budget that `tests/check_plugins.py` enforces: start 12 KB,
+  cut 15 KB, style-edit 25 KB, product-video 30 KB. Before and after: start 15.6 to 12.0 KB (the intake
+  tables moved to `start/references/intake.md`, read only when `profile.py missing` prints an id), cut 17.7
+  to 15.0 KB, style-edit 39.5 to 23.1 KB, product-video 21.9 to 22.0 KB. The shapes Kiro writes live in
+  one short file per skill: `style-edit/references/shapes.md` (images.json, visuals.json for every pick,
+  the rules plan.py enforces; 4.1 KB, read first instead of the 20.5 KB `visuals.md`, and step 3 points
+  there instead of the 23.1 KB `contracts.md`, now marked for people), `cut/references/shapes.md`
+  (spans.json, out of `retake-detection.md`), `product-video/references/shapes.md` (brief.json,
+  story.json beats). The `template-filler` agent reads shapes.md too. Test: the new check fails on the
+  old files (start 15,565, cut 17,651, style-edit 39,524 bytes) and passes on the new.
+- product-video's brief names `product.py copy` (backlog Next): step 1 runs it after the home-page crawl,
+  and it now prints a `tagline:` line (the site's description, else its h1) and a `nav:` line before the
+  headings, so the options come from it and Kiro never reads `site.json` (about 20 KB). crawl.mjs says
+  `logo text "Acme"` for a wordmark logo instead of `logo undefined`. Tests: `product.py demo`
+  (`brief_lines`), `tests/test_record.mjs` (`logoNote`).
+- Captions join Whisper's hyphen tokens: "one", "-for", "-one" is one word, "one-for-one", in one caption
+  (it showed as "one -for -one"). plan.py joins any token starting with "-" to the word before it before
+  chunking. Test: `plan.py demo`.
+- The stills sheet runs in time order with no gaps in its numbers: each tile is "N  what it shows  time
+  kind" (card N is `plan.cards[N-1]`). It showed "1-opening 0.50s" before "2-caption 0.23s" and skipped 3
+  when there was no zoom. Test: `sheet.py demo`.
+- `check.py render` with an empty style file (the no-creator default) says it is the default style instead
+  of "no --style". Test: `check.py demo`.
+- clips fetches a link with `links.py fetch` (the venv's yt-dlp; setup does not put yt-dlp on the PATH)
+  capped at 1080p (`--max-height 1080`): step 1 ran bare yt-dlp at up to 2160p, several GB for a
+  20-minute talk cut to 1080x1920. Every yt-dlp fallback format now carries the height cap. Test:
+  `links.py demo`.
+- clips shortlist "names:" lists real names: the profile's names and capitalised words that do not start
+  a sentence (a sentence that ends on a pause with no full stop counts), are not single letters and are not
+  also said in lower case. It listed "And", "So", "What", "T". Test: `clips.py demo`.
+- Teardown measures print one line, not their JSON. `graphics.py measure` (246 lines of JSON on the audit
+  run), `visual.py measure` (40) and `sound.py measure` (29) each print one summary line ending in the
+  style.json path and the block's name; `--json` prints the full block. `graphics.py merge` does the same,
+  and `gemini.py kinds` prints its kinds on one line. Test: each script's `demo` asserts the summary is one
+  line with no JSON.
+- Teardown look.md reads right without a Gemini key. The font line says "not named (no look pass ...)"
+  instead of the "[from the look pass]" placeholder. Graphics numbers come from one source: graphics.py's
+  per-card measure (new `graphics.share_pct_measured`, the hold over runtime report.py shows per video)
+  when it has run, else look.py's frame estimate labelled as such (the audit's "on screen 55%" next to
+  "winners 2, control 0" came from the two sources). look.md names each AI tell with its level and where it
+  fired. `report.py build` rewrites look.md from the final style.json (it stopped before graphics, sound and
+  the tells). The palette tells read `graphics.palette`, the palette look.md prints and kirocut copies,
+  not `crop_palette` (the colours inside captured pages): a black and brown palette no longer gets
+  "purple-blue" or "cream-paper-ground". Tests: `look.py demo`, `report.py demo`.
+- Teardown says what `--top N` downloads: SKILL.md says N plus 2 control videos (`--top 5` is 7, the
+  default 10), and `visual.py download` and `fetch.py transcribe` print the count first ("5 most-viewed +
+  2 control (closest to the median) = 7 videos"). Test: `fetch.py demo`.
+- `profile.py set` takes several answers in one call: `set platform=youtube sound.music=false
+  'names=["X"]'` writes them all and prints one line (an intake took 12 calls, each printing the full
+  path). The old `set key value` form still works, and a value may hold `=`. start's `intake.md` shows it.
+  Test: `profile.py demo` sets four pairs, one a URL with `=` (the old code stored `"sound.music=false"`
+  under the key `platform=youtube`).
+- doctor checks free disk: under 3 GB it FIXes with the reason (setup installs about 1.5 GB, the cutout
+  writes about 0.5 MB a frame, about 0.9 GB a minute at 30 fps) and what to delete, and ends "Not ready".
+  Test: `setup.py demo` feeds `disk_row` 5 GB (ok) and 2.9 GB (FIX with the reason).
+- Isolated runs never touch real keys: with `KIROCUT_HOME` set, both plugins read and save keys in
+  `$KIROCUT_HOME/.env` first and never open `~/.config/style-match/.env` (`keys.py`, and
+  style-match's `transcribe.py` key lookup that `fetch.py` and `gemini.py` share). Test: the
+  `keys.py` self-check finds a key in a temp `KIROCUT_HOME`, saves there, and finds none once that file
+  is gone.
+- README: the laptop render is no longer "the slowest option". On the 46.8 s sample `edit.py estimate`
+  gave laptop 63 s, Modal 2.0 min and GitHub Actions 7.7 min, and the laptop render took 42 s.
+- Product film: no blank frame, no headline cut by the edge, a wrong step number explained (backlog Now 1).
+  The framing check now reads every frame of the plan for content (`journey.blank_frames`: the same edge
+  cells as the fill guard, over every page the frame touches, moves and state changes included; under 4% is
+  blank) and fails any held line of text cut by the frame edge where no edge fade covers it (a headline cut by
+  the top or bottom edge deeper than the fade's 12% of the short side used to pass as "every frame holds").
+  The planner fixes both: a held framing is re-framed as before, and a move that crosses a blank frame lifts
+  higher (a "lift" on the key it moves to, raised each replan round) until the frame keeps product in view;
+  what is still blank or cut FAILs `product.py plan` with its times. A beat's `steps` (or `after`) past its
+  flow's steps exits with one line naming the beat, the flow and each valid step (`0 click 'text=Search'; 1
+  write 'github'`) instead of an `IndexError`; `story.md` says the numbers skip waits and auto scrolls. Tests:
+  `journey.py demo` (a bottom-cut headline fails and replan clears it; a move down 1800 px of page whitespace
+  fails with blank frames and passes once lifted; `"steps": [5]` gives the one-line message). Four real
+  stories (two sites, both aspects) plan with no new failure.
+- Captures on vertical read on a phone (backlog Now 2). plan.py measures a capture card's evidence text (the
+  lines under its marks or highlight, else its headline) from its DOM line boxes at the size the card draws it
+  (`capture_xh`: line box x 0.42, at the browser window's, shot's or sticker's own fit). On 9:16 a shot or
+  browser capture under 28 px x-height becomes a sticker cropped to that evidence, the crop taking the band's
+  shape at the largest size that holds it (never past 1:1), every line whole. `check.py plan` FAILs a capture
+  card still under 28 px on vertical (the plan used to pass with 0 FAIL). Test: `check.py demo` with the
+  audit's two browser captures planned as boxes about a fifth of the frame tall: 22 and 16 px, both FAIL;
+  after `readable_captures` 39 and 53 px, no FAIL. With no head found, a capture on vertical takes the
+  overlay band (4-96% wide, from 10% down) instead of the 72%-wide default box. `tests/smoke.py`'s page
+  capture is now a sticker on its first sentence: example.com's body text as a shot read at 4 px.
+- Tests clean up: `tests/smoke.py` and `tests/golden.py` delete their temp folder on success (they kept
+  every one outside CI: 1.6 GB of `ave-smoke-*` and 467 MB of `ave-golden-*` on one machine) and keep it
+  only on failure, printing its path. The Linux golden stills take the card timing change.
+- The no-creator path renders a lively edit (backlog Now 1). "No creator" is the recommended answer, so it
+  has a style of its own: `profile.py style edits/<name>` writes `DEFAULT_STYLE` when the profile has no
+  creators (it used to exit `no creator style.json found`), and `plan.py` plans with it when style.json is
+  missing or empty, with a one-line note instead of a `FileNotFoundError`. The default follows PRINCIPLES
+  (smooth, overlay-first) and takes each number from the median of three measured styles: punch zooms to
+  1.18 that the renderer eases (never a one-frame snap), 9.5 a minute on sentence starts, the smooth
+  personality, 3-word lower-case captions at 5.5%, no stroke unless the footage needs one (style-edit
+  `references/plan.md` "No creator"). New `zoom.max_hold_s` (5 s in the default): a long sentence still
+  gets a zoom change on the word nearest its middle. A zoom change never lands during a card's entrance
+  (`plan.clear_entrances`), and cards are placed off the head as drawn under the zooms, inside the same
+  14% side margins `check.py plan` holds (logos could land under the right rail or behind a zoomed head).
+  A slow push was tried first: the render check read the speaker's own movement during a 0.8 s push as a
+  surge. The outline-jitter check skips frames where a cut or zoom moves everything. Tests:
+  `profile.py demo` (no creators writes the default; now in `tests/demos.sh`), `plan.py demo` (a missing
+  style plans with a note, the default puts a zoom change at least every 5 s on a 47 s cut where `{}`
+  planned none, a logo beside a zoomed head clears it). Sample take, no creator, end to end: 7 zooms and
+  4 cards, `check.py render` 0 FAIL and no "nothing moves" (was 0 zooms and "nothing moves for 32.4 s").
+- plan.py's output passes check.py render (backlog Now 2). Contrast: plan.py aims at `CONTRAST_TARGET`
+  3.3:1, the FAIL line plus 10%, and quality.py takes its FAIL line (`CONTRAST_MIN`, 3.0) from plan.py, so
+  the two cannot drift. "Plan again" now changes something: `check.py render` lists the caption pages it
+  read under 3.3:1 (`caption_contrast.low_at`), and the next plan.py run gives each one the next step
+  (shadow, stroke, backing), kept in `contrast.json` and read once per check. Card timing: plan.py,
+  the renderer and the render check share one lead model: an overlay starts `CARD_LEAD_S` + `OVERLAY_LEAD_S`
+  x k before its word (0.1 + 0.07 s, the time the drop-in takes to carry half its ink), and motion.ts
+  starts the drop-in there from the same two numbers (it was 0.3 s x k, so captures landed 0.19-0.28 s
+  early). `plan.py demo` fails if motion.ts drifts from plan.py. Tests: `plan.py demo` (a grey the shadow
+  lifts only to 3.15:1 now gets a stroke, every pick reaches 3.3:1, a low page steps up once per check).
+  Sample take: captures land 0.12 and 0.13 s before their words, no "before its word" WARN. Golden
+  stills (darwin) updated: the terminal card starts 0.23 s later, so its typing is one letter behind at
+  the still. Linux goldens need the CI `golden-out` artifact.
+- Misheard names are not cut errors (backlog Now 3). `verify_cut.py` matches the second pass to the cut's
+  words by time (`textnorm.pair_by_time`): a kept word heard differently at the same time is listed
+  under HEARD DIFFERENTLY ("jev -> jeff x4, claude -> cloud"), never MISSING, so there is no `--pad`
+  rebuild for it. New `retakes.py captions edits/<name>` builds captions.json (and captions.txt to
+  proofread) from the second pass's words and times, with each word it heard differently spelled as the
+  approved cut text has it, the profile's `names` spellings, and every `retakes.py fix` applied (fix now
+  keeps its pairs in `fixes.json`). style-edit step 2 runs it instead of copying cut.transcript.json and
+  proofreads captions.txt, the file captions are built from. `check.py render` no longer LOOKs at a
+  caption that matches the cut text. Tests: `test_retakes.py` (captions take "Jev" and "Claude" with no
+  fix call; a fix applies to a later captions run; a misheard name is HEARD DIFFERENTLY, a word with
+  nothing heard at its time is still MISSING). Sample take: verify prints 0 MISSING (was 6), and
+  captions.json holds "Jev" x4 and "Claude" with no fix.
+
 - No half-cut text at the frame edge (backlog Now 1). `record.mjs --states` records each state's
   text line boxes from the DOM (Range.getClientRects per text node, one box per line inside one
   block, overflow-clipped and hidden text left out) and its pictures' boxes; OCR reads text inside
