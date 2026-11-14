@@ -4,6 +4,208 @@ What changed for every user.
 
 ## Unreleased
 
+- `check.py render` FAILed a behind card the cutout already covers ("drawn over the face ... up to 41%
+  of the head", fix: face.py, plan again, which loops). It looked the matte up by its 4-a-second
+  sample number instead of the plan's frame, so no matte was found, and ffmpeg's fps filter handed
+  it the render 0.1 s off the footage it compared with (mid zoom-out at 3.5 s). It now samples exact
+  frames and reads the matte the render drew at that frame; a behind card counts as on the face only
+  where it shows on the speaker's solid matte. A behind card with no matte there says to run matte.py.
+  On the sample take: 3 face FAILs -> none. Test: `check.py demo`.
+- A re-plan dropped the cutouts, and matte.py re-cut a whole range when a card moved (195 frames,
+  49.5 s, for 30 new ones). Matte frames are now named by their frame of the cut, in one folder per
+  cut and output size, and only frames not cut yet are cut; plan.py keeps every cutout whose frames
+  are all there. On the sample take, a re-plan with the same ranges needs no matte run, and one that
+  moves a card cuts 30 frames in 10 s; the cutout folder is 179 MB, was 278 MB. matte.py `--estimate`
+  prints the frames, time and cost and stops. style-edit step 4 runs matte after music's re-plan and
+  says to run it after any later plan. `check.py plan` and plan.py print the real edit path (was a
+  literal `edits/<name>`). Plans made before this need plan.py and matte.py again before a render.
+  Tests: `matte.py demo`, `check.py demo`.
+
+- A caption correction into several words ("use." heard, the cut says "are using.") was one token,
+  which plan.py's word cleaning glued into "areusing" on stills and the render, and `check.py render`
+  flagged as a LOOK. `retakes.py caption_words` and `retakes.py fix` on captions.json now write one
+  token per word, the original word's time shared by letter count. Clip edits run the same captions
+  step. Test: `test_retakes.py` (one heard word corrected into two gives two non-overlapping tokens).
+- A scene cut in hard (`cut`) started SCENE_LEAD_S (0.3 s x k) before its word, a lead sized for a
+  transition that grows, so the picture changed up to 0.4 s early. It now starts where a box card
+  does, CARD_LEAD_S before its word; match, iris and the other growing transitions keep the lead.
+  `quality.py` counts a cut scene as landed on its first frame. Tests: `plan.py demo`, `quality.py demo`.
+- Teardowns made before `"transitions"` was written left the key out, so a creator who only cuts
+  still got match / iris. `profile.fill_transitions` (run by plan.py on load) now derives them from the
+  style's measured `pace.cut_kinds`, the same rule as visual.py; a style with no cut kinds keeps the
+  default and plan.py says re-running the teardown gets the creator's transitions. Test: `profile.py demo`.
+
+- The code kind guess called white one- and two-line titles over photos "photo" or "UI recording".
+  `text_fill` is now the share of the box all its OCR lines cover (it was the biggest line), and one
+  to three lines covering half the box or more is a text card before the moving test (the picture
+  between the letters can move). On the hand-labelled titles of two public slow-drift videos: 6/16
+  -> 16/16 and 2/4 -> 4/4 text card (the documentary with look.py's caption marks cleared; with
+  them, 2/16 both ways, see Next). Test: `graphics.py demo` (a two-line title over a moving photo).
+- `laid_on` dropped titles that arrive and leave on cuts. A drift track is now also kept when it
+  starts or ends on a cut (from visual.json or a frame-wide jump) with one to three OCR lines
+  inside, or when a hard cut inside its run changes the picture between its letters but not the
+  letters. Test: `graphics.py demo` (generated stills, a title held across a cut with no OCR, a
+  title from one cut to the next with OCR). Measured: documentary precision / recall 0.00 / 0.00
+  before and after; generated stills 0.00 / 0.00 -> 0.05 / 0.25 (the title that lands on a cut is
+  found). What still misses them is in Next.
+
+- Modal upload sends the bundle as one tar with fixed file times, so an unchanged bundle can be skipped by hash. Each container takes pieces from a shared queue. A piece still running at twice the median after the queue is empty gets a second copy, and the first to finish counts. Pieces download as they finish. The estimate adds upload, start, the work over the containers times a straggle factor, and the tail. Those speeds come from the last render when `modal.json` exists; otherwise `edit.py` uses `MODAL_MEASURED`. `render.mjs` takes Remotion's own tab ceiling. A failed render waits until the app has stopped before deleting the Volume folder. `scaledown_window` is 2 seconds. The cost counts the cores in use and the time past each piece. Tests: `edit.py demo`, `modal_render.py demo`.
+
+- Captions with no font named load Inter, as does any font Google Fonts does not have, so a Modal or GitHub render uses the same face as the stills. Test: `tests/check_plugins.py`.
+
+- Teardown graphics found nothing over footage that only drifts (slow pushes on stills, dissolves
+  between them). New in overlay mode: `drift_dets` keeps hard edges that hold exactly still for
+  +-1 s while the picture's other edges move, and drops a box whose surround holds still too (the
+  fixed point of a push). A drift track is grown on its own lettering (`grow_drift`), snapped to the
+  OCR lines it holds (`to_text`), and kept only when its box changes at its entrance or exit while
+  the rest of the frame does not (`laid_on`). Samples in a dissolve or on a cut find nothing.
+  Faces that turn up all over the frame (portraits in a documentary) no longer count as a speaker,
+  so such a video gets overlay mode. Test: `graphics.py demo` (a title over a slow push, a hard cut
+  with nothing on it).
+- look.py marked held titles as captions when there was no transcript: OCR misreads of a held line
+  restarted its run, so the 4 s limit never fired, and the caption band then hid the titles from
+  graphics.py. A line now carries on a nearly identical one from the sample before. Test:
+  `look.py demo`.
+
+- Teardown graphics in overlay mode (moving footage, no steady speaker) had no entrance or exit.
+  `overlay_motion` tracks the graphic's settled picture through the source frames (where it is found
+  gives a slide, its size a scale, how much of it shows a cut or fade) and fits the curve with the same
+  `fit_ease` as plate mode. A fit under 1.5 frames now reads as a cut in both modes. Test:
+  `graphics.py demo` (card slides up 0.3 s power3.out, tile cuts in and fades out over moving footage).
+- The code-only kind guess called a one-line word mark in a near-square box a logo. A box whose biggest
+  OCR line covers half of it or more (`text_fill`) is a text card. Test: `graphics.py demo`.
+- Checked on one public non-talking-head explainer (8 hand-labelled graphics): overlay mode precision
+  0.00, recall 0.00 before and after; the miss is detection on near-still footage (now in Next).
+
+- The Modal render image installs Node from NodeSource's signed apt source; check_plugins now rejects any downloaded script piped into a shell, root or not.
+
+- The Debian and Ubuntu Node fix line ran NodeSource's setup script as root. It now adds NodeSource's
+  signing key and apt source by hand, then installs `nodejs`. `tests/check_plugins.py` fails any file that
+  pipes a downloaded script into `sudo` and a shell. Test: `setup.py demo`.
+- A Flatpak Chrome, Chromium or Edge left login.mjs saying "no Chrome found". It runs only inside its
+  sandbox, so it is still not launched, but login.mjs and doctor now name it and give the fix (a snap,
+  distro or Google Chrome install). Doctor has an optional `chrome` row from the new `login.mjs browser`.
+  Test: `node tests/test_record.mjs` (chrome lookup), `setup.py demo`.
+- clips told Windows users to copy the source video, often several GB. `clips.py link` makes
+  `source.mp4` a hard link on the same drive (no admin needed), else a symlink, else a copy, and the
+  skill uses it on every OS. Test: `clips.py demo`.
+- The renderer copy in `~/.kirocut/remotion/src` kept components deleted from the plugin:
+  edit.py copied over it with `dirs_exist_ok`. `mirror()` now removes files and folders gone from the
+  plugin's `remotion/src`, inside that folder only. Test: `edit.py demo`.
+- product-video's brief asked 11 questions over three calls. It now asks the four that change what gets
+  built, then one question confirming the defaults for the rest (style, length, login, music, sound,
+  voice), with "Change some" asking only the ones named.
+- cut's step 0 told Kiro to ask "cut first or everything" even after "edit my video like @creator",
+  a request that routes to start, which decides that itself. The line now says so.
+  `tests/check_plugins.py` fails a skill that quotes another skill's trigger without naming that skill.
+- cut, clips, product-video and improve ran `python3` scripts with no line saying `py` on Windows; each
+  now has the line the other skills use. `tests/check_plugins.py` fails a skill that runs a
+  `python3 "<script>"` command without one.
+- A suggestion sent as a public GitHub issue kept the names, domains and creator handles from the user's
+  profile, and any bare domain (`acme.io`): `taste.py scrub` only caught full URLs, emails, @handles,
+  paths and media files. Every `names` entry (name and domain) and every creator handle in profile.json
+  now becomes `<name>`, and any other bare domain `<domain>`. File names like `plan.json` stay. Test:
+  `taste.py demo`.
+- `setup.py setkey gemini` sent whatever token-shaped text was on the clipboard to Google to test it.
+  `keys.verify` now refuses a Gemini key that does not start with `AIza` before any request, and says a
+  Gemini key was expected. TypeSafe and ElevenLabs have no documented fixed prefix, so they are not
+  checked. Test: `keys.py`.
+- Blending creators dropped the pace creator's scene transitions: `profile.py` PARTS["pace"] did not list
+  `transitions`, so the blend fell back to style-edit's default. It now comes with pace, as in
+  style-match's editplan. Test: `profile.py demo`.
+- A creator measured with no drop shadow lost the contrast treatment on bright footage: Captions.tsx read
+  `shadow: false` as "a scene is up" and dropped the treatment with the shadow. Scenes now set their own
+  `flat` flag; `shadow: false` only drops the default shadow. Before: the no-shadow bright-desk render read
+  1.24:1 and `check.py render` FAILed; after, it passes. Test: `tests/smoke.py` (the `noshadow` contrast case).
+- A creator who only cuts got match in / iris out on every scene. Scene.tsx has a `cut` transition (no
+  transition either side), style-match writes `"transitions": []` when the cuts it measured are all
+  hard, and plan.py turns that into `cut` in and out (no list still gives match / iris). The
+  `same-transition` tell no longer fires on all-cut scenes, which is its own fix. Test: `plan.py demo`,
+  `visual.py demo`, `ai_tells.py demo`, `node tests/test_record.mjs` (cutPhase).
+- ai-tells.md named a real person for a caption preset; it now says "the uppercase yellow-keyword stroked
+  caption preset" and keeps the source link.
+- product-video loaded the home page twice: once for the brief (`--pages 0`) and again in the full crawl.
+  The full crawl now starts in the background before the brief; crawl.mjs writes site.json as soon as the
+  home page is shot (`pages_pending`) and again with the inner pages, `product.py copy` waits for the
+  first and `product.py pages` for the second. On linear.app: 55 s + 56 s of crawl before, 54 s after
+  (the inner pages finished inside the home page's time). Test: `product.py demo` (wait_site).
+
+- style-match did not measure how a caption's words change as they are said (`highlight None` on a
+  grey-to-dark karaoke). look.py now reads every source frame inside the caption box of up to 8 captions a
+  video, times each word from the transcript, and names the style from what a word looks like before it is
+  said: `reveal`, `karaoke`, `highlight`, `pill`, `none`, with how far the change lands from the word. It
+  writes `captions.effect` in style-edit's names (karaoke + `inactive_opacity`, reveal, word_highlight for a
+  box behind the word; a said word that only changes colour keeps the entrance and its `highlight_color`)
+  and `captions.shadow`. A moving yellow word used to become `word_highlight`, which style-edit draws as a
+  box. A highlight colour that never follows the words is now `emphasis_color`: on a real talking-head
+  creator (5 videos, frames checked) the old style.json would have turned every said word yellow; the
+  frames show whole captions with one static yellow keyword. Test: `look.py demo` (five fixture clips, one
+  per style, the timing within 0.1 s).
+- App icons were labelled "text card". A small, near-square graphic of 8 colours or fewer with a line of
+  text at most (none running out of it) is now a logo in the code's guess, and the Gemini kinds pass gets
+  each crop's size and shape on screen. A real red title banner stays a text card. Test: `graphics.py demo`,
+  `gemini.py demo`.
+- On creators with no steady speaker or plate (vlogs, walks, b-roll) the graphics detector called the
+  moving footage a graphic and missed the real ones. graphics.py now switches to an overlay mode there: what
+  holds still while the footage moves, rectangular and not flat, with text or a hard edge. Hand-labelled
+  fixture (3 graphics, a still sky and a moving ball over a panning 3-shot clip): precision / recall 0.00 /
+  0.00 before, 1.00 / 1.00 after. Test: `graphics.py demo`.
+- The AI-tell scan raised a font BAN ("Inter") from Gemini's closest-font guess on one look. Gemini now
+  rates its confidence; a font tell stays a BAN only when 3+ videos agree (75%) and most rate it high,
+  otherwise it is a WARN worded as a guess with the vote count, and look.md marks the font as a guess. Test:
+  `report.py demo`, `gemini.py demo`, `look.py demo`.
+- The teardown wrote no top-level `transitions` or `layout`, so style-edit used its defaults. visual.py
+  writes `transitions` from the creator's transition cuts (whip, match, mask, dissolve as push, match,
+  wipe, fade; absent when they only cut) and graphics.py writes `layout` `{"mode": "split", "seam"}` when
+  the graphics own the top panel over a speaker below it. `editplan.py blend` carries them with pace and
+  layout. Colour already reaches style-edit through `graphics.palette`. Test: `visual.py demo`,
+  `graphics.py demo`, `editplan.py demo`.
+- kirocut ran its independent work one item at a time. Measured on a 14-core Mac, before -> after, same
+  inputs: style-edit `capture.mjs` (6 page captures, 3 logos, a repo card, a YouTube thumbnail) 28.5 s -> 8.9 s;
+  product-video `crawl.mjs` on a public site (home page and 17 inner pages) 150.5 s -> 48.1 s; `record.mjs
+  --states` (4 flows) 27.7 s -> 9.0 s. The pages share one headless Chrome, four tabs at a time
+  (`KIROCUT_TABS`, 1 turns it off); logos and free sources fetch at once; the crawl reads inner pages while
+  it shoots the home page. Same files out (same pages, line counts and state sizes). Screencasts stay one at a
+  time (a busy machine drops their real-time frames). No agents here: one Chrome is cheaper than one agent per
+  page. Test: `tests/test_record.mjs` (pool order and cap).
+- clips edits the chosen clips at once: one `clip-editor` agent (sonnet; Bash, Read, Write, Edit) per clip, all
+  launched in one message, each taking its clip through the cut and style-edit to the stills sheet and returning
+  a short JSON; then one `stills-critic` per sheet, also in one message. Without subagents the skill runs the
+  same steps one clip at a time. On three 23-27 s clips of the sample take (no TypeSafe key, Whisper): 924 s in
+  one session -> 112 s (the three agents took 83, 86 and 112 s); input tokens 1.70 M -> 2.00 M (+17%), and the
+  main session gets three JSON lines instead of three transcripts and paper edits (peak context 99 K in one
+  session, 85-89 K per agent). Test: `evals/clips-fan-out` (three clip-editor launches in one message).
+- Hook variants (cut, `references/retake-detection.md`): the variants build, render and verify as parallel shell
+  jobs in one call, not agents (the commands are fixed). Two hooks on the sample take: 125 s -> 87 s
+  (Whisper's verify is CPU-bound, so two at once is not twice as fast).
+- `edit.py` rewrote every renderer file on each stills or render run, so parallel runs could bundle a file
+  another run had just emptied. It now copies only changed files, through a temp name. Test: `edit.py demo`.
+- A SKILL.md that names an agent must ship it with `model` and `tools` set, and every agent needs `tools`
+  (`tests/check_plugins.py`). The unused `teardown-worker` agent is gone (style-match ships its own).
+  PRINCIPLES.md "Speed": independent work runs at once, scripts first, agents return short JSON.
+
+- style-match ran every video one after another. Transcription, downloads, the Gemini look calls and the
+  visual, look and graphics measures now run several videos at once (a quarter of the cores, 1-4; `CT_JOBS=1`
+  turns it off), and SKILL.md starts `gemini.py look --no-merge` beside `transcribe`. Measured on a 14-core
+  Mac, `--top 3` (5 videos), every script step: a TikTok creator 425 s -> 119 s, a YouTube Shorts creator
+  364 s -> 167 s. Test: `parallel.py demo` (via `fetch.py demo`).
+- style-match ships a `video-analyst` agent (haiku): one per video, launched together, each returns a JSON
+  beat map (labels, second marks, words, WPM, hook, close, graphics) from the files the scripts wrote. The main
+  session merges summaries instead of reading every transcript; without an Agent tool it reads
+  `transcripts/<id>.timed.txt` (new: a line a sentence or pause with its start). Test: `fetch.py demo`.
+- "Winners" lines compared one video against two and said "every winner on that side". A side with under 2
+  videos is now "not enough" and prints no line. Test: `report.py demo`.
+- The graphics kinds prompt assumed a talking head, so on a vlog or challenge video Gemini called crops of the
+  camera shot (people, ceilings, trees) "b-roll": a measured run reported 16 graphics where there was 1 logo.
+  Crops of the main shot are now "part of the set" and b-roll must be an inserted clip; the same run keeps
+  only the logo. Test: `gemini.py demo`.
+- The AI-tell scan flagged a BAN "flat saturated ground" from the camera footage (a red store wall) when
+  graphics were on screen 1% of the time. Palette tells now need graphics on 5% of the runtime. Test:
+  `report.py demo`.
+- look.md printed `Captions settle in None s.` and Python dicts for cut and sound kinds. It prints
+  `hard 56%, jump 7%` and leaves out unmeasured numbers. Test: `look.py demo`.
+- YouTube transcripts said `0s - 0 wpm` (a YouTube listing carries no durations) and the cost line said
+  `~0s audio`. The header takes the transcript's own length. Test: `fetch.py demo`.
 - A download that failed (YouTube 403, TikTok "unexpected response") was printed and skipped, so the teardown
   silently measured 4 videos of 5. Each download now retries once and a failure ends with the ids and the
   `--ids` retry line, exit 1. Both failures from the measured runs recovered on the retry.
