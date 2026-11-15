@@ -4,6 +4,125 @@ What changed for every user.
 
 ## Unreleased
 
+- Every render now opens on a review page in the browser instead of a file path in the chat: the
+  cut, the styled edit, each clip and a product video. Play, scrub and leave a note at a moment (the
+  frame is saved, images can be pasted on), send the notes, and Kiro fixes and renders the next
+  round on the same page, with its progress shown live. Approve moves on. Earlier rounds stay as
+  tabs; several videos in a round (every clip of a long video) are tabs you can compare side by
+  side. Notes save in `edits/<name>/review.json`. Stdlib only, Mac, Windows and Linux, the default
+  browser, 127.0.0.1 with a random token. The live preview before the render is unchanged.
+  `lib/kirocut/review.py`, `style-edit/references/review.md`. Test: `review.py demo` (in demos.sh).
+
+- A slow Modal piece can start a second copy (`KIROCUT_MODAL_SLOW_PIECE`, test only, off by default). The first copy to finish counts and the other is cancelled. Start-up counts only first copies. Test: `modal_render.py demo`.
+- The Modal estimate counted the whole footage upload when Modal already held it (a re-render uploads
+  in 3-4 s). It now asks Modal by each file's hash and counts only what is missing, without sending
+  anything (about 1 s; every byte when Modal is not set up or does not answer). Test: `edit.py demo`.
+
+- Setup prints each step's time. `tests/fresh_install.py` ends with a table of each step, also in the job summary on CI. Test: `fresh_install.py demo` (in demos.sh).
+
+- A beginner who left the names question blank got no logos or captures: `route.py beats` marked only the
+  profile's `names`. It now also marks any word written with a capital inside a sentence and says which ones
+  are not in the profile. The sample take's beats list Jev, Kiro, Haiku, Opus and Fable. Test: `route.py demo`.
+
+- Output a new user could not read. face.py and `check.py render` no longer print OpenCV's "Targets are not
+  supported by the new graph engine" WARN (its log is set to errors where the detector is made).
+  `check.py render` no longer prints seven ffmpeg "Broken pipe" lines after its summary (a frame reader that
+  stops early stops ffmpeg first). The flow scene tweened a veil it never draws on a scene's ground: 15 "GSAP
+  target undefined not found" lines on the sample's stills, now 0. Setup keeps npm's "added 369 packages" and
+  "Has browser at ..." back unless the step fails, and a model download names the file, not its pinned URL.
+  `transcribe.py` prints one line for its re-heard words, `profile.py style` says "the default style (smooth
+  zooms about every 6 s, 3-word captions)", and the sound kit prints one line, "4-5 dB under your voice".
+  Tests: `face.py demo`, `check.py demo`, `setup.py demo`, `models.py`, `test_media.py`, `sfx.py demo` (now in
+  demos.sh), smoke.py (stills fail on any GSAP target warning).
+
+- `verify_cut.py` SURVIVED lines gave no time, so a doubled "and, and" went on into captions. Each line now
+  prints its cut time, its source time and the spans.json entry to add (`after` set). Test: `verify_cut.py
+  demo` (in demos.sh).
+
+- Intake wording disagreed with itself. One id list everywhere: `audience` and `names` per video (the
+  audience answer also saves `goal`), the style questions in three calls that start, setup step 8 and
+  intake.md share. With no creator the caption option reads "clean, 3 words at a time". `profile.py set`
+  given a bare `key value` among `key=value` pairs names the argument that is wrong. Test: `profile.py demo`.
+
+- Render estimates. The laptop benchmark times Chrome's start-up apart from the frames. GitHub Actions and Lambda say "Not set up yet" until they are connected, the same as Modal. The quote uses published rates and, after a render on this computer, the speeds saved in `modal.json`. Test: `edit.py demo`.
+
+- Stale docs. motion.md and contracts.md: a hard-cut scene starts `CARD_LEAD_S` before its word.
+  teardown-page.md: slow-drifting footage goes to `drift_dets`, with what it misses. plan.md: how the matte
+  `--modal` cost is worked out. render-watcher covers Modal. contracts.md: `flow` is a full-frame scene on
+  vertical and a box on wide, as plan.py does it.
+
+- Link routing. A Drive link carries its share how-to only for a failed download, and its edit folder is
+  named after the file. Podcast analytics redirects (podtrac, chartable, podsights, op3 and others) are
+  stripped to the host's own file. An Instagram reel yt-dlp cannot open comes back with a note saying so.
+  Test: `links.py demo`.
+
+- style-edit shapes.md opens with a whole two-beat visuals.json, so the file's shape (one JSON array of
+  beats) is shown before the per-pick table.
+
+- A vertical capture too small to read became a sticker of the page's own headline, which the speaker never
+  said, with its tight lines touching. plan.py now cuts a capture to a sticker only around words marked on
+  the page (`find` or `highlight`). With none marked, or marked words set tighter than the captions' line
+  height (1.14), it drops the card and says why and what to add (a sticker beat with a `find`, which
+  capture.mjs re-sets with open lines). The message for a cut says plan.py did it. Test: `check.py demo`
+  (the sample's two unmarked captures drop; the marked headline set 150 px apart on 212 px lines drops; an
+  open line becomes a sticker).
+
+- The default render WARNed a one-frame zoom snap and a jittering logo, with fixes the model could not act
+  on ("render with the current StyleEdit.tsx"). plan.py moves a zoom change out of a card's entrance so the
+  punch finishes before the card starts, or, for a full-frame scene, to the scene's middle where it is
+  hidden; two zooms closer than a punch's 0.16 s travel join into one. `quality.py` skips zoom moves under a
+  scene, reads one just before a scene only up to its start, and now catches a zoom that drops out and
+  straight back in one frame. Its jitter check needs 2+ frames of movement each side of a turn, so a thin
+  logo edge flickering through a fade no longer counts. The logo sting lost its ring, which popped in on one
+  frame. Zoom, jitter and cover WARNs now name a style.json, visuals.json or plan.json change. The sample's
+  default render: 0 FAIL, only the loudness WARN. Tests: `plan.py demo` (the 28.05 s punch before a scene),
+  `quality.py demo` (the out-and-back snap; the logo's one-frame flicker).
+
+- Someone else's short video recommended editing it as your own. A public TikTok or YouTube Short pasted
+  without `--own` now asks with **Copy this creator's style** first; **Edit it as my video** is second.
+  Every `ask` item from `links.py route` carries its `question`, which start/SKILL.md says word for word.
+  Test: `links.py demo` (a 136 s TikTok and a 39 s Short put `creator` first; every ask has a question).
+
+- "Finish setup" after the one-command install found nothing to finish. `setup.py todo` now lists every
+  optional step not done yet (the three keys, the style questions, Modal, the matte), from the same checks
+  doctor reads, whether or not it was saved for later. `setup.py later <step>` refuses an unknown step with
+  exit 2 and the list of steps. setup/SKILL.md no longer asks for times doctor does not print. Test:
+  `setup.py demo`.
+
+- Audio-only podcast clips held still: only the captions moved, and `check.py render` WARNed "nothing moves"
+  for the whole clip. The renderer now draws the cover itself (plan `cover`, from `clip.json`): a slow push
+  on the sharp cover to 1.12x and the blurred ground easing back from 1.06x and drifting down, both on one
+  `sine.inOut` over the clip in log space, plus a 1.02x `punch` on each sentence start (motion.ts
+  `punchAt`). No zooms on those clips. The cover is 640 px at y 320 so the push stays inside the 9:16 safe
+  frame. `quality.py` counts the cover as moving where its edge travels 0.5 px/s or more, and measures the
+  push on the render (WARN when under half the plan). Tests: `tests/smoke.py` renders a 16 s audio clip and
+  fails on a "nothing moves" WARN (it did before this change); `plan.py`, `quality.py`, `clips.py` demos.
+  Live on a public feed episode, a 25 s clip: render 35 s, check render 0 FAIL 0 WARN, push planned 0.113,
+  measured 0.113 log-scale.
+
+- An audio-only podcast stopped at clips: a feed or Spotify episode downloads `source.mp3`, and
+  `clips.py` looked only for `source.mp4/mov/mkv/webm`. One `source()` lookup now finds video or audio
+  (mp3, m4a, aac, wav, ogg, flac, opus) for candidates, page and trim; `link` keeps an audio file's
+  extension. `links.py` reads each episode's artwork from the feed (the episode's itunes:image, else the
+  show's) into the episode options, and `fetch --direct --cover <image>` (or a Spotify link) saves it as
+  `cover.jpg` next to the audio. `trim` makes each audio clip a 1080x1920 video: the cover blurred and
+  dimmed to 30% fills the frame, the sharp cover sits above the captions (no artwork: the file's
+  embedded art, else black); `clip.json` says `audio_only` and `profile.py style` keeps captions on for
+  it. The picks page plays audio previews. Tests: `clips.py demo`, `links.py demo`, `profile.py demo`,
+  and `tests/smoke.py` renders a synthetic audio clip through the real renderer with `check.py render`
+  0 FAIL. Live on a public 4-minute news feed episode: episode list 0.2 s, download with cover 1.5 s,
+  Whisper 32 s, candidates 0.4 s, picks page 1.5 s, trim 5 s, render 14 s, check render 0 FAIL.
+
+- A podcast feed link (RSS or Atom, 442 episodes) went straight to clips with no episode picked, and
+  yt-dlp `--no-playlist` was still walking the feed after 5 minutes. `links.py route` now reads the feed
+  itself (stdlib, 15 s timeout, 32 MB cap; an Apple Podcasts show page through the iTunes lookup API)
+  and returns an `ask` with the newest 10 episodes (title, date, length, audio url), the newest 3 as
+  options, newest first. `fetch --direct` downloads only the picked file, no yt-dlp; a feed passed to
+  `fetch` says to pick an episode. Every yt-dlp call on a link that can be a playlist (`probe`, `fetch`,
+  product-video's music step) adds `--playlist-items 1` and a hard timeout (60 s to read, 30 min to
+  download) that ends in a sentence saying what to paste instead. clips/SKILL.md says what a podcast
+  link does. Measured on one public feed: episode list in 0.65 s, download started 1.7 s later.
+
 - `check.py render` FAILed a behind card the cutout already covers ("drawn over the face ... up to 41%
   of the head", fix: face.py, plan again, which loops). It looked the matte up by its 4-a-second
   sample number instead of the plan's frame, so no matte was found, and ffmpeg's fps filter handed
