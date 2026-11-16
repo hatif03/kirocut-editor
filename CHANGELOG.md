@@ -4,6 +4,19 @@ What changed for every user.
 
 ## Unreleased
 
+- YouTube chapters from the final cut. For a 16:9 video, style-edit step 9 offers chapters next to
+  the export. Kiro picks the titles from the transcript; `chapters.py` times each one off
+  `cut.transcript.json` and checks YouTube's rules: first at 0:00, at least 3, each at least 10 s,
+  in order. Writes `edits/<name>/chapters.txt`, and `description.txt` with `--intro`. Test:
+  `chapters.py demo` (in demos.sh).
+- Hook check. When the user gave a title, `cut/scripts/hook_check.py` finds the second its key words
+  are first said in the cut and prints the first 10 s, so Kiro can say when the opening misses the
+  promise. Cut step 6 runs it after approval. Test: `hook_check.py demo` (in demos.sh).
+- `check.py render` now checks motion on every frame of the whole picture, not only on each card. It
+  FAILs a one-frame flash (frame 0 too) and one or two black frames while the footage has picture, and
+  WARNs a one-frame jump that no cut, zoom or card change explains. Each names the time and the fix. A
+  fault the footage itself has is skipped. Test: `quality.py demo` (a clean clip passes; a white flash,
+  black frames and a jump are caught).
 - Every render now opens on a review page in the browser instead of a file path in the chat: the
   cut, the styled edit, each clip and a product video. Play, scrub and leave a note at a moment (the
   frame is saved, images can be pasted on), send the notes, and Kiro fixes and renders the next
