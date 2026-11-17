@@ -2,9 +2,9 @@
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "style-match",
   "displayName": "Style match",
-  "version": "0.4.0",
+  "version": "0.7.0",
   "description": "Measure how reference videos are edited and save that as a style for your own footage.",
   "author": { "name": "KiroCut" },
   "license": "MIT",
-  "keywords": ["video", "style", "captions", "transcription"]
+  "keywords": ["video", "style", "captions", "transcription", "teardown"]
 }

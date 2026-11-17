@@ -4,6 +4,36 @@ What changed for every user.
 
 ## Unreleased
 
+- Every saved style is a skill, and feedback edits that skill. A finished creator study, a blend and
+  the user's own style each get a thin skill in `~/.claude/skills` (a project's `.claude/skills` when
+  it has one): `edit-like-<handle>` or `my-style`, with triggers ("edit my video like @handle",
+  "/edit-like-handle"), how to run the editor with that style (`profile.py style --from`), what it
+  copies, and "## Learned from your feedback". Review notes and taste corrections take a new scope,
+  **This style (@handle)** (`review.py learn --scope this-style`, `taste.py add --style`), offered
+  first when the edit used a creator's style (`edits/<name>/style.json` now records its `source`).
+  The setting goes to `style.overrides.json` beside the creator's style.json, never into the measured
+  file, so a re-study keeps it. Order: measured style < taste.json < this style's overrides < this
+  video. The rule becomes one bullet in that skill with its count, last date and regressions, and
+  still counts in `taste.py report`. The home page shows the style's skill on "Your skill".
+  New `lib/kirocut/styleskill.py`. Tests: `styleskill.py demo`, `taste.py demo`, `review.py demo`,
+  `plan.py demo`, `profile.py demo`.
+- Cut: a kept span under 0.2 s stays when a kept word starts in it (a house take's 0.167 s "30," was
+  being cut). Only a span with no word in it, such as the one-frame head flash, folds into the cut.
+- The home page: first run in the browser. `home.py serve` opens it (127.0.0.1 only, a random token
+  and a SameSite cookie, as on the review page). Five steps: setup (doctor's tool checks and the
+  optional keys), pick a creator, study their videos, your skill, your video. Keys typed on the page
+  go through `keys.py`: the prefix check, one free test request, then the key file. A key is never
+  written to the page's state, a job or a log, and never shown back. Pasting a handle or profile
+  link names the platform (`links.py classify`) and lists their top 5 and 2 median videos with
+  thumbnails (`fetch.py list`, free). **Study their videos** queues a job; `home.py wait` hands it
+  to Kiro as one line (`JOB teardown @handle platform=youtube take=captions,pace`), Kiro runs
+  style-match's quick mode and reports each step with `home.py status`. Every number on the
+  page is read from the teardown's own `style.json` and `videos.json`; a part not measured shows as
+  empty. **Build my skill** runs the skill-handoff gate and shows the skill, five prompts to copy
+  and the tools that would help, or "no separate format yet: your style is saved". **Start the
+  cut** hands the dropped video to start and links the review page. `start` and `setup` offer the
+  page first. Test: `home.py demo`.
+- `fetch.py list` keeps one thumbnail URL per video in `videos.json`.
 - New `overlays` skill: change the visuals of an edit after it is rendered, one beat at a time. Move,
   resize, swap, drop or add a card, logo, real page or animated diagram at the moment you name. It
   re-plans, makes stills of just those moments, checks them, re-renders only the frames that
