@@ -4,6 +4,27 @@ What changed for every user.
 
 ## Unreleased
 
+- `kirocut`: one command opens the editor's window. `setup.py install-launcher` puts it on the
+  PATH in a user folder (no sudo; `uninstall-launcher` takes it and any PATH line off). It starts
+  Kiro in the library with the first prompt `/kirocut:start open the home page`, or reopens
+  the page when it is already served. Permissions are never bypassed. Test: `launcher.py demo`,
+  `setup.py demo`.
+- The same window every time: the home page serves on port 47821 (the next free one when taken,
+  remembered) with one token per install (`home/token`, 0600), so the address can be bookmarked.
+- One library for every video: `~/Movies/KiroCut` on a Mac, `~/Videos/KiroCut` on Windows and
+  Linux (`KIROCUT_LIBRARY`, or Settings, to move it). The page, its jobs and the skills work there
+  unless the user names a project folder. `review.py start` records each edit folder, so edits made
+  elsewhere stay listed. Test: `library.py demo`.
+- Returning users land on Home: their videos with status (being made, ready to review, done), the
+  review page and a download for each, My style and the creators studied. **New video** is two steps:
+  pick clips (the library's videos, files picked before, and, once turned on, recent clips from
+  Movies, Desktop and Downloads; **Choose files...**; drop anywhere), set their order, one video
+  joined or separate videos, tall or wide; then **Pick a style**, each shown on the user's first clip
+  with only measured numbers, or create one by copying a creator (the cut starts while the study
+  runs). **Make my video** queues one JOB (several clips as `takes=`) or one per clip. Settings shows
+  disk use and **Clear working files** (render chunks, sound caches, review copies older than the
+  last two; asks first). Test: `home.py demo`.
+
 - Every saved style is a skill, and feedback edits that skill. A finished creator study, a blend and
   the user's own style each get a thin skill in `~/.claude/skills` (a project's `.claude/skills` when
   it has one): `edit-like-<handle>` or `my-style`, with triggers ("edit my video like @handle",
