@@ -4,6 +4,256 @@ What changed for every user.
 
 ## Unreleased
 
+- A sample style ships with the editor: Card edit. It shows in My styles and on Pick a style for every user
+  under Sample styles, with no creator to copy first. Real image cards land 0.1 s before the word that names
+  them, about 14 a minute, in the band above the speaker's head and tucked behind a cutout of it (matte.py),
+  popping in from 54% in 0.23 s or on a hard cut, still while up, leaving on a cut. Captions are one white word
+  at a time in TikTok Sans. It edits through the same style-edit path as a copied creator, its settings change
+  on its style page like any other, and it cannot be deleted. A style.json can now ask for cards behind the
+  speaker itself (`"behind": true`). Fixed: a creator's measured entrance longer than the card's lead (about
+  0.17 s) hid the card for its whole life in the render.
+- The review page is laid out as the approved editor design. A collapsed rail on the left (the KiroCut pan
+  tile, New, Home, Videos, Styles, a Making ring with the number of videos the home window is making,
+  Settings, the theme switch) links to the home window's views; with no home window running those items are
+  hidden. The top bar has "Your videos / name", the two stages (a finished stage ticks green) and Kiro's
+  status. The player, transcript card, transport and timeline sit under one stage line; a wide video plays
+  across the top with its transcript under it. The notes panel is a plain 320 px column: notes with Edit and
+  Delete under the words, "Sent" once sent, fixed notes in green with Kiro's reply, Kiro's steps with
+  green ticks and a spinner, and Send and Approve stacked at the foot. While Kiro works no button is
+  black: Stop is outlined. The last approve turns into a green "Approved". Done green is #16A34A
+  (#4ADE80 dark), with #15803D for small green text.
+- A creator shows their own profile picture. When their videos are listed, style-match saves the
+  account picture as `style-matches/<handle>/avatar.jpg`: YouTube's channel avatar from one
+  `yt-dlp -J` call, TikTok's from the profile page. It replaces the frame from their top video on the
+  style cards, Creators you copied, the style page and the copy's progress card (as soon as it is
+  saved). Instagram, private accounts and no network keep the video frame. No new tools or keys.
+- The editor is now called KiroCut The home window, page titles, setup messages and docs use the
+  new name. Its logo is a pan with three lines of sizzle: in a small tile beside the name in the home
+  window header, as the browser tab icon of the home window and the review page, and at the top of the
+  README (`docs/logo.svg`). Nothing to reinstall: the plugin is still `kirocut`,
+  the commands, settings folder (`~/.kirocut`) and library folder (`~/Movies/KiroCut`) stay the same.
+- Done is green in the home window, the same green as the review page: the ticks on finished steps and
+  videos, "Saved. The key works.", the done step numbers and the Ready to watch / Ready to review dot.
+  The current step, buttons and text stay black.
+
+- Folders for Your videos and My styles. A row of folder tiles sits under the heading: name, how many are
+  inside and two small pictures, then a dashed New folder tile (type the name, Enter saves, Esc cancels).
+  Click a folder to see only what is in it, with "‹ All videos" or "‹ All styles" to go back. Move a video or
+  a style in with ⋯ then Move to folder, or drag its card onto a folder tile; drag it onto the back link, or
+  pick Take out of, to move it back. A toast says where it went, with Undo. A folder's ⋯ has Rename and
+  Delete folder (what was in it goes back to All; nothing is deleted). Folders live in folders.json in the
+  editor's home. Home still shows everything.
+
+- Every video and style card has a ⋯ button on its picture, always showing, in Your videos (Now cards and Done
+  tiles), My styles, Pick a style and the Home shelves. Videos and clips get "Remove from this list" (off the
+  window, no file is touched) and "Move to Trash" (asks first). A creator's style gets "Delete style"; My style
+  gets "Reset to default style", which clears your feedback changes after asking. Change image and Remove image
+  moved into the same menu. The small Remove and Delete links are gone. A clip in Your videos can now be
+  removed from the list too. Create a new style is a "+ New style" button on the Copied from creators row that
+  opens the two choices in a window over the page (Esc, the X or a click outside closes it).
+- The editor is now called KiroCut. The home window, page titles, setup messages and docs use the
+  new name.
+- The editor is now called KiroCut The home window, page titles, setup messages and docs use the
+  new name. Its logo is a pan with three lines of sizzle: in a small tile beside the name in the home
+  window header, as the browser tab icon of the home window and the review page, and at the top of the
+  README (`docs/logo.svg`). Nothing to reinstall: the plugin is still `kirocut`,
+  the commands, settings folder (`~/.kirocut`) and library folder (`~/Movies/KiroCut`) stay the same.
+
+- A creator shows their own profile picture. When their videos are listed, style-match saves the
+  account picture as `style-matches/<handle>/avatar.jpg`: YouTube's channel avatar from one
+  `yt-dlp -J` call, TikTok's from the profile page. It replaces the frame from their top video on the
+  style cards, Creators you copied, the style page and the copy's progress card (as soon as it is
+  saved). Instagram, private accounts and no network keep the video frame. No new tools or keys.
+
+- Scrolling holds on the home window and the review page. The home window redraws every 1.5 s, and each
+  redraw put every inner list (Your videos, My styles, a style's page, Settings) back at the top. Now a
+  redraw with nothing new leaves the page alone, and one with something new keeps every list where it
+  was. On the review page, after Send, each status line from Kiro no longer pulls the notes list to
+  the bottom, and the transcript's follow-along now also waits 3 s after Page Up/Down, the arrow keys,
+  Home/End or a long scrollbar drag, not only after the wheel. The returning Home view is rebuilt as
+  shelves: a header with the brand, text tabs (Home, Your videos, My styles) and the live status,
+  Settings and theme on the right; then a drop box and the newest clips in one strip, 3 video cards (the
+  whole card opens the editor), My styles as image tiles and Creators you copied as a 2-column grid.
+  Nothing on Home scrolls from 1280x720 to 1920x1080: it shows fewer clips and styles when the window is
+  narrower. Tiles keep their width with a short library, leaving space on the right, and an empty
+  shelf says so in one line.
+
+- My style gets a name right away. When it is picked on Pick a style, or its page opens, before the user
+  has named it, the name is a field already focused with a suggestion selected ("Like @<creator>" when
+  it started from a creator, else the computer's login + " style"). Typing replaces it. Enter or
+  clicking away saves through the same rename as the pencil, so the skill folder, its description and
+  every other style's "Not for" carry the new name. Esc keeps the old name. An empty name saves the
+  suggestion. "My style" stays only when the user types it. The Make my video bar and the making page
+  show the style's name instead of a fixed "My style". Style names can hold "@" anywhere
+  ("Like @alexhormozi").
+
+- The review page teaches the style from each finished video. On round 1 of the cut and of the edit of
+  the user's first 3 videos, one line says "Your first videos teach it your style. Leave notes on
+  anything that is off: each video comes out closer." Got it hides it for good (`ui.json`, which the
+  theme switch now merges into instead of overwriting). On the final approve (the edit, or a cut
+  marked `final`) the panel shows "Teach <style> from this video": `wait` prints a LEARN block with
+  every note of the session and its reply, Kiro posts one-line rules with `review.py learn
+  --propose`, the page lists them with checkboxes, Update my style or Not now goes back through `wait`,
+  and `learn --done` saves the ticked rules with `styleskill.learn` into the style the edit used (or
+  My style): "Saved to <style>. Next video uses it." No notes all session: "No notes this time. Your
+  style stays as it is." Style cards on the home window add "Learned from N videos". Test: `review.py
+  demo` (propose, pick, done, no notes, the notice count) and headless screenshots, light and dark.
+
+- The review page shows the move from the cut to the edit. A tester approved the cut and nothing on the
+  page changed while Kiro spent minutes on captions, zooms and sound. Now a quiet line over the cut
+  says "This is the cut. Captions, zooms and sound come next, once you approve it." and the button reads
+  "Approve the cut and add captions". On Approve the button turns green ("Cut approved") at once, the
+  stepper ticks The cut and makes The edit current, and the dimmed cut carries a "Making the edit" card:
+  the style's name, a bar, the current step, a clock and, while rendering, minutes left. The panel lists
+  the same four steps. The bar moves only on real reports: `review.py status --step
+  captions|visuals|plan|render`, which `retakes.py captions`, `route.py beats`, `plan.py`, `edit.py stills`
+  and `edit.py render` now post themselves (render with its log's percent) through `review.step()`, a
+  no-op when no page waits on the edit. When the edit round lands the bar fills green and the page
+  switches to it with "The edit is ready". Stop still works and takes the approve back (`round --stage
+  edit` then exits 3). With no word from Kiro for 15 minutes and no render log moving, the card says so
+  instead of showing a bar. `review.py final` marks the cut as the finished video ("just the cut"), so
+  Approve reads "Approve the cut" and no edit is waited for. review.json takes a cross-process lock file,
+  since the style-edit scripts now write it too. Green marks only what is done,
+  in light and dark. Test: `review.py demo` (steps in place, no-ops, Stop on the approve) and headless
+  screenshots at 1440x900, 1280x720, 1920x1080 and 390x844.
+
+- Two Kiro sessions no longer mix up the window. A tester had one session editing and started a second
+  in another terminal: the second session's questions showed up on her edit's page. Now each page and job
+  knows its Kiro session (`CLAUDE_CODE_SESSION_ID`, and the hook's `session_id`). A question goes
+  only to pages its session works on, and the card names the job ("Kiro (team-250k-general) asks"); no
+  match, and the terminal box shows. A job remembers who took it: `status` and the scripts' self-reports
+  from another session never write to it, and each session makes one video at a time. Make my video while
+  Kiro is busy offers "Kiro is busy with <name>. Open a new Kiro for this video", which opens a new
+  Terminal running Kiro on that one job (`home.py wait --job <id>`; Windows `cmd`, Linux
+  `x-terminal-emulator`, else a command to copy). Your videos offers the same for a queued video no Kiro
+  is taking; when no window opened, the page shows the command to copy. A taken job with no report for
+  15 minutes (its session stopped) is adopted by the next session that reports on it. A Kiro
+  without `CLAUDE_CODE_SESSION_ID` keeps the old behaviour: every question reaches the page. Closing a tab
+  tells its server at once, so a question never waits on a closed tab, and the window's POSTs refuse
+  other sites' pages (Origin check). Also, starting an edit no longer opens a second browser tab:
+  `review.py serve` skips it when the home window holds that edit's job and goes there in its own tab. Test:
+  `askhook.py demo` (two sessions, two pages), `home.py demo`, `review.py demo`, `progress.py demo`,
+  `launcher.py demo` (the terminal command per OS, recorded, never run).
+- A copied creator's style now reaches the edit. A tester copied @alexhormozi, made a video, and the edit
+  looked nothing like him: no images where he puts them, captions boxed for contrast, a 2x punch zoom held
+  16 s. Fixes: `profile.py style` uses the parts the user ticked (`<handle>-mine`, the same file the
+  `edit-like-<handle>` skill and its corrections use) and keeps camera, face, hook and sound, which the
+  blend dropped; it prints the style's skill, and start now reads its learned rules. The home page's
+  "graphics" box also copies her entrance motion and layout (an older `-mine` gets them back from the study).
+  `route.py beats` prints her cards a minute (under the user's own Cards cap, if they picked one; the default
+  style's 4 a minute never caps a creator), kinds and place, and marks that many sentences `want`;
+  style-edit gives each a real card there (the user's photo, a capture, their own clip). A creator with plain
+  captions keeps a shadow or glow before any stroke or backing. Her punch zoom comes back out after about
+  one of her shots. Vertical cards go in the centred band above the head, the only place `check.py plan`
+  passes. New `style_check.py`, run at the end of every plan: one `style:` line per way the plan differs
+  from her (caption size, place, words, case, font and plain look; zooms, cards, kinds and zone; sound cues
+  and pans a minute), against her style with the style page's presets and the user's own changes laid over (user > creator > default). `sfx.py` no longer stops a
+  plan on a loud take (the cues stay under -1 dBFS).
+
+- Jev is gone: the editor no longer uses TypeSafe or asks for its key. On a real skit Jev marked
+  0.44-99.8 s (85% of the video) as one retake, because skits repeat lines on purpose. `retakes.py
+  propose` now writes `transcript.txt` and `candidates.md` (what code flagged) and Kiro writes
+  `spans.json` from them, as it did without a key; no `review.md`, `jev-usage.jsonl` or exit 4/5.
+  `clips.py candidates` ranks by the measured features and Kiro judges the shortlist. `route.py beats`
+  leaves every pick null for Kiro, and `route.py highlight` prints the page's sentences closest first.
+  `product.py copy` and `pages` list without ranking. The TypeSafe row is gone from setup, the window's
+  key rows, `keys.py`, README and the docs. A saved `TYPESAFE_API_KEY` line stays in the key file
+  untouched and is never read; an old "typesafe" in later.json is ignored. Test: `test_retakes.py`,
+  `clips.py demo`, `route.py demo`, `keys.py`, `setup.py demo`, `home.py demo`.
+- The cut renders about 2.5x faster on a Mac and no longer crashes on iPhone footage. With FFmpeg 8 and 9,
+  ffprobe prints a frame count as `16,` when the stream carries an ICC profile (every iPhone take, copied
+  into each segment), and `render.py` failed on `int()`; it now reads the first number. The two whole-file
+  frame counts decode on every core (`-threads 0`). A Mac that already decodes with VideoToolbox now
+  encodes with it too (`h264_videotoolbox -q:v 65`, 4 spans at a time); if any step of that render fails
+  (a span, the join, the frame check), the whole render is redone with x264, which Windows, Linux and
+  `--no-hw` still use. A failed render no longer leaves its `cut_render_*` temp folder
+  (24-66 MB) behind. The review page's copy of each round's cut is an APFS clone on a Mac (`cp -c`), not a
+  full copy. `clips.py` reads ffprobe's `width,height` the same tolerant way. Measured on a 60 s iPhone
+  clip cut to 42 s: 21.3 s and 68 MB before (with the parse fix alone), 8.7 s and 40 MB after, 44.9 dB
+  PSNR between them. Test: `test_media.py` (the parse, a VideoToolbox render on a Mac, and a failed
+  render cleaning up).
+- Settings is two columns that fit the window, with no "Settings" heading. Each key shows its status
+  (Verified, Saved but not checked, Failed with the reason, or Not set) and only its last 4 characters,
+  with Check again, Replace and Remove. ElevenLabs shows the permissions to pick when you create the key
+  (Speech to Text on, everything else No access, a credit quota) next to the link. Updates shows the
+  installed and latest version, what changed and a Check now button. The videos folder has Show in Finder
+  and Change. Light, Dark or System is on the page too. New routes `/key/check`, `/key/remove` and
+  `/update/check`; key checks are kept by the key's last 4 characters, never the key.
+- A review page keeps its address when its server restarts (same port when free, same token), so an open tab or a
+  saved link keeps working. Before, every restart gave a new port and token and the open tab went dead.
+- Add your script. New video in the home window has an optional "Add your script": paste it, or choose or
+  drop a .txt, .md, .docx or .pdf (docx and simple PDFs are read to text with the standard library; a PDF
+  whose words do not come out asks for a paste). A preview shows the first lines and the line count, with
+  Remove. The PDF and docx readers are bounded (20 MB unpacked, no XML entities, linear tokenizing).
+  Only the text is kept: `POST /script` (token, 1 MB file, 200 KB text) sends it back, and making
+  the video writes it to `edits/<name>/script.md` and adds `script=` to the job line. The cut passes it to
+  `transcribe.py --script` and runs the new `cut/scripts/script_match.py`, which lines the transcript up
+  with the script and writes `script-match.md`: every take of each line, the last complete one marked
+  keeper, and lines the script says twice (a Manager vs Intern skit with one actor and one voice) marked
+  say-twice so both are kept; with more takes than copies, the ones between are marked ambiguous for Kiro
+  to place by order or voice, never cut as retakes. Off-script words are listed, never cut for that. It never writes
+  `spans.json`. Rules in `cut/references/script.md`. Test: `script_match.py demo`, `home.py demo`.
+
+  `/update/check` (at most one GitHub check a minute); key checks are kept by the key's last 4 characters,
+  never the key. Saving or removing a key now takes a lock and writes a 0600 temp file that replaces the
+  old one, so two saves at once no longer lose a key and a reader never sees half a file.
+- The home window shows progress on its own. A tester pressed Copy and the window sat blank while Kiro
+  installed and ran the teardown, because steps only reached it when Kiro ran `home.py status`. Now the
+  long scripts report themselves while Kiro has that job taken (a script never takes a queued job, so
+  `wait` still hands it out): style-match's
+  `fetch.py list` and `transcribe`, `visual.py download` and `measure`, `look.py`, `graphics.py`,
+  `gemini.py kinds`, `sound.py` and `report.py` post the page's step names with "video 3 of 7" and a bar;
+  the cut's `join.py`, `transcribe.py`, `build_timeline.py` and `render.py` post the video job's steps.
+  It is one `home.py status --if-active` call through `lib/kirocut/progress.py` (style-match:
+  `scripts/_progress.py`, kept byte-identical), never fails or holds up a script (it gives up on the
+  state lock after 2 s), and the same text as the newest step updates that row. Each report names its
+  job: the cut scripts pass their edit folder and the teardown scripts the handle (`--key`), so with
+  separate videos each video's steps land on its own job; a report with no key goes only to a lone taken
+  job. Every view shows a live strip in the header while a job runs: a spinner, the
+  newest step and a clock since anything last arrived; after 60 s with nothing new it says "Still
+  working: <step>. First runs take longer.", or "Kiro is not listening. Type kirocut in
+  Terminal." when no `wait` is running. `home.py` records `claude_seen` on every `wait`, `status`
+  and self-report. Test: `progress.py demo`, `home.py demo`, and a real 3-video teardown run with no
+  `status` calls, its steps landing on the page by themselves (screenshots every 20 s).
+  Also on the window: every Your videos card and Home row opens that video's editor (click or Enter),
+  shows the raw clip's frame instead of a dark box, and while it is made shows the current step with a
+  clock and an "Open the editor" button. My styles and Pick a style group "Your style" and "Copied from
+  creators" (newest first, "New" on one made in the last 24 h, "Made 3 days ago"); My style says it is
+  used on every video, which creator it started as a copy of, and which numbers your feedback changed.
+  A creator's card shows their own frame ("Their video") without the sample caption; My style never uses
+  the creator's frame, and no preview draws the "how it looks" sample caption any more. Every "study" the
+  user reads is now "copy". The first-run step 2 is "Pick videos in a format you like" (tab "Videos", six
+  numbered boxes, "What counts as the same format?", a profile link as the smaller option), and the card
+  on My styles is "Copy an editing style" with a "Copy this style" button. When style-match leaves
+  links out (`format.json`), the copy screen says "Using 4 of 6: 2 look like a different format (...)"
+  and greys those videos. The light/dark choice is one setting for the window and every review page
+  (`$KIROCUT_HOME/ui.json`, `POST /theme` on both, put on `<html>` before first paint; a click is not
+  undone by a poll already in flight); before, each
+  page's port had its own and a light window opened a dark review page. The review page header drops the
+  word "review" and shows the video name in full beside Home, centred. Fixed: "to Nonex" in a zoom line
+  with no measured scale, Done tiles breaking "today" letter by letter, and a style page heading
+  breaking a handle mid-word.
+- Review page: change the cut from its transcript, like Tella, right in the transcript beside the player.
+  Cut words are struck and removed pauses marked. While the video plays the transcript follows it: the word
+  said now has a soft highlight, played words are a step stronger, and the list keeps the word in view
+  (it waits 3 s after the user scrolls by hand), on the cut and in Preview. A round's data file from before
+  words carried raw times is rebuilt when the page asks for it (every word looked untimed, underlined
+  and could not be edited). Each cut is flagged inline with its reason (a soft red
+  band: Filler, Retake, False start, Your cut, Cut with a pause, Pause 1.2s): the tick keeps it, the cross
+  brings it back. Selecting words shows one dark pill: Restore, Copy (to the clipboard), Cut; Backspace or
+  Delete cuts, Cmd/Ctrl+Z undoes the last change. Changes wait, highlighted, until Apply. Preview plays the
+  raw take skipping every cut range plus the pending changes (checked each frame), so the result is heard
+  before any render. Apply rewrites `spans.json` (restored words leave their span; cut words get a `manual`
+  span, merged with any span they overlap) and `wait` prints `EDITS ...` so Kiro rebuilds, renders,
+  verifies and opens the next round. Words the pause trim took can be restored now, and a removed pause put
+  back: they go into a new `keep.json` that `build_timeline.py` leaves in. Every change is checked with
+  `build_timeline.py`'s own span check before it is written (atomic, one Apply at a time); a hidden `(cough)`
+  span is never swept in; untimed words count the same as in the build. Stop puts the old files back only
+  over what Apply wrote; `round` refuses while stopped, and send and approve wait until Kiro has the
+  changes. Read only on the edit stage. Notes Kiro resolved now show green ("Done in round N"),
+  left-as-is notes grey, and the Notes tab counts "2 done · 1 open". Test: `review.py demo`,
+  `test_build_timeline.py`.
+
 - A creator's style now copies one editing format, not a blend of everything they post. After the
   visual and look passes, `format_check.py check <handle>` gives each video a few measured features
   (frame: full, letterbox, split or 16:9; talking head, two people, screen recording or b-roll; words a
