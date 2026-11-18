@@ -4,6 +4,172 @@ What changed for every user.
 
 ## Unreleased
 
+- A creator's style now copies one editing format, not a blend of everything they post. After the
+  visual and look passes, `format_check.py check <handle>` gives each video a few measured features
+  (frame: full, letterbox, split or 16:9; talking head, two people, screen recording or b-roll; words a
+  caption, caption height, size and case; median shot length; length), groups the videos that match,
+  keeps the largest group (a tie: the higher median view multiple) and writes `format.json` with each
+  differing video and why. When the kept group is 3 or more and a majority, the others move to
+  `video/left-out/`, so style.json, look.md, graphics, sound and the page come from the kept format only;
+  style.json records `format` and the style's skill says it ("copying their talking-head videos with word
+  captions"). With 1-2 videos or no majority nothing moves and the user is asked for more videos of one
+  kind. A profile run picks videos of the creator's usual length (within 2x of the median) and measures 2
+  spares when the profile is big enough, about 1 min more at worst; pasted links are all measured and the
+  user is told "Using 4 of 6: 2 look like a different format". `visual.py measure` keeps each video's
+  measure until the video or the measuring code changes (`--force` measures again). Without a face
+  detector the face share is recorded as not measured instead of 0. On 5 public Shorts (3 Ali Abdaal
+  talking heads, 2 Fireship), the check put the 2 Fireship videos in their own groups and split off one
+  talking head with top-of-frame sentence captions; 2 of 5 is no majority, so nothing moved. Test:
+  `format_check.py demo`, `report.py demo`, `fetch.py demo`, `visual.py demo`.
+- The first edit is as fast as the ones after it. Setup now pays the one-time costs the first edit used to:
+  `install-all` adds "Warming up the editor" (the first load of OpenCV, onnxruntime and faster-whisper, and
+  one test frame through the renderer, which builds its cache and starts the render browser once) and
+  downloads the 15 MB cutout model for cards behind you. On a fresh install with a 20 s 4K take, the first
+  edit took about 110 s against 88 s for the second before (face finder 16.6 s against 2.0 s, stills
+  17-31 s against 14 s, verify 12.2 s against 9.6 s); now 66 s against 71 s. Both new steps are optional:
+  if one fails, setup still says Ready and the first edit does that work as before. A model that still
+  downloads during an edit (a transcription size picked later, the cutout model if setup could not fetch
+  it, the renderer after an update) shows on the window's video job as "Downloading the cutout model,
+  first time only" with "12 of 15 MB", and on the review page's Kiro panel. `setup.py warm` runs the
+  warm-up alone. Test: `setup.py demo`, `models.py`.
+- The style page has ready-made presets, laid out as in the I4 design and fitted to the window. Captions:
+  Plain (white TikTok Sans, the default), Bold, Karaoke and Minimal, plus every file in
+  `<library>/custom/captions/` and a copied creator's own captions ("Theirs"). Each tile is a real still from
+  the StyleEdit composition on a frame of the user's newest raw take with five words from their own
+  transcript (a demo photo and "I will push these changes" when there are none), rendered in one bundle in
+  the background and cached by everything that changes the picture (at most 60 files, none older than 7
+  days). The big preview shows the picked one; drag its dashed box to move the captions (only the big
+  preview renders again), and a size slider sits under the tiles. Custom caption files are checked: a key
+  that is not a caption setting, or a bad value, is dropped with a warning. Zooms: None, Smooth (0.8 s push
+  at 1.18x, a zoom change at least every 5 s) and Punchy (1.15x snap, about 6 a minute). Cut: Relaxed / Natural /
+  Tight (0.25 / 0.15 / 0.12 s pauses) with "Play 5 s of your video, before and after", cut from the newest
+  edit's raw take with that pause rule. Cards and graphics: on/off, Rarely / Sometimes / Often (at most 2 /
+  4 / 8 cards a minute; the default style is Sometimes, a copied creator's style has no cap until the user
+  picks one; plan.py names every card it leaves out) and the card look. Sound: effects and background music.
+  Each section says "you changed this" or "from @creator" and has its own Reset. Every pick is saved as a
+  correction through the style's skill (`captions.preset`, `zoom.preset`, `cut.max_pause`, `cards.on`,
+  `cards.per_min`, `look.preset`, `sfx`, `music`), and plan.py applies each one (`presets.py`; a demo check
+  per preset in `plan.py demo`). Caption presets are JSON files in `plugins/kirocut/presets/captions/`;
+  the onboarding caption answers use the same files.
+  Changed for existing users: the default style's zoom block is now the Smooth preset (`per_min` 3 instead
+  of 9.5, with the same 5 s longest hold, push, 0.8 s and 1.18x). On most takes the hold rule still lands a
+  zoom change every 5 s, so edits look the same; long sentence-free stretches no longer get the extra
+  changes the old rate added. The default style now lands at most 4 cards a minute ("Sometimes"); plan.py
+  names each card it leaves out. A caption answer from onboarding (bold, karaoke, minimal) is now the whole
+  preset, so its size and TikTok Sans replace a copied creator's measured caption size and font.
+
+- First run opens the editor's window first. Before, a new install went straight to several minutes of
+  installs in the terminal and the window never opened. Now the window opens at once (it needs nothing
+  installed, and runs on a Mac's built-in Python 3.9 too) and `setup.py install-all --report` installs the
+  Python packages, the transcription model and the renderer behind it, never asking. The window shows one
+  "Getting your computer ready" bar with "Now: <step>", real progress (packages, model MB, renderer
+  packages) and the tool rows under "See details". "Next: pick a creator" works during the install; "Start
+  the cut" waits for the tools and says so. A failed step is shown with its fix and the steps that do not
+  need it still run. The session-start check tells Kiro to do this on a first run; setup no longer asks
+  a question before opening the window. A clean install took 48 s here (packages 7 s, model 29 s,
+  renderer 9 s, with a warm npm cache).
+- Gemini keys that start with `AQ.` are accepted. Google AI Studio has issued them since mid-2026, and the
+  key check refused anything not starting with `AIza` before sending it. Calls already send the key in the
+  `x-goog-api-key` header, which Google's docs give for both key types.
+- Saving a key, transcribing and every other web request now work on python.org's macOS Python before
+  "Install Certificates.command" has been run. They failed with `CERTIFICATE_VERIFY_FAILED`. Every HTTPS
+  call goes through `lib/kirocut/net.py` (style-match: `scripts/_net.py`), which still verifies
+  certificates and adds trusted roots: certifi when importable, else the editor venv's certifi bundle by
+  path, else the OS bundle (`/etc/ssl/cert.pem` on macOS). A certificate error now says "fix my
+  certificates" instead of the raw error. Doctor has a "secure web" row, and `setup.py certs` is the
+  cleaner fix. Test: `net.py demo`, `setup.py demo`.
+- Home window: several creator links are easy to add. Each pasted link becomes its own row with the app's
+  logo, a short form of the link and a remove x; pasting several at once splits them; Enter adds, Backspace
+  on the empty box removes the last; a profile link stays one row and shows the profile. The count shows
+  ("3 videos. 5 or more gives a truer style."). On the first-run creator step and on "Copy a creator".
+  Style previews show a real person under the style's caption: the image you chose for that style, else
+  your newest raw take (never a finished render, its own captions clash), else one of three Unsplash demo
+  photos (`demo/CREDITS.md`). Empty spots (recent clips, Your videos, Creators you studied) show a marked
+  example. Styles can be renamed (pencil: the name and its skill, `/fast-cuts`), given a "Use it for" line,
+  given their own preview image ("Change image"), and deleted (studied creators; confirmed in the page, the
+  measured videos only if ticked). Every rename or Use-for edit rewrites all style skills' descriptions, so
+  each one names its own phrases and the other styles under "Not for". Dark mode (follows the system,
+  sun/moon switch). A clearer Home button here and on the review page; no page label beside the name;
+  fewer helper lines; no "For power users" box. Settings shows the version and, when GitHub has a newer
+  one, its first changelog lines and an Update button (`JOB update`). New video: dragging files shows "Drop
+  to add" over the window; each file is a card at the front with its copy progress, is picked once in, and a
+  toast names it; a wrong file says so on its card. Each clip has a menu: "Hide from this list" (scanned
+  clips) and "Move to Trash" (confirmed in the page; Trash or Recycle Bin, never a permanent delete). Your
+  videos: "Remove" moves that edit's folder to the Trash after a confirm. Live reload: the window and the
+  review page reload themselves when their page changes, and the servers restart on the same port when
+  their Python changes (`live.py`). Test: `home.py demo`, `styleskill.py demo`, `live.py demo`.
+- Your changes survive updates: `<library>/custom/` holds your own rule files (`rules/*.md`, printed by
+  `taste.py show` so every skill follows them), caption styles (`captions/<name>.json`, on with
+  `taste.py set captions.preset <name>`), template defaults (`templates/<type>.json`) and the cut critic's
+  rubric (`prompts/judge-rubric.md`). The editor reads them before its own. Settings shows the folder with
+  Show in Finder. The improve skill only edits the plugin's files in a repo checkout with
+  `KIROCUT_MAINTAINER=1`; everyone else's changes go to custom/ or taste.json. Docs: `docs/customise.md`.
+  Test: `custom.py demo` (a user file still wins after the plugin folder is replaced), `plan.py demo`,
+  `judge_cut.py demo`, `taste.py demo`, `improve.py demo`, `home.py demo`.
+- Change the editor itself and still get updates: fork the repo, install the plugin from your fork,
+  and say "update the editor". The new `update` skill finds how you installed (official plugin, your
+  fork, or a plain clone). On a fork it shows what the update brings and which of your files it also
+  touches, makes a `before-update-<date>` branch, merges, runs the fast self-checks, and rolls back
+  if they fail. It never pushes, stashes or deletes a branch. README "Want to change the editor
+  itself?". Test: `update.py demo`.
+- Sourced proof in the style edit: when a line names a person and what they said, `source.py quote` finds
+  the second they say it in a YouTube video (from its auto-captions) and `source.py clip` downloads only
+  that part into a `video_card`. X posts fall back to the public fxtwitter API when X's embed endpoint
+  returns nothing. Every clip and post is credited in `credits.txt` (url at that second, channel, date),
+  which `chapters.py --intro` puts in `description.txt`. Free, no keys, no login. Test: `source.py demo`,
+  `chapters.py demo`.
+- Cut quality: a script (`transcribe.py --script`, or `--keyterm Name`) now spells its names, product
+  names and jargon right: up to 100 picked terms go to ElevenLabs Scribe as keyterms (about 20% more on
+  that request) and into Whisper's prompt. Each approved cut adds one line to `metrics.jsonl` in the
+  editor's home (lengths, judge precision; `taste/scripts/learn.py` adds false cuts), and `trend.py tally`
+  shows the false-cut trend. `verify_cut.py` now lists joins that land inside loud speech;
+  `splice_check.py <edit> --fix` moves each to a quiet trough within 0.12 s and says what moved.
+  Test: `transcribe.py demo`, `trend.py demo`, `splice_check.py demo`.
+- Letterbox layout: `plan.py --layout letterbox` (or `"layout": {"mode": "letterbox"}` in style.json) turns a
+  landscape take into a vertical reel: a black 9:16 frame, the take as a centred band, a lowercase title
+  above it (`--title`, else the first sentence), captions one word at a time in the band (yellow unless the
+  creator highlights in another colour), and one of your own photos or a capture beside your head over the
+  opening line. All of it inside the reels safe zone. style-match's look pass picks it for a creator
+  whose videos are letterboxed (a 16:9 band between black bars). Test: `plan.py demo`, `look.py demo`.
+- Review page: while Kiro is making a round (it ran `status`, `round` or `resolve` in the last 15 min) the
+  page says "Kiro is working. Notes you send now are next." instead of "Kiro is not listening".
+- Kiro's questions in the window: when Kiro asks a question (AskUserQuestion) and the home page or a
+  review page is open in front of you, the question shows there with its options, an Other box and
+  "Answer in Kiro instead". Several questions show one after another; the tab title says
+  "(1) Kiro has a question". No page open, or no answer in 10 minutes: the terminal box shows as before.
+  Permission prompts stay in the terminal. Test: `askhook.py demo`, `home.py demo`, `review.py demo`.
+- Study a creator from links: paste one or more video links (TikTok, YouTube or Instagram) instead of a
+  profile, on the first run and on Pick a style. The window lists the links, names the creator when every
+  link shares one, and says that 5 or more gives a truer style. Test: `home.py demo`.
+- Home page dashboard: **Home** from every page. Returning users get a Home tab beside New video, Your
+  videos and My styles (always shown, also during New video, Pick a style and Making). Every first-run
+  step has a Home button in the header, and the "ai editor" name goes Home too: the dashboard once set
+  up, else step 1. The header says "Making N videos" while any are being made.
+- Your videos: what needs you now as cards (ready to watch or being made, with a plain line and Watch
+  and review), finished videos as a grid with a filled green tick and Download. The library shows as
+  "Movies › KiroCut" instead of a full path (`/library` gives `place`).
+- Settings: the optional keys and Modal sit on the page (same rows and checks as setup), with a box of
+  plain-word prompts to copy into Kiro. The style page says where the style started and how
+  many things you changed, and no longer shows the skill file's path. Creators on Home open their
+  style page and mark the one My style started from. "Build it yourself" opens My style's page.
+- Layout fixes at 1100 px and on phones: the style page's side panel moves under at 1100, key rows
+  stack in Settings, no words break mid-word, first-run panels are no longer cut off on phones.
+  Test: `home.py demo`.
+
+- My styles: every saved style (My style and each studied creator) is a card with its real numbers
+  (measured, with that style's corrections) and its skill name. A style's page changes caption size,
+  words and height, zooms, cut and sound effects with a live frame; each change is a correction at
+  that style's scope (`styleskill.learn`: its `style.overrides.json`, or taste.json for My style, and
+  the skill's "Learned from your feedback"). The page lists those rules with counts and a Forget
+  button, opens the skill file, and takes "Tell it what to change" in plain words as
+  `JOB style-change`, which Kiro turns into rules at that scope. Test: `home.py demo`.
+- Review page: a **Home** button back to the editor's window at its fixed address (same tab), or a
+  plain line saying to type `kirocut` when it is not running. **Move to playhead** is gone.
+  A note left on the last frame keeps its still (`grab` seeks from the end). Test: `review.py demo`.
+- Home page setup step: real brand marks (Simple Icons, CC0, and TypeSafe's own mark) beside each
+  tool and key, one colour, vendored. The key file path is shortened in the middle, and a stopped
+  editor reads "The editor stopped. Run kirocut to start it again."
+
 - `kirocut`: one command opens the editor's window. `setup.py install-launcher` puts it on the
   PATH in a user folder (no sudo; `uninstall-launcher` takes it and any PATH line off). It starts
   Kiro in the library with the first prompt `/kirocut:start open the home page`, or reopens
