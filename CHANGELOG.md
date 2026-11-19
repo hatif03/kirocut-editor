@@ -4,6 +4,138 @@ What changed for every user.
 
 ## Unreleased
 
+- Motion graphics built for your video. A new `motion` skill gives each moment that needs an animation (a number,
+  a list, steps, a before and after, an app in use) its own clip: one agent per clip, all built while you review
+  the cut, each checked (lint, transitions, a frame-by-frame motion check), rendered and placed on its word so
+  the motion finishes before the card leaves. A clip that fails its checks falls back to the old template, so a
+  video never breaks. Setup installs HyperFrames and GSAP from npm once. It uses more Kiro tokens than the
+  templates (about 100k per clip); the style page's Motion setting turns it down.
+- The style page has a Motion section: None, Some or Lots, a switch for each kind of animation, and the look.
+  Animations you approve go to your own library, with Use again, Archive and Delete. A note on one clip in the
+  editor rebuilds only that clip and re-renders only that part of the video.
+- New sample style: 50/50. The visual owns the top of the frame and you the bottom, on a paper ground, with a
+  panel version and a cutout version where your head breaks out of the card. Your face is back within 8 seconds.
+
+- Kiro's questions show in the video's editor, with "Kiro is asking you something" in the header. Esc folds
+  the question into a bar that reopens it.
+- The editor has a Download button once the edit is approved. Files are named "<video> - <style>.mp4".
+- No model downloads in the middle of an edit. Setup states a model's size and the free space first.
+- Format warnings from an analysis show on the style page. Music follows the creator unless you changed it.
+- No render question when no cloud is connected: it renders on your computer and says so.
+- Update leaves a developer copy (a git checkout) alone.
+- A cut whose last source frame is stamped late no longer comes out one frame short.
+- A new sample style, **Motion design**, for wide videos. One near-black canvas a camera drags across. When you
+  name a tool, a dark tile with a silver rim and its real logo lands on the word, joined to the last by a dashed
+  line, under a heading in your words. A question you ask sits big in the middle, then the camera pans down and it
+  rises into the heading. Between boards you have the whole frame, the camera easing in and moving you left or
+  right, so each animation lands on the other side. Soft sound cues on the moves, two whooshes a minute at most.
+
+- Modal is one button. Settings (and the first-run keys page) has **Connect Modal**: it installs Modal, opens
+  Modal's own login page in the browser (log in or sign up there), builds the render machine once in the
+  background with each step shown, and says what this month has cost. No terminal, no Kiro needed.
+  **Test render** renders 5 seconds on Modal and shows the time. Errors are one plain sentence: not logged
+  in, out of credit, the render machine did not build.
+- The render question recommends Modal for a video over a minute once Modal is connected and quicker,
+  the laptop otherwise. A saved choice is kept.
+- Several videos at once, with nothing to set up: every video you make gets its own Kiro in a new Terminal
+  window straight away (one each when several clips become separate videos), unless a listening Kiro is free
+  to take it now. The editor and the video card say "Kiro is working on this video in its own Terminal window".
+  Where no terminal can open, the editor shows the command to run. The "Make it in a new Kiro chat" button is gone.
+- Add images or links on New video: paste web pages, X posts, YouTube, GitHub or docs links, or drop, paste or
+  choose images (12 at most, under 15 MB each), each with optional "Show when I say..." words. They are saved with
+  the video (`edits/<name>/assets/` and `assets.json`, on your computer only) and go in first, as cards on those
+  words, before Kiro searches for anything. The editor's notes have an "Anything to add?" line for more.
+- Motion graphics are built for each line. The beats that need motion (a count, a list of notes, a before and
+  after, a command running, a render, an easing curve, a flow) each get their own animated clip, designed for
+  that sentence and landing each part on its word, built by one agent per clip while you review the cut. Every
+  clip passes lint, a layout check, a frame-to-frame motion check and a look at its contact sheets before it is
+  used; a clip that fails keeps the card template. New `motion` skill; `setup.py motion` installs its tools
+  (under a minute) and `doctor` checks them. style.json `motion` sets clips or templates, how many and which kinds.
+- A Motion section on each style's page: how many beats get an animation (none, some, lots), which kinds
+  (counters, lists, flows, before and after, the app in use, curves, logos), and the look (palette and font) with
+  a preview. It applies to the next video. A measured creator's style starts from their animation share.
+- Animations you approve are saved, listed under Saved animations on the style page (Use again, Archive, Delete).
+  A new video starts a matching beat from one, re-timed and changed for its words, never copied unchanged;
+  archived ones are never used.
+- A note on one animation ("make the counter bigger") rebuilds only that clip and re-renders only its span.
+- A new sample style, 50/50: the visual owns the top of the frame and you the bottom, on a paper ground, an
+  animation built for each line filling the top panel edge to edge, your face back full frame within 8 seconds.
+  `layout.variant: "cutout"` makes your head break out of your card onto the paper. Each panel animation passes a
+  ground and fill check and four frame-by-frame proofs (nothing clipped, nothing in the side rails, no two beats
+  at once, every line on screen long enough to read).
+
+- The cut renders at 1080p: a 4K take comes out 1080x1920 (or 1920x1080), never upscaled. The edit was already
+  1080p, and a 4K cut took about four times as long to encode. `render.py --max 0` keeps the source size.
+
+- Card edit: cards move. Most beats are now animations built from what is said: a like counter ticking with
+  comments stacking (`likes`), a progress bar filling (`progress`), an easing curve drawing (`curve`), notes
+  appearing line by line (`notes`), a before and after with an arrow (`side_by_side` `arrow`). Cards pop in,
+  push or drift while up, and leave before the next one lands. They fill the band above the head and tuck
+  behind the hair. A page is captured once, never cropped five ways.
+- Card edit: a plain white title card opens the video on the chest (emoji kept), and a black "comment"
+  pill (`cta`) lands on the ask.
+- Captions never sit on the face: a caption line inside the head moves to the chin line, inside the reels
+  safe zone. The Card edit's captions are plain white, no box, no shadow.
+- A new default motion reference (`style-edit/references/motion-design.md`) for every style: built animations
+  over static captures, big cards, real logos in brand colours, no blur, bounce or 3D tilt on entrances.
+
+- The cut page opens sooner on long takes. The render starts encoding the kept parts while the judge reads,
+  and a later render (after a judge fix, a verify fix or a review note) re-encodes only the parts that changed:
+  on a 10-minute 4K take, a re-render after a judge change went from about 105 s to 29 s. The finished file is
+  frame-counted once instead of three times. Reader cuts on takes over 5 minutes go straight in, highlighted,
+  and the judge checks them, instead of a second wave of agents. The judge stops after 2 rounds, and the
+  mechanical steps (build, render, verify, cut page) run as one command.
+
+- Images in your answers. When Kiro asks a question in the editor window, attach a picture to your
+  answer with the paperclip, or paste or drop one on the question. For example a screenshot of how a title
+  should look. Kiro opens it before it carries on. Images stay on your computer, next to the edit.
+
+- Paste an Instagram profile to see its newest reels, as with TikTok and YouTube. It uses your own
+  Instagram login from your browser, read on your computer and sent only to instagram.com. Not logged in,
+  the window says to log in to instagram.com in Chrome and paste it again, or to paste reel links.
+
+- Two videos at once. Make a video while Kiro is making another, and a second Kiro opens in its own
+  Terminal window for it straight away, so both are made at the same time. The card says so. Before, the
+  second video waited behind a button most people never saw.
+
+- The stills open in the editor. After you approve the cut, the stills come back on the same page as the
+  cut: one frame for each card, captions and zooms, over your sound, with notes and "Approve and render".
+  Before, they were shown in the terminal and offered a raw plan page first. That page (the live preview) is
+  now only for moving cards by hand when you ask for it.
+
+- Make my video opens the editor straight away, on your clip, with every step of the cut beside it: done
+  steps ticked, the one now with a spinner, the rest waiting, from what the scripts really report. The
+  in-between "Making your video" screen is gone. The editor then carries on into the stills and the edit.
+
+- A plan with no cards in a style that uses cards now stops at the plan check, with what to fix, instead of
+  reaching you as an edit with nothing on screen.
+
+- Pick a style: the cards are wide enough for their names ("My style" no longer wraps one letter per line)
+  and their facts. The window no longer shows fixed time and cost estimates that real runs don't match.
+
+- `kirocut` always runs the newest installed version. It was fixed to the version it was installed
+  from, so after `/plugin update` it kept opening the old editor. The window also repoints an older
+  `kirocut` the first time it starts.
+
+- The trust question: the steps now name the right option ("Yes, I trust this folder") and say to press
+  the down arrow first, because Enter alone picks "No, exit".
+
+- Faster after you approve the cut: the background prep checks and fixes its own stills sheet, so Kiro
+  looks once and asks. Card stills are taken 0.7 s before a card ends, not during its exit.
+
+- Connect Kiro. When no Kiro is listening, the window shows one button, **Connect Kiro**, instead of
+  "type kirocut in Terminal". It opens a new Terminal window with Kiro in your videos folder,
+  allowed only the editor's own commands, and it picks up what you queued. One at a time: the window says
+  "Opening Kiro in a new Terminal window..." and, if nothing connects within a minute, offers Try again.
+  `kirocut` now opens that Kiro too when the window is already open and nobody is listening;
+  `kirocut --window-only` opens just the window.
+
+- Settings > Update always finishes. Kiro runs the update itself, marks it done or failed on the page,
+  and keeps listening. Before, the page could sit on "Kiro is picking this up" after Kiro stopped.
+
+- Settings > Update now updates. Kiro runs `kiro-cli powers install` for `plugins/kirocut` and
+  `plugins/style-match`, then asks you to start a new chat.
+
 - Two new skills. `logo-pack` gets the official, brand-colour logo of every company, app and tool named in a
   video, trims it, makes a transparent 512 px PNG beside the SVG, checks each one and shows them on one sheet;
   the edit picks them up and shows logos named together side by side. `skill-improver` turns a finished
