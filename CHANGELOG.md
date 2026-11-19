@@ -4,6 +4,100 @@ What changed for every user.
 
 ## Unreleased
 
+- Two new skills. `logo-pack` gets the official, brand-colour logo of every company, app and tool named in a
+  video, trims it, makes a transparent 512 px PNG beside the SVG, checks each one and shows them on one sheet;
+  the edit picks them up and shows logos named together side by side. `skill-improver` turns a finished
+  video's notes into one-line rules (with the reason and date) in the style or skill that made it, after you
+  say yes; it runs the review page's "Teach your style from this video", and for a style that runs your own
+  skill it writes into that skill's "Learned rules" with a short log.
+
+- `skill-maker` helps you make your own editing skill: a few questions, one run without a skill, three test
+  scenarios, a SKILL.md checked against the skill-authoring rules, a test in a fresh agent, then rounds of
+  fixes with you. The skill plugs into the editor (your edit's files, the review page, the safe zone) and can
+  run as a style (My styles > New style > Use your own skill).
+
+- Auto-updates. Setup and Settings > Updates reinstall the powers. Start a new Kiro chat to load them.
+- Every video card has one layout, tall or wide: the picture on top (a tall video shows whole over a blurred
+  copy of itself), then the name, the details, the status and the button at full width along the bottom. The
+  buttons in a row line up. Done tiles and folders use the same picture area.
+- See all on Home opens Your videos or Styles instead of growing Home.
+- New folder sits next to New style on Styles and at the top of Your videos.
+- Archive a style from its ⋯ menu to take it off Styles, Home and Pick a style without deleting anything. An
+  Archived tab brings it back. Deleting a style moves it and its skill to the Trash.
+
+- Every page in the window ends with space under its last row, so the last card or line never sits on the
+  bottom edge of the window.
+- Card edits show real things, never a card of words on white. In the Card edit style (and your own
+  card-edit style) every card is a screenshot of the page or app named, framed round it to fill the band
+  above your head, a logo on its own white card, your photo or an animation. Cards come at the style's rate
+  (about one every 4 s) and tuck behind your head. New: a title pill at the top on the hook and the call to
+  action, a running numbered list, and a red X over a card that does not apply. The style page's card Look
+  dropdown is gone (the look belongs to the style), and Often now means 16 cards a minute.
+- Skill styles. A style can point at a Kiro skill (`"skill": "<name>"` in its style.json, or New style >
+  Use your own skill). Its card says "Runs /<name>", its page shows the skill's description and the skills it
+  calls instead of the caption, zoom, cut, card and sound controls, and making a video cuts it as usual, then
+  runs that skill on the approved cut and puts its render on the review page. When the session doesn't have
+  the skill, the window says so and offers the generic edit with the style's numbers.
+
+- Making the edit is faster and asks less. While you review the cut, the visuals, the plan and the stills
+  sheet are made in the background (all free, on your computer), so approving the cut goes straight to the
+  sheet. The audience and the names in a video are no longer asked: the first answer is used and the review
+  page says which, and you change it by saying so. Where to render and whether to change the volume are
+  asked once and saved. Kiro no longer asks what to show before the sheet: it picks the real page and the
+  sheet shows it.
+
+- The Making the edit card names the style ("the Card edit style"), never its folder id
+  ("@own-card-edit's style"). Steps made while you reviewed the cut show as done the moment you approve.
+
+- Plan again no longer crashes on minimal captions with no stroke and no box, which left the old plan in
+  place so a fix render changed nothing. A peak that is already in your take is a warning, not a fail
+  that sent the edit into a render it could not fix.
+
+- A Kiro session the editor opens allows only the editor's own commands (its scripts, ffmpeg, ffprobe,
+  npx remotion), so they no longer ask Allow. The README has the same rules for a Kiro you start.
+
+- Style cards show their picture tall (4:5), centred on the face, and a wide frame whole over a blurred copy
+  of itself. New face frames come from the middle of the video, where its captions and cards are on screen.
+  A style's page lists what it was analysed from (each video opens in a new tab, and the creator's profile);
+  new analyses keep that list in references.json. Menus open above everything, so a tile next to them never
+  covers them, and cards no longer rebuild under the pointer while a video is being made.
+
+- A first run happens inside the window: Home shows three steps (Set up, Analyse a format, Make your first
+  video) with one Start setup, then setup's real steps and sizes, the two optional keys with the ElevenLabs
+  key settings beside them, Analyse a format with link rows, the analysis's real steps, the format ready to
+  rename, and a drop box for the first clip that goes straight to Pick a style with the new format picked.
+  A Getting started block in the sidebar follows the real state (1, 2, 3 of 3) and goes once the first cut
+  is ready. Wide folder tiles fit three across (four on a big screen).
+
+- Styles is one list: every style is yours, and each card says where it came from (Built by you, Learned
+  from your edits, From @creator) with its cut, zooms and captions as icon rows. Tabs filter it (All, Built
+  by you, From creators). New style opens Analyse a format (paste 3 to 6 videos edited the same way, from any
+  creators, or pick them from a profile's newest videos) or Build it yourself, which makes a new named style
+  of your own. You can have several of your own and make any one the default. A style being analysed shows
+  its real steps first in the list. A style's page shows it on your video with its captions, zooms, cut,
+  cards and sound as option tiles, saved as you go. Delete and reset ask in a dialog. Style folders sit in
+  the sidebar with the video folders. Pick a style has the same cards, the default first, and a Make it in
+  a new Kiro chat button where a terminal can be opened.
+
+- The home window has a sidebar instead of the top header: KiroCut and its pan, + New video, Home, Your videos
+  and My styles with counts, your video folders (drag a video onto one to move it, with Undo), the job being
+  made right now with its real progress, Settings and the light/dark switch. The panel button folds it into a
+  rail of icons with labels (remembered in this browser); under 1100 px wide it is always the rail. Video cards
+  show their state on a bar along the bottom: green and full with "Done. 2:14 long" and Open the editor, or
+  black and part-filled with the current step and See progress. Finished videos are tiles in one row height,
+  wide for 16:9 videos and tall for 9:16. Home, Your videos and Done show one row; See all opens the rest in
+  place. Settings has its keys, updates, videos folder and theme in two columns. Done green is now #16A34A
+  (#4ADE80 in dark).
+
+- Vertical videos keep everything inside the reels safe zone: x 60-940, y 250-1440 of the 1080x1920
+  frame, for every style. Cards, overlays, logos, captions and scene content no longer reach the top bar,
+  the like and share rail or the caption block. The band above the head is now 74% of the width (it was
+  92%) and starts at 13.1% down (it was 10%). Captions are at most 74% wide. `check.py plan` fails any card
+  outside the zone, cards behind the speaker included, and captions that are too wide. Wide videos are
+  unchanged. The x-height check on a sticker now measures it the way the renderer draws it (98% of its
+  box, capture padding trimmed), not the older smaller fit, so a readable sticker in the narrower band is
+  no longer refused.
+
 - A sample style ships with the editor: Card edit. It shows in My styles and on Pick a style for every user
   under Sample styles, with no creator to copy first. Real image cards land 0.1 s before the word that names
   them, about 14 a minute, in the band above the speaker's head and tucked behind a cutout of it (matte.py),
