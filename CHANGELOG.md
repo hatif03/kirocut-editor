@@ -4,6 +4,252 @@ What changed for every user.
 
 ## Unreleased
 
+- Trial reels: a trial-reels skill makes versions of an approved reel that each look like a different video (the type first: story, list or pitch), puts them on the Trial reels tab, and posts only the ones you pick, spread over the day. Posting can graduate a Trial Reel automatically or only when you say.
+- Two caption edits made right after each other no longer drop the first one from the note.
+
+- New video: "Add images or links" is now "Add videos, images or links". Choose, drop or paste videos (up to 2 GB each) as well as pictures and links, up to 50 in all. Each file uploads on its own with a progress bar; a video shows a frame from it. Kiro puts each one in first, on its "Show when I say..." words.
+- B-roll has Specific clips: drag clips in, choose files, or Pick from folders to tick clips inside a connected folder. Every specific clip goes in the video; the ticked folders fill the rest.
+- The video page's "Anything to add?" takes videos too, uploaded one at a time with progress.
+- The timeline zooms and pans like CapCut: Cmd + scroll or pinch zooms where the pointer is, a sideways swipe or Shift + scroll moves along, and -, a slider, + and Fit sit above it (Cmd = and Cmd - zoom, Shift Z fits). While playing it follows the playhead. Text, Captions and Sounds rows zoom with it.
+- Full screen has controls: a scrub bar that shows the time where you point, play, -5s and +5s, the time, and Exit full screen. They hide while playing and come back when you move the mouse.
+
+- Text and Sounds rows under the timeline on the edit, like CapCut's: each clip is as long as it lasts, a sound shows its waveform, with a ruler, a playhead and - / + zoom (it opens at about 15 s a screen). A Captions row shows every caption line; click one on the timeline or on the video to retype it in the Captions panel's Lines (Enter saves and goes to the next line), x takes a line out. + Text and + Sound add one at the playhead (+ Sound picks from your sound library, each with Play). Click a text to change it, click a sound to hear it in place, and x on any of them takes it out.
+
+- A Sounds tool beside Text and Captions: the sound library. Each moment that gets a sound (a card slides in, a logo pops, a zoom, a big moment, an impact, a card leaves) has Play, Default, Off and your own sound files (+ Your own). Picks are for every video.
+- Click a card (a picture, a page, a logo) on the edit to move it, resize it from a corner, or delete it. Reels keep it inside the safe zone.
+- A Captions tool beside Text: how many words show at a time (1, 3, 5 or a sentence) and the caption look, for this video.
+- Text has its own panel on the left, like Tella: the Text tool in the menu opens it, Notes stay on the right. Pick a look (Plain, Outline, Box), type, drag it on the video. Click any text, in the list or on the video, to change its words, look, place or time (Start here, End here), or Delete it. Sent texts change too.
+- The left menu has Check for updates, always, on the video page and the home window. It turns into Update to <version> when one is out, and says when you are up to date.
+
+- Sending notes with no Kiro listening goes to the Kiro that worked on the video first: still open in Terminal, the notes are typed into it; closed, its conversation opens again. A new Kiro only when there is neither.
+- The Kiro card on the video page has Copy session: the command that opens that Kiro's conversation in a terminal.
+
+- Check now sees a new release the moment it is out. It read GitHub's 5-minute cached copy before, so a fresh release could still show as the old one.
+
+- Check now asks GitHub on every press. A press while a check is running waits for that check.
+
+- The sidebar's Making card has Stop for a video Kiro is fixing from its review page, the same Stop as on that page.
+- Settings' Check now asks GitHub on every press (10 s apart), skips GitHub's 5-minute cached copy, waits for the answer and says when it last checked.
+- New video has a B-roll section (tick your Drive folders, or leave Kiro decides on) and an Additional instructions for Kiro box. Copy a reel takes a reel link and remakes it with your b-roll, the reel's words on screen and its sound, then opens it in the editor.
+- Settings has an Auto-post your videos card: paste a Zernio key, connect any number of Instagram, TikTok, YouTube and other accounts, and Kiro posts an approved video now or at a set time. A video's ⋯ menu has Rename.
+- Questions from a Kiro that is not working on a video (another project, research, setup in another folder) stay in its own terminal. They no longer pop up on Home or a video's page.
+- Sending notes or approving with no Kiro on that video opens a new Kiro in its own Terminal window that carries on with the edit. A video whose Kiro stopped mid-round shows "Stopped? Open a new Kiro".
+- Copy for Kiro on the video page: when the Kiro that made a video is closed or stopped answering, one button copies what a new Kiro session needs to pick the edit up and apply your notes. The page no longer says Kiro is working when it has stopped.
+- Dragging a video or a style into a folder moves it: Your videos and Styles show only what is in no folder, and their counts match.
+- Add text on the edit: T in the note box, type, drag it on the video, pick Plain (white), Outline (white with a black edge) or Box (black on white). It renders as typed on the next draft, for 3 s or over an i/o range.
+- The video page's left menu always shows. With the window closed, a click opens it.
+- A video's versions are one Version dropdown beside Watch and Compare, so long names no longer squeeze the player bar.
+- A finished reel gets a Trial reels tab: Kiro's spare hooks and versions, a type menu per version (pick several, or let Kiro decide), Add a version, Ask Kiro, and Make. Trial reels list under their own heading in the Version dropdown.
+
+- The video page's left rail has Skills, and the Skills page loads when opened from a link.
+
+- The sample styles lean on animations. Card edit: fewer cards (20 a minute, was 30), three in four of them
+  animations, no list cards of words. 50/50: animations 85 in 100, no list cards. Motion design: Lots of animations,
+  the app in use on, more animations than logo tiles.
+- Notes on a sample style's video teach that sample style (they always saved there); the page now says "Teach Card
+  edit from this video" instead of "Save what you liked as your own style".
+
+- The transcript lights the word you hear, not the word the video has reached: it allows for your speakers' or
+  headphones' delay, times the playback speed, so it stays in step at 2x and on Bluetooth headphones.
+
+- After an update, every open page moves onto the new version by itself: the window and each video's page restart on
+  it within about 15 seconds, so a video page never keeps showing the old version.
+- The video page's left rail has an Update button when a new version is out. It runs the same update as Settings.
+
+- An Update button in the sidebar when a new version is out. One press installs it and the card shows the steps.
+- A question from Kiro that no page could show (or one it typed in the Terminal) now puts "Kiro needs you in the
+  Terminal window" with the question on every open page, with a chime.
+
+- Approving the cut goes straight to the full edit. The frames preview, and its second approve, are gone; Kiro
+  still checks the frames itself before rendering.
+- The note box keeps its shape while you type: the time and your words on top, the version, attach and send buttons
+  always in the same place underneath.
+
+- The New style tile at the end of Styles opens the same New style window as the button, instead of making a blank
+  style straight away.
+- An analysing card has a Stop button, and the first-run "Analysing your format" page has Stop analysing. Stop ends
+  that creator's analysis only; others keep going.
+- Analyse a format has "What do you like about them?": write what you like (the captions, the zooms, the sound) and
+  Kiro looks closer at those parts. Add files too, by Add files or by dropping them on the box: example videos,
+  screenshots, PDFs or notes. They are copied to your library's references folder and handed to the analysis.
+- A new video opens its Kiro with the editor loaded when the editor was installed for one folder only (a cloned
+  repo). Before, the new Terminal said it could not find /kirocut:start.
+- Every style page starts with a chat box. Type what to change (Enter sends, Shift+Enter is a new line) and a Kiro
+  opens in a new Terminal window and changes the style. A skill style's words go into its skill. Your words and
+  Kiro's reply show above the box.
+- Make a new skill is a chat box too: say what you like (the look, the pace, creators to copy) and a Kiro opens to
+  build it with you.
+- A skill style's page is shorter: the skills it calls are one line under What runs.
+- The Skills page scrolls.
+- Each style's What runs can take other skills: Add a skill, before the edit (on the cut) or after the video (on
+  the finished video, like a thumbnail or a description). Or tell Kiro in the style's chat. New video shows what
+  will run for the picked style.
+- The video's notes panel lists its skills: the ones it ran, the one running now and the ones still to come.
+- The sidebar's Making card has Stop. Kiro stops at its next step, even mid-run.
+- When Kiro waits for you in the Terminal (a permission prompt, a question), every open page says so and chimes once.
+- Pressing Make my video again on the same clip while it waits for its Kiro opens no second job or Terminal window.
+- The notes panel says Submit feedback to Kiro, and notes not sent yet say so.
+- After Accept all suggestions, Undo brings them back, and Show suggestions again lists every kept one so you can
+  bring any back.
+- Settings, Update works however the editor was installed. A cloned repo on main with no changes of its own gets
+  git pull; a marketplace added from a cloned folder is pulled first; only a fork is sent to Kiro to update.
+- An approve can be taken back. While Kiro works on it the button says Stop and undo approve; after the final
+  approve it says Undo approve. Either opens the draft for notes again.
+- Approve sits in the top right of the video page, not under the notes.
+- A new draft opens where you were in the video, not at the start.
+- On the video page, drag the line between the video and the transcript, or the edge of the notes panel, to resize
+  them. Double-click a line to put it back.
+
+- The window tells you when Kiro needs you. A new question plays a soft chime once (not again on reload) and
+  the tab title says so. A draft that finishes chimes too. While the tab is hidden, both show a system notice once you
+  press Turn on alerts in Settings. Settings has Sound when Kiro asks or finishes (on by default, this browser only).
+- While a Kiro is working, the sidebar card says which video and the step (Kiro is working on my-video:
+  Cutting the mistakes), and the tab title shows it (Making 1 · KiroCut).
+
+- The block on a Kiro editing the editor's own files is gone. A Kiro making a video can change the editor
+  again when a style needs it, such as see-through animations.
+
+- Card edit never shows a card of words alone. A notes card now looks like real notes: your face in the header,
+  the frame of your take beside each line, a green tick drawing in. A progress card shows frames of your take. A
+  terminal or a chat with no logo gets no card, and the check fails any words-only card that gets through.
+- Animations install themselves: an editor set up before the motion tools existed installs them on the first edit
+  (a few seconds). If they cannot install, the edit says once that animations fell back.
+
+- Skills lists every skill that helps with an edit, from your own skills folder, the library's .claude/skills and
+  your other plugins (named plugin:skill). A skill counts when its name or description is about video, captions,
+  cuts, overlays, animation, thumbnails, sound or logos. The rest sit behind Not for editing at the bottom, which
+  opens in place with the same rows.
+- Update in Settings runs in the window without Kiro. It updates kirocut and style-match, restarts the
+  window on the new version and reloads the tab. It shows the new version, and the /reload-plugins line to copy
+  until your Kiro session runs on it.
+
+- A Kiro making a video can no longer edit the editor's own files. On the installed plugin a hook blocks
+  Edit and Write inside it with a plain message, and Kiro sessions the window opens get an Edit deny rule on
+  the plugin folder. A checkout or fork you own is not blocked outside the window. The start, cut and
+  style-edit skills say to report a wrong script and use a supported override instead.
+
+- Skills: every skill has a ⋯ menu with Hide from this list and Delete. Delete moves the skill to the Trash, only from
+  your own skills folder, and says which styles use it. Skills that don't edit video sit under Other skills. A style
+  whose skill was deleted says so and lets you pick another skill or archive it.
+
+- Go back to a draft now undoes the fixes made after it, so a zoom you brought back stays. Prep never changes the
+  style you picked. Only notes you tick "Keep as a rule" become rules, with no question, and styles go by their
+  names. The cut keeps your opening hook unless you said it again later.
+- Card edit keeps its pace: a card about every 2 s, none on screen under 1.2 s, lists at caption size and photos
+  at their own shape. A note is tagged with what you clicked and quotes the caption on screen then.
+- The Making count in the editor hides at 0 and counts every video being made. "Making draft 2" names the right
+  draft. A style with no zooms says "No zooms". One name for the preview, one row per open question, and the
+  sample offered once.
+
+- The style you pick is always used, whichever Kiro takes the video. Each question goes only to the video it is
+  about, named on the card, and never falls back to the Terminal while a page is open. Each new video gets its own
+  Kiro. "Made in" leaves out time spent waiting for you.
+- Buttons no longer get rebuilt under your cursor, and the first Download click works. Drafts have one name
+  everywhere. The sample does not count as your first video. Plainer words, and no check output in Kiro's notes.
+
+- The Card edit and 50/50 samples have a real picture and an example video, both from their own edit of the
+  public sample take (the one "Try it with a sample video" uses): a frame with a card fully in, the speaker's
+  eyes open and the caption on, cropped around a focus point so the card stays inside every shape it shows
+  in. On Pick a style and the Styles list, hovering or focusing the card plays the 12 s example muted (a small
+  play mark says it is a video). The style page has the example as a player at the top. The 50/50 sample no
+  longer uses a stock photo. Motion design keeps its drawn board and has no example: it is a wide style and
+  the sample take is vertical.
+- `thumbs.py make <edit> <style folder>` picks and crops that frame and cuts the example (720p, under
+  3 MB) from any finished edit, for new samples and styles built here. It skips blinks and half-shut eyes
+  (the face finder's eye points, judged against the speaker's own usual openness) and prefers a built card
+  to a lone logo. Creator styles keep the creator's account picture.
+- Easier to change an edit. Click a card, caption, title or zoom on the video, or select words in the
+  transcript, and the note starts with what it is ("Card at 0:04: the tiktok.com page on "reels"."), timed to it.
+- Each draft shows "Changed in this draft": every note with Kiro's one-line answer, then everything else that
+  changed (cards swapped, removed or resized, zooms, caption words and size, the title, the music, words cut or
+  put back). Click a line to jump there.
+- The Drafts tab plays any draft at the same moment, compares two side by side, and goes back to an earlier draft
+  in one click: its files and video return as a new draft, with no wait for Kiro.
+- "No zoom here" stays fixed when the edit is planned again, and a draft no longer opens with its notes unanswered.
+
+- No footage handy? "Try it with a sample video" on the Welcome screen, on Make your first video and in Getting
+  started runs the whole flow on a public sample take, with no keys and no questions: the cut, the preview, the
+  finished video and Download in about three minutes from a fresh install.
+- Plainer words on every screen. "Stills" is now the preview, a "round" is a draft, and "Approve and render" is
+  "Approve and make the video". Every empty page has one button that says what happens.
+- Setup no longer breaks when a first video starts while it is still installing: one Kiro installs, and the
+  model and render browser downloads no longer clash.
+
+- Videos are made faster, and look the same. Transcription starts the moment you add a clip on New video, while
+  you pick a style. The edit renders in the background while you look at the stills, so Approve with no notes has
+  it ready (lower priority, and not on battery). Pages and logos captured for one video are reused by the next for
+  7 days. The renderer warms up when you add a clip, not on the first stills.
+- The finished video says how long it took, with real times only: "Made in 6 min (cut 3:10, edit 1:40, render
+  0:52)". Every stage's time is in `edits/<name>/timings.json`.
+
+- Kiro's questions reach the right video: each one shows only in its own video's editor, waits there if the
+  tab is in the background (the tab title says "(1) Kiro is asking"), and Home shows "Kiro is asking about
+  <video>" with Open.
+- Picking a style for one video no longer changes your default style.
+- Music: a style or creator that uses music gets a bed under your voice, and the checks fail if it renders silent.
+- A renamed style shows its new name in the editor, the teach box and download names.
+- The first video goes through "Add images or links". During setup you can start "Analyse a format" straight
+  away, and Getting started counts only finished steps.
+- Spoken lists, numbers, steps and before-and-afters become motion clips within the style's Motion setting.
+- Full-frame scenes fill the frame on a light ground, the creator's accent colour and second face show where
+  they use them, and cut-away grounds keep the creator's brightness.
+- Smaller fixes: Modal "Later" works, the setup timer counts from the start, no stuck "Still coming" spinner, a
+  fresh My style shows no numbers, the editor is centred on a phone, Check lists the motion tools and cutout model.
+- "Try it with a sample video" on the first-run Home and in Getting started. It downloads the repo's public
+  sample take and runs the real flow on it: the cut, the editor, the preview and the finished video, in the Card
+  edit sample style. Its transcript, cut and visuals ship with the editor, so it needs no keys and skips
+  transcribing and checking. It shows as "Sample video" in Your videos and can be removed like any video.
+- Plainer words on every screen: no editor jargon, one idea a sentence, buttons that say what happens, and an
+  empty state with one button.
+
+- Captions follow a creator's typography: the share of lines in their accent colour (on keywords), a second
+  lighter or serif face, big keywords at their size, and two-line stacks. No box or stroke unless the creator
+  uses one: a soft shadow or a soft band instead, one treatment for the whole video. A creator who is often off
+  screen gets more full-frame cut-aways, with your face back within 8 seconds. match.py scores these too.
+
+- A note like "always use fewer zooms" is offered as a rule for the style ("Keep as a rule for My style"). Each
+  rule Kiro saves shows as "Saved to <style>: <rule>. Undo" on the editor.
+- Every style page lists its learned rules with the day and the video each came from, and Remove. A skill
+  style lists the rules in its skill's own file.
+- New Skills page in the sidebar: your video skills, the styles that use each, and Use as a style, Improve with
+  feedback, Open the file, Show in Finder, Make a new skill.
+- A style page shows "What runs": the cut, real logos, animations and the edit, with logos and animations
+  switchable per style.
+- "Fewer zooms" now gives fewer zooms: a zoom rate you set is no longer filled back in on long sentences.
+- Kiro's question for a video reaches that video's editor only, even when its tab is in the background: the tab
+  title says "(1) Kiro is asking", and Home and the sidebar's job card show "Kiro is asking about <video>" with
+  Open. It no longer lands in another video's editor or only in the Terminal.
+- A video with no music settings gets a music bed when its format uses music in most videos, and the edit's checks
+  fail a music style that plans or renders silent.
+- Lists, numbers, steps and before/after lines become animations even when another card was planned there, within
+  the style's animation amount.
+- Picking a style for one video no longer changes your saved style. Only Make default does.
+- A renamed style shows its new name everywhere in the editor: "Teach <name>", the receipts, downloads.
+- The first video goes through "Add images or links" like every other. While setup runs, Home offers Analyse a
+  format at once, and Getting started counts finished steps.
+- Small fixes: Settings > Modal > Later works; Check lists the animation tools and the cutout model; a developer
+  copy says "update with git"; the first edit says "The edit is ready"; captions show their keyword colour; a fresh
+  My style shows no made-up numbers; the editor's video is centred on a phone.
+
+- New sample style: Motion design (16:9). One dark board the camera moves across, silver-rimmed tiles with real
+  logos landing on your words and joined by flowing lines, questions that sit centred then rise into the heading,
+  a few overlays alternating sides, and simple sound cues from the editor's own kit.
+- Styles from a creator follow them more closely. The analysis now sees jump cuts on a fixed camera, measures 2x
+  punch-ins and caption colours correctly, finds cards above a close-framed head, and records the colour grade;
+  the edit now uses the caption side, zoom rate, cut-aways, title at the open, music choice and impact sounds it
+  measured. `style-match/scripts/match.py` scores an edit against the creator, feature by feature.
+
+- Video cards say whose turn it is: "Your turn: watch the cut", "Your turn: approve the stills", "Your turn: watch
+  the edit". Done only after you approve the final edit. Home and Your videos count the same way.
+- Settings > Check runs in place. The old five-step setup screen is gone, and the logo, Home and Getting started
+  always take you somewhere.
+- Works on a phone-width window: no text one letter per line, the keys box no longer collapses below 1180 px,
+  and the style page stacks.
+- A style's name shows the same everywhere after a rename. "Use your own skill" works with its suggested name.
+- Green only means done. The video shape follows the clip you picked. No fixed time or cost estimates, and no
+  stock photos of strangers in place of a creator.
+- The kirocut command is only ever pointed at the installed plugin, never at a copy someone is testing.
+
 - Motion graphics built for your video. A new `motion` skill gives each moment that needs an animation (a number,
   a list, steps, a before and after, an app in use) its own clip: one agent per clip, all built while you review
   the cut, each checked (lint, transitions, a frame-by-frame motion check), rendered and placed on its word so
