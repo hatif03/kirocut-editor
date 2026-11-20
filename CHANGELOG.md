@@ -4,6 +4,59 @@ What changed for every user.
 
 ## Unreleased
 
+- Support KiroCut KiroCut stays free, and a Stripe link (pay what you want) now sits in the sidebar and in Settings. After you have finished 2 videos, one popup asks once: Not now asks again in 30 days, Don't ask again never does. The repo has a Sponsor button too.
+
+- Songs on the timeline edit like CapCut. Drag either edge to trim (the handles show on hover), drag the middle to move, and Alt-drag to slide which part of the song plays. Press Cmd+B or Split in its box to split it at the playhead, then Delete cuts a piece away. Every step undoes, volume too, and it goes into the video by itself.
+- A song baked into the draft keeps its name and its handles.
+- Text on the video clicks and drags again in live mode: its click target had been hidden, so a click picked the picture under it. A text with the cursor in it drags when you press and move, and a plain click still places the cursor. A picked text sits over pictures.
+
+- Hand edits just update. Caption style, caption words and timing, and sounds on the timeline go into the video by themselves, with no note in the chat. A note is only written when the draft cannot be updated by itself, such as while Kiro has it or when its render is gone.
+- A caption style reaches every frame, so it takes a full render in the background. The live player shows it at once, and Approve waits until the video has it.
+- Cmd+Z and Shift+Cmd+Z work on caption size, place, colour, look and words, on text (moved, resized, restyled, added, deleted) and on sounds added or removed. They work right after using a slider too. Undo and redo buttons sit in the control row.
+- A text saves itself when you let go or stop typing. A click anywhere else lets it go without losing the change.
+
+- The back button and the logo always take you home from a video page. If the editor's window stopped, for example when the Mac restarted, they start it first.
+
+- The chat icon sits at the far right of the top bar and stays there: it opens and closes the panel.
+- The timeline stays on an approved draft and on trial reels, to look and scrub. A trial reel shows its ruler, playhead and video bar.
+- The version list is the app's own menu, with bigger rows that are easier to click.
+- A trial reel no longer jumps at the main draft's cuts, and its transcript no longer offers to cut words.
+
+- The playhead drags again on the edit page: from its handle, the ruler or any empty part of a row. The video follows.
+- A zoomed-in timeline scrolls and follows the playhead again.
+- The Captions row shows the words at any zoom, and the Video row no longer repeats them.
+- An AI chat icon in the top bar opens the panel when it is closed.
+
+- New versions install themselves while the window or a video page is open and nothing is being made. Open pages refresh on their own and say what's new. Turn it off in Settings, under Updates.
+- On a trial reel (picked in the Version menu), the notes box works after the video is approved: "Note on t2 at this moment..." goes to that trial, and Kiro answers on the Trial reels tab.
+- A new version shows Update on the edit page too, and a page never refreshes itself while you type on the video.
+- The edit page is tidied the way CapCut lays it out. The rail shows only the edit tools, with Transcript first (the logo goes home). The transcript is a panel on the left and the video sits big in the middle. One row holds play, time, speed, Watch/Compare, sound, safe zone, full screen and zoom. One timeline: the extra scrubber and its bar row are gone, and each row is named Video, Images, Text, Captions or Sounds with its one action as a small icon. Captions are calm grey until you pick one. The "This is the edit" line is gone. After you approve, the top button says Approved instead of offering Approve beside Undo approve.
+- Kiro's timeline notes keep one line per thing: moving a sound again replaces its line, and a sound added then removed leaves nothing, so the note no longer grows with every change.
+- The notes panel closes: × beside its tabs hides it and the video gets the room, Notes in the top bar brings it back, and the page remembers. Writing a note opens it again.
+- Timeline keys, CapCut's: click any clip (text, caption, image, sound, video piece) to pick it, then Delete or Backspace takes it out. Cmd+B or S splits at the playhead, Cmd+D copies the picked text right after it, Alt+Left and Alt+Right nudge the picked clip 0.1 s (1 s with Shift), Esc lets go. Keys always go to what you clicked last, so words picked in the transcript earlier never take a Delete meant for a clip. Point at a clip without clicking and Delete takes that one out instead.
+- The editor learns from what you do, not only what you type: at the approve, your moves, resizes, fonts, caption changes, cuts and sound levels become proposed rules, and a kept one with a setting changes the next draft. Each draft lists the rules it used, and Turn off stops one without deleting it.
+- The edit plays live on its review page: the video you watch is the edit itself, drawn from its plan, so typing a caption or a text, a colour, a moved or dropped picture, a sound or a cut shows in the real frame at once. No blurred box, no Preview label, no second copy. The MP4 still plays for the cut, older drafts, other versions, compare and a render finished by hand.
+- Drag a caption's edges on the Captions row to show it longer or shorter, or drag it to move it; an edge pushes the next caption along. The video shows it at its new time straight away and it bakes into the video by itself.
+- A picked image lets go when the video plays past it or you click anywhere else, and an open text saves and closes the same way. No Done needed.
+- A Media tool on the edit: upload or drop images and videos, then drag one onto the video (or the timeline) and it is on screen there at once, from the playhead, 3 s for a picture or the clip's length up to 10 s. Move, resize, retime and delete it like any card; it goes into the video by itself, no Kiro needed.
+- On the edit, select words in the transcript and press Delete to cut them: they strike through, the Video row and playback skip them at once, and Kiro gets the words in one note. Delete on struck words puts them back, Cmd+Z undoes. The transcript also folds to its header with the arrow in its corner, kept in this browser.
+- Click a caption and the Captions panel opens on that line: its words, then Look, Size, Position, Colour, Highlight and Words at a time. Each change shows on the video at once as a preview, and you can drag the caption up or down. Saved for this video only; the next draft has it.
+- Timeline, CapCut style: drag a split line to move it (a cut gets longer or shorter with it, snapping to word starts), double-click one to remove it, and a new Images row shows every picture on screen: click it to select it on the video, drag it or its edges to change when it shows, and it goes into the video by itself. Cmd+Z and Shift+Cmd+Z undo and redo timeline edits.
+- Text is edited on the video, like CapCut: click a text to type straight into it, drag it to move it, drag any corner to size it, and drag a side to bring its width in (it wraps sooner). Enter saves, Esc cancels. The panel shows the same text, size and width.
+- Text takes a font (10 Google fonts, TikTok Sans by default) and a colour: 24 colours, a colour wheel for any colour, or a hex code. On a box the colour is the box, and its words turn black or white to read.
+- Block: a new look with one box that hugs the whole text. Box keeps a box on each line.
+- Texts already in the video can be clicked on the video to change them. Font, colour, width and Block stay when Kiro plans the video again.
+- Drag a text on the timeline's Text row to move it in time, or drag either edge to make it start or end somewhere else.
+- A Video row on the timeline: Split (or S) splits the video at the playhead, click a piece and press Delete to cut it, Delete again puts it back. The page plays without the cut pieces straight away; Submit feedback and Kiro cuts those words from the next draft.
+- Drop an audio file (a song, a voice-over, a sound; up to 200 MB) on the timeline, or Choose an audio file under + Sound. It plays with the video at once. Drag it along the Sounds row, drag its edges to trim it, click it for its volume, Play and Remove, or press Delete. Sounds from your library drag along the row too.
+- Drop a video or an image on the timeline (at that spot) or on the video (at the playhead). It goes in Anything to add? with the words said there, and Kiro puts it on screen on them.
+
+- One Kiro control on the video page: a dot and what Kiro is doing (working on your notes, waiting for your notes, open, or not running), with one button. Show Kiro brings its Terminal window to the front; Start Kiro carries on in the Kiro that worked on the video. Copy for Kiro, Copy session and Open a new Kiro are gone.
+- A Kiro page in the editor window lists every video's Kiro with Show, Stop and Start, and the sidebar says how many are running. Stop closes that Kiro; the video, notes and drafts stay.
+- Feedback on trial reels once they are made: a box under them on the Trial reels tab, for the trial on screen (at the moment you are on) or all of them. Kiro changes those trials, puts each back in the Version menu, and answers under your note.
+
+- Teach your style from this video says where the rules go: a Save to list with this video's style first, your other styles, and New style from this video (a named copy of the style with these rules).
+- YouTube (16:9) cuts breathe: pauses up to 0.30 s instead of a reel's 0.15 s, and Kiro keeps each joke's beat as you said it (before a punchline, after a joke, before a reaction), up to 1.2 s.
 - Trial reels: a trial-reels skill makes versions of an approved reel that each look like a different video (the type first: story, list or pitch), puts them on the Trial reels tab, and posts only the ones you pick, spread over the day. Posting can graduate a Trial Reel automatically or only when you say.
 - Two caption edits made right after each other no longer drop the first one from the note.
 
