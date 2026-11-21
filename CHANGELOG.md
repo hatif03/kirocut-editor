@@ -4,6 +4,25 @@ What changed for every user.
 
 ## Unreleased
 
+- Your own shortcuts. Press ? to see every key and change any of them: click a key, press the new one. It warns when a key is taken and offers to swap. CapCut and Premiere Pro / Resolve presets, Reset and Reset all, and the same editor in home Settings. Saved once for every video.
+- Properties. Pick anything and its settings open on the left: text position, rotation, opacity, alignment, animation and text colour; picture position, scale, rotation and opacity; sound volume, fades, trim and mute. Several picked show what they share.
+- Handles on the video. A picked text or picture moves, resizes and rotates right on the video, snapping to the centre, other items and the reels safe zone. Alt-drag copies it, arrows nudge it.
+- Brand kit. A Brand page on home: import your BRAND.md, edit it there, or let Kiro make one from your website. Every edit uses your colours, fonts, logo and voice.
+
+- Every draft edits live, not only KiroCut's own plan renders. A finished video from any skill plays in the live player with your texts, sounds and lanes on top, so a change shows at once.
+- Hand edits on those drafts go into the video by themselves: texts, sounds and video cuts render onto the draft in the background, the cut pieces come out, and nothing becomes a note for Kiro. The draft Kiro made stays as the base, so nothing is drawn twice.
+- A cut piece plays without it straight away, and its toast says so.
+- Teach your styles and skills from any note, any round. "Make this a rule" on a note saves it straight to this video's style, My style, another style or one of your skills (trial reels, talking head and the rest), with Undo.
+- New style from this video sits in the video page's menu at any time, and home's New style can start from a video.
+- After the final approve, the rules card opens over the video. A "Rules to review" button reopens it, and home lists every video with rules waiting.
+- If no Kiro is running for the video, KiroCut reads your notes itself in the background, so the card never sits on "Kiro is reading your notes".
+
+- The timeline has lanes. Images, Text and Sounds each get a lane per overlap, so nothing sits on top of anything else. Drag an item up or down to move it to another lane, or below the last one to make a new lane. A later lane draws on top in the video.
+- Each lane has hide (mute for sounds) and lock. A hidden lane leaves the video and comes back when you show it. A locked lane cannot be picked or moved.
+- Moves and trims snap to the playhead, to every other item's edges and to caption words, with a yellow line and the time. Hold Cmd to drag freely.
+- Shift-click picks several texts, images or sounds. Drag one to move them all, or press Delete to remove them all. Each is one undo.
+- The Support KiroCut link lets you choose how much to give.
+
 - Support KiroCut KiroCut stays free, and a Stripe link (pay what you want) now sits in the sidebar and in Settings. After you have finished 2 videos, one popup asks once: Not now asks again in 30 days, Don't ask again never does. The repo has a Sponsor button too.
 
 - Songs on the timeline edit like CapCut. Drag either edge to trim (the handles show on hover), drag the middle to move, and Alt-drag to slide which part of the song plays. Press Cmd+B or Split in its box to split it at the playhead, then Delete cuts a piece away. Every step undoes, volume too, and it goes into the video by itself.
