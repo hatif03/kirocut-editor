@@ -4,6 +4,26 @@ What changed for every user.
 
 ## Unreleased
 
+- Scenes. A KiroCut edit now opens as a scene: the footage, every text, picture, card, caption and sound is its own item on its own track, drawn the same way on the page and in the export.
+- Every element movable. Press on anything on the video to move it, drag a handle to resize or rotate it, crop a picture or a clip, and trim or slide it on the timeline. Its settings open on the left.
+- AI cuts as clips you can drag back. Each piece the AI kept is a clip of your raw take. A thin yellow line marks each cut: hover it to see what was taken out and why, and press Bring back, or drag a clip's edge out to get the words back. Everything after it moves with it.
+- Export from scenes. Export renders the scene exactly as you see it, with Show in Finder and Download.
+- Trial reels and other versions get the full timeline. Each version is its own scene: move, trim and export it like the main draft, with its own undo. The export carries the version's name.
+- Resize like Canva. The handles sit on the element as you see it, even while the footage is zoomed. A corner keeps the opposite corner still (Alt resizes from the centre) and keeps a picture's, clip's or card's shape (Shift frees it). A text's corner scales its words and box; its side changes the wrap. Edges snap to the centre and other items while you resize.
+- Nothing stops at the reels safe zone any more. Moves and resizes go anywhere on the frame.
+- A click on empty space picks nothing: the black around the video, an empty timeline row, or the footage while something else is picked. Picking no longer highlights a text's words.
+- One editor for every video. Every draft opens in the scene editor by itself, a KiroCut edit or a finished MP4 from another skill, and everything in it moves. A finished MP4 is one clip you can move, trim and crop, with the texts, sounds and cuts you already made on it kept as their own items.
+- Kiro's work arrives as elements. When you send notes on a draft, Kiro answers them on the scene: a screenshot is a picture, an animation is a clip with a see-through background, a text is a text, a sound is a sound. Each one shows up on the page within a few seconds, with no new render, and you can drag, resize, trim or delete it like anything else.
+- See what Kiro changed. Its items carry a small Kiro mark on the timeline until you touch them. The notes panel lists Kiro's changes, each with Undo and Redo, and Cmd+Z takes a whole Kiro change off in one step while your own edits since stay.
+- Kiro edits trial reels too. A note on a version is answered on that version's own scene, with its own list of Kiro's changes and its own undo.
+
+- Export. Edit, then press Export: it renders exactly what the page shows and saves the video, with Show in Finder and Download. No feedback to Kiro, no approve, and it works while Kiro is busy (it exports what you see now). Exports also go to your library's exports folder, and home shows when a video was exported.
+- Drag on the video like Canva. Press on a text or a picture and drag it straight away; a click picks it, a double-click types. Texts win over the picture under them; Cmd-click reaches the picture. Bigger handles with their own cursors, corners that never hide under another item, and the video no longer jumps while you drag.
+- A text that is already in the video picture shows as "In the video" instead of a second copy you could drag. Sounds already mixed in are not played twice.
+
+- Ripple. A magnet on the Video lane (on by default) takes a cut piece out of the timeline and pulls everything after it left, as the video will play. A join mark sits where pieces meet: double-click it or press Delete on it to bring the piece back. Cuts now come out of KiroCut's own drafts too, by themselves.
+- One undo for everything. Every hand edit undoes and redoes, deleting a picture too, and the button says what it will undo.
+- Editor keys: Space, J/K/L, a frame or a second at a time, jump between edges, copy, paste and duplicate at the playhead, pick the whole lane, Q and W trim to the playhead.
 - Your own shortcuts. Press ? to see every key and change any of them: click a key, press the new one. It warns when a key is taken and offers to swap. CapCut and Premiere Pro / Resolve presets, Reset and Reset all, and the same editor in home Settings. Saved once for every video.
 - Properties. Pick anything and its settings open on the left: text position, rotation, opacity, alignment, animation and text colour; picture position, scale, rotation and opacity; sound volume, fades, trim and mute. Several picked show what they share.
 - Handles on the video. A picked text or picture moves, resizes and rotates right on the video, snapping to the centre, other items and the reels safe zone. Alt-drag copies it, arrows nudge it.
