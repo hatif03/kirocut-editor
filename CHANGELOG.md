@@ -4,6 +4,53 @@ What changed for every user.
 
 ## Unreleased
 
+- The timeline works like CapCut's. It runs the whole width of the window under the panels, the video and the notes, and a bar above it drags to make it taller or shorter.
+- One toolbar on top of the timeline: undo, redo, split, delete to the playhead (Q), delete from the playhead (W), delete, add Text, add Audio, add a Track, and the zoom on the right.
+- Clips show what is in them. A video shows its frames over its sound wave (a silent clip is frames only), a picture shows itself, and the rows for footage, pictures and sound are taller than text rows. Track rows start with an icon for their kind.
+- Clips are solid blocks in one colour per kind. The picked clip gets white grips on both ends to drag, and hovering a clip shows its grips.
+- Properties has its own column beside Media, Text, Captions or Sounds, so picking something never swaps out the panel you were using. Media, Text, Captions and Sounds always open when clicked (× closes them). Properties opens and closes from its rail button or its ×.
+- The video no longer jumps up while you work.
+
+- Click a keyframe diamond on a clip and the playhead jumps to it, with that keyframe open in Properties. Before, only the diamonds in the rows under the clip did this.
+- Zoomed-in footage shows all its handles. A box bigger than the frame draws past it, over the stage, and its corner and rotate handles move in to the edge you can see, so you can always drag to resize or rotate.
+- Every number in Properties (scale, position, rotation, opacity, size) changes when you drag across it, left or right, like CapCut. Shift for bigger steps. A click without a drag still types in it.
+
+- Text is added the CapCut way. The Text button opens a Text panel: a big Add text button, then every look as a large tile drawn in its look (plain, white box, black box, pill, bold outline, soft shadow, highlight, white card, a Comment "WORD" box, a name label, a big title). Click a tile to add it at the playhead, or drag it onto the video or onto the timeline to put it there.
+- A new text starts with the caret in it, ready to type. Double-click any text on the video to type in it: Enter is a new line, Esc or a click away finishes.
+- Properties has a Style section like CapCut's: text colour, then Stroke, Background and Shadow, each with a switch, colour swatches and sliders (stroke width; background opacity, roundness and padding; shadow opacity, blur, distance and angle). The video changes while you drag, and letting go is one undo. A look tile sets these rows, and changing a row afterwards keeps the rest. Text shadows now show in the player and the export.
+- New things never land on another kind of track or on top of a clip. A text goes on a free text track, a picture or video on a free picture track, a sound on a free sound track, or a new track of that kind just above the others. Dropping onto a row puts it there only when that spot is free.
+- Copy and paste anything on the scene: Cmd+C copies the picked items (several at once, keeping their timing and rows), Cmd+V pastes them at the playhead, Cmd+D duplicates right after, Cmd+X cuts. Right-click a clip for Copy, Paste, Duplicate and Delete. Pasting into another video copies the files it needs into that video. A screenshot on the clipboard pastes as a picture.
+
+- Text with a box over two or more lines looks like Instagram's text box: one rounded box per line, every line centred with the same padding, the lines touching cleanly with smooth inside corners. No line cuts into the one above any more.
+- Properties works like CapCut's panel: tabs per kind (Text | Animation, Video | Audio | Animation | Speed, Audio | Speed), text looks as picture tiles (plain, outline, white box, black box, block, shadow), fonts shown in their own font, colour swatches, animations as tiles that play on hover with one duration slider, sliders with the number beside them for size, scale, opacity, rotation, volume and speed (plus 0.5x to 2x buttons). Width, height and the extra look settings sit under Advanced; timing sits at the bottom, folded.
+- Sound rows are taller with a white volume line always showing: drag the line, or drag the waveform up or down, to turn a clip up or down, with the dB showing. Drag sideways first to move it.
+
+- Turn a clip's sound up or down on the timeline. Every clip with sound has a volume line across it: drag it up or down and you hear the change as you drag. A label shows the level in dB, and it snaps back to 0 dB, the sound as it was.
+- Boost up to +12 dB, in the player and in the export. Down to silence at the bottom.
+- Video clips show their waveform too, and it grows and shrinks with the volume.
+- With several clips picked, dragging one line moves them all by the same dB.
+- Properties shows the volume in dB with the same range.
+
+- Notes reach the Kiro that last worked on the video, in the Kiro desktop app too. A desktop session listens in the background and wakes up the moment you press Submit feedback to Kiro.
+- The top bar says where your notes go: your desktop session, your Terminal Kiro, or a new Kiro, with the session's short id and whether it is listening, working or not listening.
+- A desktop session that isn't listening never gets a Terminal Kiro opened in its place. The top bar says so, with Open the desktop app; Start a new Kiro is in the ⋯ menu.
+- Only one Kiro listens on a video. A newer one takes over and the older one stops.
+
+- Add audio in the editor. The Sounds panel lists your sounds, the ones you picked for a moment first. Play one to hear it, search, then Add puts it at the playhead or drag it onto the timeline. It goes on the first audio track free there, or a new one.
+- Your own files. + Audio opens a file picker for mp3, wav, m4a, aac, flac, ogg, opus, or a video whose sound you want. Dropping an audio file from Finder on the timeline adds it where you drop it; on the video, at the playhead. A long song stops at the end of the video.
+- Every sound is copied into the edit, so the export has it on any Mac.
+- Audio clips show their waveform. Move, trim either edge, Alt-drag to slip, split and delete them like any clip. Drag a top corner to fade in or out. Volume and fades are in Properties, and each track mutes.
+- What you add is heard at once in the player and in the export.
+
+- Split and delete work everywhere. S or Cmd+B splits the picked clip at the playhead, or with nothing picked the video under it. Delete or Backspace takes out the picked clip, or the one under the mouse once you move onto it, and the gap closes. Split and Delete buttons sit beside the timeline zoom. Each is one undo.
+- Keys no longer stop after you type in Properties. Clicking a clip or the video lets go of the field, so the next pick shows its own settings and S and Delete work.
+- A split keeps the zoom. Both parts hold the picture exactly where it was.
+- Keyframes you can see. A picked clip opens a lane under its track with a row per animated setting and a diamond per keyframe, the AI's zooms included. Click a diamond to go there and see it in Properties, drag it to move it, press Delete to remove it, and pick its ease (linear, ease in, ease out, ease in and out, hold). Properties opens if it was closed. The diamond beside a field adds a keyframe; a keyed field shows in yellow. Scale is now a field.
+- The AI's cuts are easy to find. A yellow tick per cut on the ruler at any zoom, with what was taken out and Bring back on hover. The Video row's list button shows every cut with its time, reason and words. Up and Down jump between cuts.
+- No black strip down the side. Footage the house centre step slid over is zoomed just enough to fill the frame, and scenes already made heal the first time they open. New scenes zoom about each zoom's own point, as the render does.
+
+- The Properties panel closes. Its × hides it and the video gets the room; picking something keeps it closed, so the video never jumps. Properties in the left rail opens it again, and so does any tool there. It remembers which way you left it.
+
 - Scenes. A KiroCut edit now opens as a scene: the footage, every text, picture, card, caption and sound is its own item on its own track, drawn the same way on the page and in the export.
 - Every element movable. Press on anything on the video to move it, drag a handle to resize or rotate it, crop a picture or a clip, and trim or slide it on the timeline. Its settings open on the left.
 - AI cuts as clips you can drag back. Each piece the AI kept is a clip of your raw take. A thin yellow line marks each cut: hover it to see what was taken out and why, and press Bring back, or drag a clip's edge out to get the words back. Everything after it moves with it.
