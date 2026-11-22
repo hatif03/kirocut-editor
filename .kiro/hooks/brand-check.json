@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "kirocut-brand-check",
+      "description": "After a brand-facing file is saved, check the KiroCut name, the Kiro pitch, and that no example creator account was added.",
+      "trigger": "PostFileSave",
+      "matcher": "(README\\.md|AGENTS\\.md|CLAUDE\\.md|home\\.html|review\\.html|docs/logo\\.svg)$",
+      "action": {
+        "type": "agent",
+        "prompt": "A KiroCut brand file was saved. Check the diff. The visible name is KiroCut. The pitch is that this folder turns the Kiro IDE into a video editor. Matching a style from reference videos the person chooses stays. Report only if the diff adds an Instagram, TikTok, or YouTube link to someone else's account, or if the visible product name is no longer KiroCut. Do not rewrite the file unless something is wrong."
+      }
+    }
+  ]
+}

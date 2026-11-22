@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="KiroCut">
+  <rect width="64" height="64" rx="16" fill="#7B5CFF"/>
+  <path fill="#FFFFFF" d="M18 33C18 18 24 11 32 11s14 7 14 22v12c0 6-5 9-14 9s-14-3-14-9V33z"/>
+  <path d="M11 36C22 36 28 40 32 43 36 46 42 50 53 50" fill="none" stroke="#141414" stroke-width="7" stroke-linecap="round"/>
+  <path d="M11 50C22 50 28 46 32 43 36 40 42 36 53 36" fill="none" stroke="#141414" stroke-width="7" stroke-linecap="round"/>
+  <ellipse cx="26" cy="27" rx="2.5" ry="4" fill="#1A1428"/>
+  <ellipse cx="38" cy="27" rx="2.5" ry="4" fill="#1A1428"/>
+</svg>

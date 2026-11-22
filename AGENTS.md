@@ -1,19 +1,74 @@
 # KiroCut
 
-Skills live under `plugins/kirocut/skills/` and `plugins/style-match/skills/`. Read a skill's `SKILL.md` before doing its work.
+**KiroCut turns the Kiro IDE into a video editor.** When the user asks for an edit, drops a
+video, pastes a link, names a creator, or asks how to start: read
+`plugins/kirocut/skills/start/SKILL.md` in full and follow it (paths are explained under "Paths"
+below). It asks its own questions and runs the other skills in order. If the user is changing this
+repo itself (skills, scripts, tests, docs), skip this and follow "Rules for every agent". Kiro
+follows this file and `.kiro/steering/`. The same skills also load from `.kiro/skills/`.
 
-| Skill | Use when |
-|---|---|
-| start | "edit my video", a dropped video, a pasted link |
-| setup | a tool is missing |
-| cut | "cut my video" |
-| style-edit | captions, zooms, cards, the render |
-| style-match | "break down" reference videos |
-| product-video | a website that should become a film |
-| clips | a long video or podcast |
-| taste | a correction to an edit |
-| improve | turn that kind of feedback into a fix here |
+Instructions for Kiro and any other coding agent (Codex, Cursor, Gemini CLI, Copilot)
+using the skills in this repo. In Kiro, `.kiro/steering/` is the project brief. Matching a style
+from reference videos the user chooses stays a feature. Do not add example links to other creators.
 
-Never ask for an API key in the chat. Keys are saved from the terminal, by the setup skill.
+## The skills
 
-Work in the library (`plugins/kirocut/lib/kirocut/library.py`) or a folder they named. Self-check with `python3 tests/check_plugins.py` and each script's `demo`.
+Each skill is a folder with a `SKILL.md` ([Agent Skills format](https://agentskills.io/specification)).
+Read a skill's `SKILL.md` in full before doing its task.
+
+| Skill | Folder | Use when the user says |
+|---|---|---|
+| `start` | `plugins/kirocut/skills/start/` | "edit my video", "make my video look like @creator", drops a video |
+| `setup` | `plugins/kirocut/skills/setup/` | "set up the editor", or a tool is missing |
+| `cut` | `plugins/kirocut/skills/cut/` | "cut my video", "remove my mistakes" |
+| `style-edit` | `plugins/kirocut/skills/style-edit/` | "style it", "add captions and zooms", "render the edit" |
+| `overlays` | `plugins/kirocut/skills/overlays/` | after a render: "add an animation here", "this card is wrong", "the card covers my face", "swap the logo", "show the real page instead", "fewer cards" |
+| `taste` | `plugins/kirocut/skills/taste/` | a reaction to an edit: "captions too small", "fewer zooms"; "learn from my edit" (a raw take and the posted cut) |
+| `product-video` | `plugins/kirocut/skills/product-video/` | "make a launch video for <url>", "product video of my site", pastes a website |
+| `broll-reel` | `plugins/kirocut/skills/broll-reel/` | a home page job with `mode=broll-reel`, "copy this reel with my b-roll" |
+| `trial-reels` | `plugins/kirocut/skills/trial-reels/` | "make trial reels of this", "test other hooks", the Trial reels tab's Make, or `wait` prints TRIALS |
+| `clips` | `plugins/kirocut/skills/clips/` | "clip this video", "make shorts from my podcast", drops a long video or YouTube link |
+| `improve` | `plugins/kirocut/skills/improve/` | maintainers: "improve the editor", "turn feedback into fixes", "process suggestions" |
+| `post` | `plugins/kirocut/skills/post/` | "post it", "post to TikTok", "schedule the post", "connect my accounts" |
+| `update` | `plugins/kirocut/skills/update/` | "update the editor", "get the latest version", "sync my fork" |
+| `style-match` | `plugins/style-match/skills/style-match/` | "break down @handle", "tear down @handle" |
+
+Order: `start` asks a few questions once, then runs setup, style-match, cut and style-edit in order.
+On a first run `start` offers the home page (`plugins/kirocut/lib/kirocut/home.py`, `start/references/home.md`): the user pastes a creator and drops a video there, `home.py wait` hands each job to the agent as one line (`JOB teardown @handle ...`), and the agent runs the skill and reports back with `home.py status`.
+`style-match` measures a creator, `cut` cleans the user's take, `style-edit` renders
+it in that creator's style. Every render (cut, edit, clip, product video) is handed over on the review page
+(`plugins/kirocut/lib/kirocut/review.py`): the user leaves notes at moments, Kiro fixes and re-renders. `taste` runs whenever the user corrects an edit; a correction the user says would help everyone goes to
+`~/.kirocut/suggestions.jsonl` (and, if they agree, a GitHub issue), which `improve` turns into fixes here.
+`product-video` stands alone: a URL in, a product video out (no footage, no creator).
+
+## Paths
+
+The skills are written for Kiro, which fills in two variables. Elsewhere, read them as:
+
+- `${CLAUDE_SKILL_DIR}`: the folder containing that `SKILL.md`.
+- `${CLAUDE_PLUGIN_ROOT}`: the plugin folder two levels above it (`plugins/kirocut/`).
+
+These skills share code in `plugins/kirocut/lib/` and the renderer in
+`plugins/kirocut/remotion/`, so keep the repo layout. Clone the whole repo rather than copying
+single skill folders.
+
+## Install
+
+- **Kiro:** open this folder. Steering in `.kiro/steering/` and `.kiro/skills/` load with the workspace. Say "edit my video".
+- **Kiro Power:** `kiro-cli powers install` the `plugins/kirocut` folder, then `plugins/style-match`. See the README.
+- **Cursor and Codex:** this repo ships `.cursor-plugin/plugin.json` and `.codex-plugin/plugin.json`,
+  both pointing at the same skill folders.
+
+## Rules for every agent
+
+- Never ask the user to paste an API key into the chat. Keys are saved with the commands the
+  skills give, in the user's own terminal.
+- Ask before creating a GitHub repo or spending money on AWS.
+- Work in the library (`python3 plugins/kirocut/lib/kirocut/library.py path`, `~/Movies/KiroCut` on a
+  Mac), or a project folder the user named: `style-matches/<handle>/` and `edits/<name>/`. The
+  `kirocut` command and "open the home page" open the editor's window (start's `references/home.md`).
+- Self-checks: `python3 tests/check_plugins.py`, plus each script's `demo` (see
+  `.github/workflows/check.yml`).
+
+
+The rules every video follows, for every user: [plugins/kirocut/PRINCIPLES.md](plugins/kirocut/PRINCIPLES.md).

@@ -2,9 +2,9 @@
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "kirocut",
   "displayName": "KiroCut",
-  "version": "0.7.0",
-  "description": "Cut, style and review a talking-head video from a page on this machine.",
+  "version": "1.0.0",
+  "description": "Turn the Kiro IDE into a video editor. Cut a talking-head take, match a style from reference videos you choose, then render captions, zooms and cards.",
   "author": { "name": "KiroCut" },
   "license": "MIT",
-  "keywords": ["video", "talking-head", "captions", "jump-cut", "short-form"]
+  "keywords": ["video", "edit my video", "video-editing", "talking-head", "captions", "jump-cut", "remotion", "kirocut", "short-form"]
 }

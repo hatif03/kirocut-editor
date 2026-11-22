@@ -2,7 +2,25 @@
 
 What changed for every user.
 
-## Unreleased
+## 1.0.0
+
+- The editor is KiroCut. Open this folder in the Kiro IDE and say "edit my video". The mark is Kiro's ghost on Kiro purple, cut by CapCut's crossed bars.
+- The Python package is `kirocut`, in `plugins/kirocut/lib/kirocut`.
+- Kiro loads the skills from `.kiro/skills/`. Installing a power is `kiro-cli powers install` on `plugins/kirocut`, then `plugins/style-match`. Your own styles go in `~/.kiro/skills`. An edit's agent log is `review/agent.json`. The terminal command is `kirocut` (it starts `kiro-cli chat`). A measured style is written to `style-matches/<handle>/`. Keys live in `~/.config/kirocut/.env`.
+- Matching a style from reference videos you choose stays. This repo does not ship example links to other creators' accounts.
+
+- A new video no longer lands on a Kiro that is still working on another one. Before, a Kiro in the middle of a render or a long round looked free after 15 minutes, so it took the next new video too and both projects clogged one session. Now anything written in an edit in the last hour counts as busy, and the new video gets a Kiro of its own.
+
+- A video clip's sound wave fills the clip, centred, until its frames are ready (or when there are none). Before, it sat in a thin strip at the bottom under an empty band.
+- Sound waves draw on a loudness scale like CapCut's, so speech fills the clip instead of a thin line.
+- Delete to the playhead and Delete from the playhead (Q and W) follow your keyboard shortcuts; change them under Keyboard shortcuts.
+- Frames on the timeline come in about 4 times faster on long videos (a 10-minute draft: 11 s instead of 48).
+
+- Kiro keeps your edits. When a new draft comes in, the timeline is built again from it, so everything in the draft is on the timeline, and every change you made on the last one (a move, a resize, a trim, a delete, something you added) is put back on top. Kiro's change wins only on something it was asked to change. Kiro is also told never to delete or rebuild the timeline.
+- Before, a new rendered draft could leave the timeline on the old draft's video, so the new draft's texts, cards and sounds were missing from it.
+- Sound effects that came from a full file path, and the red X stamp, are now items on the timeline. They used to be left out.
+- Duplicate this timeline (in the ⋯ menu) copies the timeline on screen, with all your edits, into a new version and opens it. Changing the copy leaves the original as it was.
+- Changing the speed of a clip keeps its footage: 2x makes it half as long. On the main video, everything after it moves up and the captions are retimed to match.
 
 - The timeline works like CapCut's. It runs the whole width of the window under the panels, the video and the notes, and a bar above it drags to make it taller or shorter.
 - One toolbar on top of the timeline: undo, redo, split, delete to the playhead (Q), delete from the playhead (W), delete, add Text, add Audio, add a Track, and the zoom on the right.
