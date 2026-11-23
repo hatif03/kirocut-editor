@@ -1,0 +1,17 @@
+{
+  "name": "kirocut-view",
+  "displayName": "KiroCut view",
+  "description": "Shows the KiroCut editor (a page served on this computer) in a panel beside the Kiro chat.",
+  "version": "0.1.0",
+  "publisher": "kirocut",
+  "license": "MIT",
+  "engines": { "vscode": "^1.80.0" },
+  "categories": ["Other"],
+  "main": "./extension.js",
+  "activationEvents": ["onCommand:kirocut.openEditor", "onUri"],
+  "contributes": {
+    "commands": [
+      { "command": "kirocut.openEditor", "title": "KiroCut: Open the editor in a panel" }
+    ]
+  }
+}

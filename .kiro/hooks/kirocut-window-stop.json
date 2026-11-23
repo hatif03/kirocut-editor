@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "KiroCut: honour Stop pressed in the editor window",
+      "trigger": "PreToolUse",
+      "description": "While Stop pressed in the KiroCut window is fresh (two minutes), blocks every tool call so a long run ends at its next step.",
+      "matcher": "*",
+      "action": {
+        "type": "command",
+        "command": "node plugins/kirocut/mcp/launch.mjs --run plugins/kirocut/lib/kirocut/kirohook.py pretool",
+        "timeout": 10
+      }
+    }
+  ]
+}

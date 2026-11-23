@@ -1,0 +1,27 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "spike-prompt-context",
+      "description": "Spike: does a PromptSubmit command hook's stdout reach the agent? Copy to .kiro/hooks/ to try, delete after.",
+      "trigger": "PromptSubmit",
+      "action": { "type": "command", "command": "py docs/spike/hooks/hook_probe.py prompt" },
+      "timeout": 10
+    },
+    {
+      "name": "spike-block-tool",
+      "description": "Spike: can a PreToolUse hook block a tool of one MCP server? Exit 2 blocks.",
+      "trigger": "PreToolUse",
+      "matcher": "@spike/spike_block",
+      "action": { "type": "command", "command": "py docs/spike/hooks/hook_probe.py block" },
+      "timeout": 10
+    },
+    {
+      "name": "spike-stop",
+      "description": "Spike: does the Stop trigger fire after each agent turn? It appends a line to docs/spike/hooks/stop.log.",
+      "trigger": "Stop",
+      "action": { "type": "command", "command": "py docs/spike/hooks/hook_probe.py stop" },
+      "timeout": 10
+    }
+  ]
+}

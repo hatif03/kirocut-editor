@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "KiroCut: check the tools at session start",
+      "trigger": "SessionStart",
+      "description": "Silent when ffmpeg, Node, the Python packages and the renderer are installed; otherwise one line telling the agent to run setup first.",
+      "action": {
+        "type": "command",
+        "command": "node plugins/kirocut/mcp/launch.mjs --run plugins/kirocut/lib/kirocut/kirohook.py session",
+        "timeout": 30
+      }
+    }
+  ]
+}

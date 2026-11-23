@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "KiroCut: tell the agent what happened in the editor window",
+      "trigger": "PromptSubmit",
+      "description": "When the user sends a message, adds one line if they started a video or sent notes in the KiroCut window, so the agent calls kirocut_events. Also lifts a window Stop.",
+      "action": {
+        "type": "command",
+        "command": "node plugins/kirocut/mcp/launch.mjs --run plugins/kirocut/lib/kirocut/kirohook.py prompt",
+        "timeout": 15
+      }
+    }
+  ]
+}

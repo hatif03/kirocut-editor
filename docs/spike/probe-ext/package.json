@@ -1,0 +1,13 @@
+{
+  "name": "kirocut-probe",
+  "displayName": "KiroCut probe (spike)",
+  "description": "Throwaway extension for the KiroCut compatibility spike: can a webview frame a 127.0.0.1 page, and can a URI open it?",
+  "version": "0.0.1",
+  "publisher": "kirocut",
+  "engines": { "vscode": "^1.80.0" },
+  "main": "./extension.js",
+  "activationEvents": ["onCommand:kirocutProbe.open", "onUri"],
+  "contributes": {
+    "commands": [{ "command": "kirocutProbe.open", "title": "KiroCut probe: open a local page in a panel" }]
+  }
+}

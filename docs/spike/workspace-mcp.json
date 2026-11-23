@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "kirocut": {
+      "command": "node",
+      "args": ["plugins/kirocut/mcp/launch.mjs"],
+      "disabled": false,
+      "autoApprove": ["kirocut_status"]
+    }
+  }
+}

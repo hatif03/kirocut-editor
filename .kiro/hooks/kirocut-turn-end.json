@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "KiroCut: stop saying Kiro is listening when the turn ends",
+      "trigger": "Stop",
+      "description": "After each agent turn, clears the editor window's listening light.",
+      "action": {
+        "type": "command",
+        "command": "node plugins/kirocut/mcp/launch.mjs --run plugins/kirocut/lib/kirocut/kirohook.py stop",
+        "timeout": 10
+      }
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+ "embed": "browser",
+ "elicitation": "auto",
+ "progress": "notify",
+ "prompt_hook": "inject",
+ "framed_cookie": "header",
+ "mcp_relative_path": "unknown",
+ "recorded": []
+}
