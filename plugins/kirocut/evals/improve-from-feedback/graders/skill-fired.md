@@ -1,5 +1,4 @@
 ---
-type: tool_used
-tool: Skill
-input_match: '"skill"\s*:\s*"(?:[\w-]+:)?improve"'
+type: skill_used
+skill: improve
 ---

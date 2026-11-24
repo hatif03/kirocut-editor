@@ -2,5 +2,5 @@
 type: llm
 focus: trace
 ---
-PASS if Kiro asks (AskUserQuestion, or choices in its reply when the session has no AskUserQuestion) whether the correction is about this video only, the user's own style, or would help everyone using the editor (any wording with those three choices).
+PASS if Kiro asks (kirocut_ask, or choices in its reply when the session has no kirocut_ask) whether the correction is about this video only, the user's own style, or would help everyone using the editor (any wording with those three choices).
 FAIL if it never offers the "would help everyone" choice.

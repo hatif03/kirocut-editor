@@ -1,7 +1,5 @@
 ---
-type: tool_used
-tool: Skill
-min: 0
+type: skill_used
+skill: any
 max: 0
-arm: both
 ---

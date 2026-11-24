@@ -1,5 +1,4 @@
 ---
-type: tool_used
-tool: Skill
-input_match: '"skill"\s*:\s*"(?:[\w-]+:)?logo-pack"'
+type: skill_used
+skill: logo-pack
 ---
