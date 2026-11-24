@@ -11,7 +11,7 @@
     python3 update.py add-upstream       add the `upstream` remote (ask the user first)
     python3 update.py check              fetch upstream: new commits, their CHANGELOG lines, files both sides changed
     python3 update.py merge              backup branch, then merge upstream/main (refuses a dirty tree)
-    python3 update.py verify             the fast self-checks: tests/check_plugins.py and tests/demos.sh
+    python3 update.py verify             the fast self-checks: tests/check_plugins.py and tests/run_demos.py
     python3 update.py rollback           back to the backup branch the last merge made
     python3 update.py demo               self-check on throwaway git repos
 
@@ -35,11 +35,6 @@ PLUGINS = ("kirocut", "style-match")   # style-match is a dependency: an update 
 def kiro_dir():
     """Kiro's own folder: $KIRO_HOME, else ~/.kiro."""
     return Path(os.environ.get("KIRO_HOME", "").strip() or Path.home() / ".kiro").expanduser()
-
-
-def claude_dir():
-    """Old name. Reads Kiro's folder."""
-    return kiro_dir()
 
 
 def upstream_url():
@@ -108,16 +103,6 @@ def dev_copy():
     if root.as_posix().startswith(powers + "/"):
         return False   # a power Kiro installed (itself may be a git checkout Kiro keeps)
     return any((d / ".git").exists() for d in (root, *root.parents))
-
-
-def installed(plugin="kirocut", market="kirocut"):
-    """(version, install folder) Claude Code has for plugin@market, from installed_plugins.json, or (None, None)."""
-    try:
-        import json
-        rows = json.loads((claude_dir() / "plugins" / "installed_plugins.json").read_text(encoding="utf-8"))["plugins"][f"{plugin}@{market}"]
-        return rows[-1].get("version"), rows[-1].get("installPath")
-    except (OSError, ValueError, KeyError, IndexError, TypeError, AttributeError):
-        return None, None
 
 
 def local_market(market="kirocut"):
@@ -313,7 +298,7 @@ def verify(repo):
         from kirocut.run import venv_python
         py = str(venv_python()) if venv_python().exists() else sys.executable
     failed = [name for name, cmd in (("tests/check_plugins.py", [sys.executable, "tests/check_plugins.py"]),
-                                     ("tests/demos.sh", ["bash", "tests/demos.sh"]))
+                                     ("tests/run_demos.py", [py, "tests/run_demos.py"]))
               if subprocess.run(cmd, cwd=repo, env={**os.environ, "PY": py}).returncode]
     if failed:
         print("FAILED: " + ", ".join(failed) + "\nFix them, or go back with: update.py rollback")
@@ -365,7 +350,6 @@ def demo():
         def run(repo, *a):
             env = {**os.environ, "KIROCUT_UPSTREAM": up.as_posix(), "HOME": str(tmp), "USERPROFILE": str(tmp)}
             env.pop("KIRO_HOME", None)
-            env.pop("CLAUDE_CONFIG_DIR", None)
             return subprocess.run([sys.executable, script, *a, "--repo", str(repo)], capture_output=True,
                                   text=True, encoding="utf-8", env=env)
 
@@ -376,7 +360,7 @@ def demo():
         write(up, "CHANGELOG.md", "# Changelog\n\n## Unreleased\n")
         write(up, "a.txt", "one\ntwo\n")
         write(up, "tests/check_plugins.py", "print('plugins ok')\n")
-        write(up, "tests/demos.sh", "exit 1\n")
+        write(up, "tests/run_demos.py", "import sys\nsys.exit(1)\n")
         commit(up, "start")
         for d in (fork, clone):
             g(tmp, "clone", "-q", str(up), str(d))
@@ -430,7 +414,7 @@ def demo():
 
         # verify runs both checks and points at rollback when one fails
         r = run(fork, "verify")
-        assert r.returncode == 1 and "tests/demos.sh" in r.stdout and "rollback" in r.stdout, r.stdout
+        assert r.returncode == 1 and "tests/run_demos.py" in r.stdout and "rollback" in r.stdout, r.stdout
 
         # conflict: both sides change the same line
         write(up, "a.txt", "one\nTWO\n")

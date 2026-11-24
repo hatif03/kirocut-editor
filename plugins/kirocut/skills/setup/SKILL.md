@@ -7,14 +7,14 @@ compatibility: Kiro or any agent with a shell, on Mac, Windows or Linux. Install
 
 # Setup
 
-Paths: `${CLAUDE_SKILL_DIR}` means the folder containing this SKILL.md, and `${CLAUDE_PLUGIN_ROOT}` the plugin folder two levels above it.
+Paths: `${KIROCUT_SKILL}` means the folder containing this SKILL.md, and `${KIROCUT_PLUGIN}` the plugin folder two levels above it (`plugins/kirocut` here).
 
-Every question goes in the question box: the AskUserQuestion tool (2-4 options, recommended first). Only in an agent without it, ask numbered questions in text.
+Every question goes in the question box: the kirocut_ask tool (2-4 options, recommended first). No form in the IDE: say the numbered text it returns, then pass the reply to `kirocut_answer`.
 
 The user may never have used a terminal. In the terminal flow, say what each tool is for in one
 sentence before installing it, and check after every step.
 
-`U="${CLAUDE_SKILL_DIR}/scripts/setup.py"`. Run it with `python3` on Mac and Linux, `py` on Windows.
+`U="${KIROCUT_SKILL}/scripts/setup.py"`. Run it with `python3` on Mac and Linux, `py` on Windows.
 
 ## 0. Window first
 
@@ -22,11 +22,11 @@ On a first run (no profile, or doctor not `Ready.`; the session-start line says 
 any install or question, and with no question box (the page is the setup; keys are typed there):
 
 1. Open the window: `python3 "$H" serve` and `python3 "$H" wait`, both `run_in_background`,
-   `H="${CLAUDE_PLUGIN_ROOT}/lib/kirocut/home.py"` (stdlib only: it needs nothing installed). Say one line: "The editor is open in your browser.
+   `H="${KIROCUT_PLUGIN}/lib/kirocut/home.py"` (stdlib only: it needs nothing installed). Say one line: "The editor is open in your browser.
    It is getting your computer ready; pick a creator there meanwhile."
-2. Install in the background: `python3 "$U" install-all --report` (`run_in_background`). It runs steps
+2. Install in the background: `python3 "$U" install-all --report` (a shell command that keeps running). It runs steps
    3-4 in order, never asks, and shows each on the page's "Getting your computer ready" bar.
-3. Take the page's jobs as `${CLAUDE_PLUGIN_ROOT}/skills/start/references/home.md` says. A teardown
+3. Take the page's jobs as `${KIROCUT_PLUGIN}/skills/start/references/home.md` says. A teardown
    job needs the Python packages step done first (it uses yt-dlp).
 4. It exits 1 with `Not ready.` and one fix per line, also shown on the page: do each fix (step 2 for
    ffmpeg, Node, git, Python), then run `install-all --report` again. Done steps take seconds.
@@ -59,7 +59,7 @@ it puts back the exact pinned set. What is installed is recorded in `~/.kirocut/
 A `saved login` row is a browser profile product-video logged in to a site with: it stays logged in
 on this computer. Say which sites and how long ago each was used, and ask in the question box
 "Delete these saved logins?" (Keep them (Recommended) / Delete <domain>, one option a site); on a
-delete, `node "${CLAUDE_PLUGIN_ROOT}/skills/product-video/scripts/login.mjs" logout <domain>`.
+delete, `node "${KIROCUT_PLUGIN}/skills/product-video/scripts/login.mjs" logout <domain>`.
 
 If `python3` itself is missing:
 - Mac: `brew install python`. No Homebrew? See step 2.
@@ -184,17 +184,17 @@ Then say this line once: "Updates: say update the editor. Kiro reinstalls the po
 Last, taste. Ask what is still missing:
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/lib/kirocut/profile.py" missing --style
+python3 "${KIROCUT_PLUGIN}/lib/kirocut/profile.py" missing --style
 ```
 
 Ask those ids in the question box, at most four per call, using the wording, options and `set`
-commands in `${CLAUDE_PLUGIN_ROOT}/skills/start/references/intake.md` (the rows that are not
+commands in `${KIROCUT_PLUGIN}/skills/start/references/intake.md` (the rows that are not
 per video), in its three style calls: what to copy (platform, creators, what to take, liked videos),
 what makes it yours (brand, own photos, avoid, captions; a brand file goes on the home page's Brand page or
 through `lib/kirocut/brandkit.py import <file>`, and a kit there answers brand), then sound, "Let graphics sit behind
 you?" and "Have a raw take and the version you posted? I can learn how you cut." Every question has
 a recommended first option. On yes to the last, run the taste skill's "Learn from a past edit".
-On "use the defaults" (or once the three calls are done), run `python3 "${CLAUDE_PLUGIN_ROOT}/lib/kirocut/profile.py" defaults`:
+On "use the defaults" (or once the three calls are done), run `python3 "${KIROCUT_PLUGIN}/lib/kirocut/profile.py" defaults`:
 anything left unanswered is saved as its default, so start never asks these again.
 
 On **Yes** to graphics behind you, `install-all` has already downloaded the matting model (15 MB). Run

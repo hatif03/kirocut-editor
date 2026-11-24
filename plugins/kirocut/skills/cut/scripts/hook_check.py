@@ -2,7 +2,7 @@
 """When does the cut first say what the title promises?
 
 Viewers who do not hear what the title promised leave in the first seconds. This finds the second
-the title's key words are first spoken in the cut and prints the first 10 s of speech, so Claude
+the title's key words are first spoken in the cut and prints the first 10 s of speech, so Kiro
 can tell the user when the opening does not deliver the promise.
 
     python3 hook_check.py edits/NAME "<title or the hook the user stated>"

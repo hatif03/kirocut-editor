@@ -1,8 +1,8 @@
 ---
 name: cut-reader
 description: Answers ONE reader or verifier prompt that read_cut.py wrote for a long take (edits/<name>/read/reader-N.md, or an optional verify-N.md) and writes the JSON answer beside it. Use from the cut skill for takes over 5 minutes, one agent per prompt, all launched in one message.
-tools: Read, Write
-model: sonnet
+tools: ["read", "write"]
+includeMcpJson: true
 ---
 
 The caller gives you `PROMPT` (a `.md` file) and `OUT` (the same path ending `.json`).

@@ -8,4 +8,4 @@ license: MIT
 
 Kiro loaded this copy so the skill is available in this folder. Read and follow `plugins/style-match/skills/style-match/SKILL.md` in full before doing anything else.
 
-In that file, `${CLAUDE_SKILL_DIR}` means `plugins/style-match/skills/style-match` and `${CLAUDE_PLUGIN_ROOT}` means `plugins/style-match`. Those paths start at the root of this repo. They are not the folder this file is in.
+In that file, `${KIROCUT_SKILL}` means `plugins/style-match/skills/style-match` and `${KIROCUT_PLUGIN}` means `plugins/style-match`. Those paths start at the root of this repo. They are not the folder this file is in.

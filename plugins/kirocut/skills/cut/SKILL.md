@@ -7,11 +7,11 @@ compatibility: Python 3.9+, ffmpeg and the venv the setup skill installs (faster
 
 # Cut
 
-Paths: `${CLAUDE_SKILL_DIR}` means the folder containing this SKILL.md, and `${CLAUDE_PLUGIN_ROOT}` the plugin folder two levels above it.
+Paths: `${KIROCUT_SKILL}` means the folder containing this SKILL.md, and `${KIROCUT_PLUGIN}` the plugin folder two levels above it (`plugins/kirocut` here).
 
-Read `${CLAUDE_PLUGIN_ROOT}/PRINCIPLES.md` first: the rules every video in this plugin follows.
+Read `${KIROCUT_PLUGIN}/PRINCIPLES.md` first: the rules every video in this plugin follows.
 
-Every question goes in the question box: the AskUserQuestion tool (2-4 options, recommended first). Only in an agent without it, ask numbered questions in text.
+Every question goes in the question box: the kirocut_ask tool (2-4 options, recommended first). No form in the IDE: say the numbered text it returns, then pass the reply to `kirocut_answer`.
 
 ```
 edits/<name>/  transcript.txt (read this, never words.raw.json), spans.json (what to remove, quoted),
@@ -22,9 +22,9 @@ edits/<name>/  transcript.txt (read this, never words.raw.json), spans.json (wha
 `<name>` is a slug of the file name (`IMG_1234.MOV` -> `img-1234`), in the library
 (PRINCIPLES.md "Where"). Never modify, move or copy the source file: pass its path.
 
-`PY="${CLAUDE_PLUGIN_ROOT}/lib/kirocut/run.py"`; `python3 "$PY"` runs the tool venv. On Windows, use
+`PY="${KIROCUT_PLUGIN}/lib/kirocut/run.py"`; `python3 "$PY"` runs the tool venv. On Windows, use
 `py` wherever these commands say `python3`.
-No venv yet: run the `setup` skill first. `S="${CLAUDE_SKILL_DIR}/scripts"`.
+No venv yet: run the `setup` skill first. `S="${KIROCUT_SKILL}/scripts"`.
 
 ## No video yet?
 
@@ -48,7 +48,7 @@ style-edit; a later cut change re-runs style-edit from its plan step.
 ## 0b. Read the user's taste
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/skills/taste/scripts/taste.py" show --edit edits/<name>
+python3 "${KIROCUT_PLUGIN}/skills/taste/scripts/taste.py" show --edit edits/<name>
 ```
 
 Follow every rule in it. Save a reaction to a result ("too slow") with the taste skill before redoing.
@@ -89,7 +89,7 @@ Only if the user wants it shorter (or their taste says to run the editorial pass
 cuts (content calls).
 
 A misheard name is one command, never a JSON rewrite: `python3 "$S/retakes.py" fix edits/<name>
-cloud=Claude jiv=Jev` (whole words, kept in `fixes.json` for the captions).
+kero=Kiro jiv=Jev` (whole words, kept in `fixes.json` for the captions).
 
 ## 3. Build
 
@@ -104,7 +104,7 @@ music: word gaps only. A build `ERROR` writes nothing: fix the span, rerun.
 **Keep it as shot (Recommended)** (most creators post it that way) / **Flip it so the text reads**; on a
 flip add `--flip` to every render.py below.
 
-In one message, start the spans encoding in the background (`run_in_background`) and the paper
+In one message, start the spans encoding in the background (a shell command that keeps running) and the paper
 checks; step 4 then encodes only what changed:
 
 ```bash
@@ -122,7 +122,7 @@ go first, the judge after: `references/judge.md`. Never read `paper-edit.md` you
 Foreground (render.py waits for the background encode):
 
 ```bash
-R="${CLAUDE_PLUGIN_ROOT}/lib/kirocut/review.py"
+R="${KIROCUT_PLUGIN}/lib/kirocut/review.py"
 python3 "$S/build_timeline.py" <source> edits/<name> && \
 python3 "$S/render.py" <source> edits/<name> && \
 python3 "$PY" "$S/verify_cut.py" edits/<name> --engine <same engine as step 1> && \

@@ -1,9 +1,8 @@
 ---
 name: render-watcher
 description: Watches a long render (a local edit.py render, a Modal or Lambda render, or a GitHub Actions render run) in the background and reports when it finishes or fails. Use right after starting a render so the main session can carry on.
-tools: Bash, Read
-model: haiku
-background: true
+tools: ["shell", "read"]
+includeMcpJson: true
 ---
 
 You watch one render the caller describes and report once, when it ends.

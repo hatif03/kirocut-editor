@@ -20,14 +20,14 @@ sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from edit import still_frames  # noqa: E402
 
-LONG_EDGE = 1568        # Claude reads images up to 1568 px on the long edge without shrinking them
+LONG_EDGE = 1568        # the model reads images up to 1568 px on the long edge without shrinking them
 TOKENS_CAP = 1600       # ...and about 1.15 MP, which is about 1,600 tokens: the most one image costs
 LABEL = 0.075           # label strip height, as a share of the tile width
 GAP = 6
 
 
 def tokens(w, h):
-    """Image tokens Claude spends on a w x h image: shrunk to LONG_EDGE, then w*h/750, capped."""
+    """Image tokens the model spends on a w x h image: shrunk to LONG_EDGE, then w*h/750, capped."""
     s = min(1.0, LONG_EDGE / max(w, h))
     return min(TOKENS_CAP, round(w * s * h * s / 750))
 

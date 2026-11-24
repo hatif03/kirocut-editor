@@ -7,12 +7,12 @@ compatibility: Node 20+, ffmpeg and the HyperFrames CLI with GSAP, installed onc
 
 # Motion
 
-Paths: `${CLAUDE_SKILL_DIR}` means the folder containing this SKILL.md, and `${CLAUDE_PLUGIN_ROOT}` the plugin folder two levels above it.
+Paths: `${KIROCUT_SKILL}` means the folder containing this SKILL.md, and `${KIROCUT_PLUGIN}` the plugin folder two levels above it (`plugins/kirocut` here).
 
-Every question goes in the question box: the AskUserQuestion tool (2-4 options, recommended first).
+Every question goes in the question box: the kirocut_ask tool (2-4 options, recommended first).
 
 One clip per beat, built for that line, never a template filled in. The template card is the fallback.
-`M="${CLAUDE_SKILL_DIR}/scripts/motion.py"`; paths are relative to the library, like style-edit's. Run the
+`M="${KIROCUT_SKILL}/scripts/motion.py"`; paths are relative to the library, like style-edit's. Run the
 scripts with `python3` on Mac and Linux, `py` on Windows.
 
 ```
@@ -23,7 +23,7 @@ visuals.json (style-edit step 3) -> motion.py pick -> motion/<id>/{index.html, b
 
 ## 0. Ready?
 
-`python3 "${CLAUDE_PLUGIN_ROOT}/skills/setup/scripts/setup.py" doctor` shows `motion clips` ok. Setup installs
+`python3 "${KIROCUT_PLUGIN}/skills/setup/scripts/setup.py" doctor` shows `motion clips` ok. Setup installs
 them by default; an install from before the motion step has none, so `pick` installs them itself (a few seconds,
 once). If that install fails, pick prints `Animations fell back: ...` once and makes no clip folders: say that line
 to the user once. The visual templates stay, and a beat whose template is only words gets no card (plan.py).
@@ -50,7 +50,7 @@ visuals.json first (style-edit `references/shapes.md`), then pick.
 ## 2. Build: one clip-builder agent per clip, all in one message
 
 For each `motion/<id>/brief.md` pick printed, launch the `clip-builder` agent
-(`${CLAUDE_PLUGIN_ROOT}/agents/clip-builder.md`, opus, background) with that brief's full path, every
+(`${KIROCUT_PLUGIN}/agents/clip-builder.md`) with that brief's full path, every
 clip in ONE message. Each reads only its brief and `references/clip-brief-card.md`, builds `index.html`,
 and runs `motion.py check` at most 3 times. Never build the clips in the main session.
 
@@ -60,7 +60,7 @@ reviewing the cut, so the clips are ready when the cut is approved.
 ## 3. Check a clip (what each agent runs)
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/lib/kirocut/run.py" "$M" check edits/<name>/motion/<id>
+python3 "${KIROCUT_PLUGIN}/lib/kirocut/run.py" "$M" check edits/<name>/motion/<id>
 ```
 
 In order: `check_clip.py` (source gotchas, free), `hyperframes lint`, `hyperframes check --at-transitions`,
@@ -100,11 +100,11 @@ frame between cards, a part that never moves while held, anything over the face,
 
 A clip is a `video` item the user moves, scales and trims (`lib/kirocut/SCENE.md` "Animations are elements"). Make
 its page `background: transparent` (html, body and #root) when it sits over the footage, render it with alpha, and
-add it at its word, as `wait`'s `SCENE:` block says:
+add it at its word, as the `SCENE:` block of `kirocut_events` says:
 
 ```bash
 npx hyperframes render edits/<name>/motion/<id> --format webm -o edits/<name>/motion/<id>/renders/clip.webm
-python3 "${CLAUDE_PLUGIN_ROOT}/lib/kirocut/scene.py" add edits/<name> video --src edits/<name>/motion/<id>/renders/clip.webm \
+python3 "${KIROCUT_PLUGIN}/lib/kirocut/scene.py" add edits/<name> video --src edits/<name>/motion/<id>/renders/clip.webm \
   --start <word time - 0.1> --x <centre x> --y <centre y> --w <width> --why "<the line it shows>"
 ```
 

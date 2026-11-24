@@ -144,7 +144,7 @@ style or sound are one format here.
 
 ## Fallback: no Gemini key
 
-One Agent call, `model: "haiku"`, so the images never enter the main conversation:
+One sub-agent call on a small, fast model, so the images never enter the main conversation:
 
 > For each video id in `<ids>`, read `style-matches/<handle>/sheets/<id>.jpg`
 > (9 frames of one video, time top left). Fill the JSON schema printed by
@@ -161,7 +161,7 @@ read by the small model.
 |---|---|---|
 | Before: 2-3 of 62 sheets a video (1200 x 1704, about 1,550 tokens each) + a full frame or two | 14-23 | 22,000-35,000 |
 | After, Gemini key | 0 (look.md, 26 lines) | about 350 |
-| After, no key | 0 (haiku reads 7 sheets of 720 x 1281, about 8,600 tokens there) | about 350 + the haiku reply |
+| After, no key | 0 (the small model reads 7 sheets of 720 x 1281, about 8,600 tokens there) | about 350 + the small model's reply |
 
 Gemini side: about 5,600 input tokens a 60 s video at 1 fps and low resolution (measured:
 39,565 for 7 videos), $0.0014 a video at $0.25 per 1M on the paid tier, $0 on the free tier.

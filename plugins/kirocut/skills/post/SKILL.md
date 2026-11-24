@@ -7,11 +7,11 @@ compatibility: Python 3.9+ (stdlib only). A Zernio account with its API key save
 
 # Post
 
-Paths: `${CLAUDE_SKILL_DIR}` means the folder containing this SKILL.md, and `${CLAUDE_PLUGIN_ROOT}` the plugin folder two levels above it.
+Paths: `${KIROCUT_SKILL}` means the folder containing this SKILL.md, and `${KIROCUT_PLUGIN}` the plugin folder two levels above it (`plugins/kirocut` here).
 
-Every question to the user goes in the question box: call the AskUserQuestion tool (2-4 options, the recommended one first). Only in an agent without that tool, ask numbered questions in text.
+Every question to the user goes in the question box: call the kirocut_ask tool (2-4 options, the recommended one first). No form in the IDE: say the numbered text it returns, then pass the reply to `kirocut_answer`.
 
-`P="${CLAUDE_PLUGIN_ROOT}/lib/kirocut/post.py"`. On Windows, use `py` wherever these commands say `python3`.
+`P="${KIROCUT_PLUGIN}/lib/kirocut/post.py"`. On Windows, use `py` wherever these commands say `python3`.
 
 ## 1. Accounts
 
@@ -20,7 +20,7 @@ python3 "$P" accounts
 ```
 
 - **Exit 2 (no key):** posting is not set up. Open the home window on Settings
-  (`python3 "${CLAUDE_PLUGIN_ROOT}/lib/kirocut/home.py" serve`, then the Settings page) and say in one line:
+  (`python3 "${KIROCUT_PLUGIN}/lib/kirocut/home.py" serve`, then the Settings page) and say in one line:
   "Make a Zernio account (the link is on the Auto-post card in Settings), connect your apps there, then paste its API key on
   that card." Never ask for the key in the chat. Run `accounts` again when they say it is done.
 - **No accounts:** the Auto-post card in Settings has a Connect button per app. Each press adds one account, so pressing TikTok
@@ -30,7 +30,7 @@ python3 "$P" accounts
 ## 2. What to post
 
 - **The video:** the approved render (`edits/<name>/render.mp4`, a clip's render, or a file the user names).
-- **Accounts:** one AskUserQuestion with `multiSelect: true`, one option per account, labelled
+- **Accounts:** one kirocut_ask with `multiSelect: true`, one option per account, labelled
   `@username (Platform)`. With more than 4 accounts, ask per platform. Never guess between two accounts on one
   platform. If the user already named them ("all of them", "just my TikTok"), use that and skip the question.
 - **Caption:** write it from the video's own words (`edits/<name>/captions.json` or `words.json`): the hook line,
@@ -39,7 +39,7 @@ python3 "$P" accounts
 
 ## 3. Confirm, then send
 
-Show the caption, title, accounts and time in one AskUserQuestion: Post it / Change the caption / Not now. TikTok
+Show the caption, title, accounts and time in one kirocut_ask: Post it / Change the caption / Not now. TikTok
 requires the user to have seen the post before it goes out, so never send without this yes.
 
 ```bash

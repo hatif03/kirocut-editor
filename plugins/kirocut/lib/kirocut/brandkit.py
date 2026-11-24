@@ -7,7 +7,7 @@
     python3 brandkit.py demo                self-check
 
 Files: $KIROCUT_HOME/brand/ (default ~/.kirocut/brand): BRAND.md (the source of truth), brand.json (what was
-read from it), the logo files it names (a link is downloaded in), BRAND.draft.md (Make one with Claude), refs/ (the
+read from it), the logo files it names (a link is downloaded in), BRAND.draft.md (Make one with Kiro), refs/ (the
 pictures given to that job), job.json (its state). The template ships beside this file (BRAND.template.md).
 
 What it reads: headings like Colours / Colors / Palette, Fonts / Typography, Logo, Voice / Tone, Words to use, Words to
@@ -35,7 +35,7 @@ from pathlib import Path
 
 TEMPLATE = Path(__file__).with_name("BRAND.template.md")
 IMG_EXT = (".svg", ".png", ".jpg", ".jpeg", ".webp", ".gif")
-JOB_S = 600   # the Claude job's time limit
+JOB_S = 600   # the Kiro job's time limit
 HEX = re.compile(r"(?<![\w&])#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})(?![0-9a-zA-Z])")
 PLACEHOLDER = re.compile(r"`[^`\n]*`|<[A-Za-z][^<>\n|]{0,118}>")   # inline code is kept: `<slug>` is not a placeholder
 # heading -> kind, first match wins (the avoid kinds before the plain ones: "Forbidden colors" is not a palette)
@@ -329,14 +329,14 @@ def set_use(on):
     write_brand({**b, "use_creator": not on})
 
 
-# ---------- Make one with Claude: a headless Claude Code CLI job (the plan allowance, never an API key) ----------
+# ---------- Make one with Kiro: a headless Kiro CLI job (the plan allowance, never an API key) ----------
 def job_state():
     try:
         j = json.loads((folder() / "job.json").read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return None
     if j.get("state") == "running" and time.time() - j.get("at", 0) > JOB_S + 60:   # the window restarted under it
-        j.update(state="failed", why="Claude stopped before it finished. Try again.")
+        j.update(state="failed", why="Kiro stopped before it finished. Try again.")
     return j
 
 
@@ -346,7 +346,7 @@ def set_job(**j):
 
 
 def job_prompt(url, about, pics):
-    src = [f"- The website: {url}. Read it with WebFetch (the home page, then its stylesheet if the colours or fonts "
+    src = [f"- The website: {url}. Read it with the web fetch tool (the home page, then its stylesheet if the colours or fonts "
            "are not in the page): the real hex colours, the font-family names, and the logo's full https link."] if url else []
     if about:
         src.append(f"- What the user says about the brand: {about}")
@@ -376,19 +376,19 @@ def run_job(url, about, pics, cli):
         except Exception as e:  # noqa: BLE001  never left running: the page offers Try again
             why = "Kiro took too long making your brand kit." if isinstance(e, subprocess.TimeoutExpired) else f"Kiro did not start: {e}"
     if not why and not (d / "BRAND.draft.md").exists():
-        why = "Claude finished without writing a brand kit."
+        why = "Kiro finished without writing a brand kit."
     set_job(state="failed", why=why) if why else set_job(state="done")
 
 
 def start_job(url="", about="", images=(), cli=None, wait=False):
-    """Make one with Claude: images are [{"name", "data": base64 or a data: URL}], saved to refs/. Runs in a thread."""
+    """Make one with Kiro: images are [{"name", "data": base64 or a data: URL}], saved to refs/. Runs in a thread."""
     url, about = (url or "").strip(), (about or "").strip()[:4000]
     if url and not re.match(r"https?://", url):
         url = "https://" + url
     if not (url or about or images):
         raise ValueError("Give a website, a few lines about the brand or a picture.")
     if (job_state() or {}).get("state") == "running":
-        raise ValueError("Claude is already making your brand kit.")
+        raise ValueError("Kiro is already making your brand kit.")
     d = folder()
     shutil.rmtree(d / "refs", ignore_errors=True)
     (d / "BRAND.draft.md").unlink(missing_ok=True)
@@ -411,7 +411,7 @@ def start_job(url="", about="", images=(), cli=None, wait=False):
 
 
 def state():
-    """GET /brand: the kit as read, the file, the switch, the Claude job and its draft."""
+    """GET /brand: the kit as read, the file, the switch, the Kiro job and its draft."""
     d, j = folder(), job_state()
     md = d / "BRAND.md"
     draft = d / "BRAND.draft.md"
@@ -419,7 +419,7 @@ def state():
     return {"kit": load() if md.exists() else None, "md": md.read_text(encoding="utf-8") if md.exists() else "",
             "use": bool(b.get("kit")) and not b.get("use_creator"), "path": str(md), "job": j,
             "draft": draft.read_text(encoding="utf-8") if draft.exists() and (j or {}).get("state") == "done" else None,
-            "claude": bool(os.environ.get("KIROCUT_KIRO") or shutil.which("kiro-cli"))}
+            "kiro": bool(os.environ.get("KIROCUT_KIRO") or shutil.which("kiro-cli"))}
 
 
 def route(h, method, path, q, body=None):
@@ -438,7 +438,7 @@ def route(h, method, path, q, body=None):
             else:
                 import mimetypes
                 h.send(200, p.read_bytes(), mimetypes.guess_type(p.name)[0] or "application/octet-stream")
-        elif method == "POST" and path == "/brand/save":   # Import a file, Edit > Save and the Claude draft's Save
+        elif method == "POST" and path == "/brand/save":   # Import a file, Edit > Save and the Kiro draft's Save
             md = str((body or {}).get("md") or "")
             if not md.strip():
                 h.send(400, {"error": "The file is empty."})
@@ -448,7 +448,7 @@ def route(h, method, path, q, body=None):
         elif method == "POST" and path == "/brand/use":
             set_use(bool((body or {}).get("on")))
             h.send(200, state())
-        elif method == "POST" and path == "/brand/claude":
+        elif method == "POST" and path == "/brand/kiro":
             if (body or {}).get("clear"):
                 (folder() / "job.json").unlink(missing_ok=True)
                 (folder() / "BRAND.draft.md").unlink(missing_ok=True)
@@ -571,18 +571,27 @@ White, lower case, one word at a time.
     assert read_profile()["brand"]["use_creator"] is True and any("could not download" in u for u in load()["unread"])
     set_use(True)
     assert state()["use"] is True
-    # 4. Make one with Claude: no CLI says so; a stub that writes nothing fails plainly; a fake one leaves a draft
+    # 4. Make one with Kiro: no CLI says so; a stub that writes nothing fails plainly; a fake one leaves a draft
     start_job(about="calm", cli="", wait=True)
     assert job_state()["state"] == "failed" and "not installed" in job_state()["why"]
-    start_job(url="example.com", cli=shutil.which("true") or "true", wait=True)
-    assert job_state()["state"] == "failed" and "without writing" in job_state()["why"], job_state()
-    fake = tmp / "fake-claude"
-    fake.write_text("#!/bin/sh\nprintf '%s\\n' \"$@\" > args.txt\nprintf '## Colours\\n- Accent: #112233\\n' > BRAND.draft.md\n", encoding="utf-8")
-    fake.chmod(0o755)
-    start_job(url="https://example.com", images=[{"name": "shot.png", "data": base64.b64encode(b"png").decode()}], cli=str(fake), wait=True)
-    assert job_state()["state"] == "done" and state()["draft"].startswith("## Colours"), job_state()
+    # the CLI is a Python script on every OS (the launcher's command is swapped for it); what it is given is `kiro-cli chat --no-interactive <prompt>`
+    import launcher
+    assert launcher.headless("p", exe="kiro-cli") == ["kiro-cli", "chat", "--no-interactive", "p"], "the headless command is kiro-cli chat --no-interactive"
+    stub = tmp / "stub_cli.py"
+    real_headless = launcher.headless
+    launcher.headless = lambda prompt, exe=None, os_name=None: [sys.executable, str(stub), prompt]
+    try:
+        stub.write_text("", encoding="utf-8")   # runs, writes nothing
+        start_job(url="example.com", cli="kiro-cli", wait=True)
+        assert job_state()["state"] == "failed" and "without writing" in job_state()["why"], job_state()
+        stub.write_text("import sys\nopen('args.txt', 'w', encoding='utf-8').write(sys.argv[1])\n"
+                        "open('BRAND.draft.md', 'w', encoding='utf-8').write('## Colours\\n- Accent: #112233\\n')\n", encoding="utf-8")
+        start_job(url="https://example.com", images=[{"name": "shot.png", "data": base64.b64encode(b"png").decode()}], cli="kiro-cli", wait=True)
+        assert job_state()["state"] == "done" and state()["draft"].startswith("## Colours"), job_state()
+    finally:
+        launcher.headless = real_headless
     args = (folder() / "args.txt").read_text(encoding="utf-8")
-    assert "-p" in args and "WebFetch" in args and "Write(./BRAND.draft.md)" in args and "shot.png" in args and "example.com" in args, args
+    assert "web fetch tool" in args and "./BRAND.draft.md" in args and "shot.png" in args and "example.com" in args, args
     assert (folder() / "refs" / "shot.png").read_bytes() == b"png" and "firecrawl" not in args.lower()
     save(state()["draft"])
     assert load()["colors"][0]["hex"] == "#112233" and state()["draft"] is None

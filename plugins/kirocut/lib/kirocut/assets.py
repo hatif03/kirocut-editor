@@ -5,7 +5,7 @@ editor's "Anything to add?". Stdlib only, stored on this computer only.
     <edit>/assets/asset-img1.png ...   the images (png, jpeg, gif, webp; under 15 MB each)
     <edit>/assets/asset-vid1.mp4 ...   the videos (mp4, mov, m4v, webm; under 2 GB each)
     <edit>/media/<name> ...            the editor's Media panel uploads (save_media): dragged onto the video by the user,
-                                       not listed in assets.json, so Claude is not asked to place them
+                                       not listed in assets.json, so Kiro is not asked to place them
     <edit>/assets.json                 {"items": [{"kind": "image", "src": "assets/asset-img1.png", "name": "chart.png", "say": ""},
                                                   {"kind": "video", "src": "assets/asset-vid1.mov", "name": "demo.mov", "say": ""},
                                                   {"kind": "link", "url": "https://x.com/...", "site": "x", "say": "the launch"}]}
@@ -31,7 +31,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import askhook  # noqa: E402
+import pagekit  # noqa: E402
 
 MAX_ITEMS = 50
 MAX_VIDEO = 2 << 30
@@ -84,7 +84,7 @@ def _slot(edit, kind, ext):
 
 def _fits(path, kind):
     n = Path(path).stat().st_size
-    return 0 < n <= (askhook.MAX_IMAGE if kind == "image" else MAX_VIDEO)
+    return 0 < n <= (pagekit.MAX_IMAGE if kind == "image" else MAX_VIDEO)
 
 
 def _inside(path, root):
@@ -110,7 +110,7 @@ def add(edit, new, staged=None):
                 continue
             items.append({"kind": "link", "url": url, "site": site(url), "say": say})
         elif it.get("image"):
-            saved = askhook.save_images(edit / "assets", [it["image"]], "asset")
+            saved = pagekit.save_images(edit / "assets", [it["image"]], "asset")
             if saved:
                 name = Path(str(it.get("name") or saved[0])).name[:120]
                 items.append({"kind": "image", "src": f"assets/{saved[0]}", "name": name, "say": say})
@@ -138,7 +138,7 @@ def save_stream(edit, name, stream, n, say=""):
         raise ValueError("Add a video (.mp4, .mov, .m4v, .webm) or an image (.png, .jpg, .gif, .webp).")
     if len(items) >= MAX_ITEMS:
         raise ValueError(f"{MAX_ITEMS} at most. Take one out first.")
-    if not 0 < n <= (askhook.MAX_IMAGE if kind == "image" else MAX_VIDEO):
+    if not 0 < n <= (pagekit.MAX_IMAGE if kind == "image" else MAX_VIDEO):
         raise ValueError(f"{name} is over {'15 MB' if kind == 'image' else '2 GB'}.")
     out = _slot(edit, kind, Path(name).suffix.lower())
     _stream_to(out, stream, n)
@@ -165,12 +165,12 @@ def _stream_to(out, stream, n):
 
 def save_media(edit, name, stream, n):
     """The editor's Media panel: one file into <edit>/media/ under its own name (-2, -3 when taken). Not in assets.json:
-    Claude is not asked to place it, the user drags it onto the video. Its src ("media/<name>")."""
+    Kiro is not asked to place it, the user drags it onto the video. Its src ("media/<name>")."""
     name = re.sub(r"[^\w.\- ]+", "", Path(str(name or "")).name).strip()[:120]
     kind = kind_of(name)
     if not kind or name.startswith("."):
         raise ValueError("Add a video (.mp4, .mov, .m4v, .webm) or an image (.png, .jpg, .gif, .webp).")
-    if not 0 < n <= (askhook.MAX_IMAGE if kind == "image" else MAX_VIDEO):
+    if not 0 < n <= (pagekit.MAX_IMAGE if kind == "image" else MAX_VIDEO):
         raise ValueError(f"{name} is over {'15 MB' if kind == 'image' else '2 GB'}.")
     folder = Path(edit) / "media"
     folder.mkdir(parents=True, exist_ok=True)
@@ -216,9 +216,9 @@ def demo():
     assert out[1]["site"] == "github" and site("https://www.youtube.com/watch?v=1") == "youtube" and site("https://docs.python.org") == "web"
     assert out[2]["src"] == "assets/asset-img1.png" and out[2]["name"] == "chart.png" and (e / out[2]["src"]).is_file()
     assert json.loads((e / "assets.json").read_text(encoding="utf-8"))["items"] == out
-    for _ in range(askhook.MAX_IMAGES + 2):
+    for _ in range(pagekit.MAX_IMAGES + 2):
         add(e, [{"image": png}])
-    assert sum(x["kind"] == "image" for x in load(e)) == askhook.MAX_IMAGES + 3, "more images than a note can carry"
+    assert sum(x["kind"] == "image" for x in load(e)) == pagekit.MAX_IMAGES + 3, "more images than a note can carry"
     # files: staged uploads (New video) and streamed ones (the editor), videos and images alike
     st = Path(tempfile.mkdtemp(prefix="assets_staged_"))
     (st / "demo.mov").write_bytes(b"v" * 10)
@@ -236,14 +236,14 @@ def demo():
     import io
     out = save_stream(e, "../clip.MP4", io.BytesIO(b"c" * 5), 5, "  my clip ")
     assert out[-1] == {"kind": "video", "src": "assets/asset-vid2.mp4", "name": "clip.MP4", "say": "my clip"}, out[-1]
-    for bad, size, words in (("a.txt", 3, "Add a video"), ("b.png", askhook.MAX_IMAGE + 1, "over 15 MB"), ("c.mp4", 9, "stopped")):
+    for bad, size, words in (("a.txt", 3, "Add a video"), ("b.png", pagekit.MAX_IMAGE + 1, "over 15 MB"), ("c.mp4", 9, "stopped")):
         try:
             save_stream(e, bad, io.BytesIO(b"z" * 3), size)
             raise AssertionError(bad)
         except ValueError as err:
             assert words in str(err), err
     assert not list((e / "assets").glob("*.part")), "a stopped upload leaves no file behind"
-    big = "data:image/png;base64," + "A" * (askhook.MAX_IMAGE * 4 // 3 + 8)
+    big = "data:image/png;base64," + "A" * (pagekit.MAX_IMAGE * 4 // 3 + 8)
     n = len(load(e))
     remove(e, 2)
     assert not (e / "assets/asset-img1.png").exists() and len(load(e)) == n - 1
@@ -255,7 +255,7 @@ def demo():
         raise AssertionError("past MAX_ITEMS")
     except ValueError as err:
         assert "50 at most" in str(err)
-    # the Media panel: files into media/ under their own names, not asked of Claude (assets.json untouched)
+    # the Media panel: files into media/ under their own names, not asked of Kiro (assets.json untouched)
     n = len(load(e))
     assert save_media(e, "../My pic.png", io.BytesIO(b"p" * 4), 4) == "media/My pic.png"
     assert save_media(e, "My pic.png", io.BytesIO(b"q" * 4), 4) == "media/My pic-2.png" and len(load(e)) == n

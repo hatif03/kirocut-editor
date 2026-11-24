@@ -164,7 +164,7 @@ def ai_tells_module():
     here = Path(__file__).resolve()
     cands = [os.environ.get("KIROCUT_STYLE_SCRIPTS"),
              here.parents[4] / "kirocut" / "skills" / "style-edit" / "scripts"]
-    cands += sorted(glob.glob(str(Path.home() / ".claude" / "plugins" / "**" / "style-edit" / "scripts"),
+    cands += sorted(glob.glob(str(Path.home() / ".kiro" / "powers" / "**" / "style-edit" / "scripts"),
                               recursive=True))
     for c in cands:
         if c and (Path(c) / "ai_tells.py").exists():
@@ -479,7 +479,7 @@ def page(handle, outdir, style, videos, hooks, comp, tells, gfx_rows):
                      f"<span class=mute>Instead: {E(f['fix'])}</span></li>")
         H.append("</ul>")
 
-    # Choices are asked in Claude's question box, never ticked here: a static page cannot reach Claude.
+    # Choices are asked in the Kiro chat, never ticked here: a static page cannot reach the chat.
     H.append("<h2>What to take</h2><div class=take><p>Back in Kiro, you will be asked which of these to copy:</p><ul>")
     for k, label in TAKE:
         H.append(f"<li>{E(label)}</li>")

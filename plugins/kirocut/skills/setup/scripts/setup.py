@@ -36,7 +36,7 @@ What got installed is recorded in ~/.kirocut/env.json. KIROCUT_HOME moves the fo
   python3 setup.py later <step>   save an optional step for later (gemini elevenlabs style modal matte)
   python3 setup.py todo       every optional step not done yet ("finish setup")
   python3 setup.py install-launcher     put the `kirocut` command on the PATH (a user folder, no sudo;
-                              idempotent). It opens the editor's window with Claude Code behind it.
+                              idempotent). It opens the editor's window with Kiro behind it.
   python3 setup.py uninstall-launcher   take it off again (and the PATH line, if install added one)
   python3 setup.py demo       self-check
 
@@ -560,7 +560,7 @@ def clip_kind(text):
         return "the clipboard is empty"
     if "\n" in t:
         return f"the clipboard holds {t.count(chr(10)) + 1} lines of text, not one key"
-    if t.startswith(("/", "!", "python", "pbpaste", "claude", "npx")):
+    if t.startswith(("/", "!", "python", "pbpaste", "kiro-cli", "npx")):
         return "the clipboard holds a command, not the key"
     if t.startswith("http"):
         return "the clipboard holds a web address, not the key"
@@ -929,7 +929,7 @@ def report_status(step=None, progress=None, detail=None, done=False, failed=None
 def plain(e):
     """A step's failure as one sentence: its own sys.exit message, else what went wrong."""
     msg = str(e.code) if isinstance(e, SystemExit) else f"{type(e).__name__}: {e}"
-    return msg.removeprefix("ERROR: ").split("\n")[-1].strip().replace("; its output is above.", ". Claude has the details.")
+    return msg.removeprefix("ERROR: ").split("\n")[-1].strip().replace("; its output is above.", ". Kiro has the details.")
 
 
 def install_all(report=False, steps=INSTALL_STEPS, status=None, tools=lambda: checks()[:4]):
@@ -1234,7 +1234,7 @@ def demo_launcher():
                 fh.write(launcher_text("Windows"))
         env = dict(os.environ, KIROCUT_HOME=str(t / "h"), KIROCUT_LIBRARY=str(t / "lib"))
         r = subprocess.run(run(real, "--dry-run"), capture_output=True, text=True, env=env)
-        assert r.returncode == 0 and "/kirocut:start open the home page" in r.stdout, (r.stdout, r.stderr)
+        assert r.returncode == 0 and r.stdout.strip().endswith("home.py serve"), (r.stdout, r.stderr)
         moved = b / ("moved.cmd" if win else "moved")
         with open(moved, "w", encoding="utf-8", newline="") as fh:
             fh.write(real.read_text(encoding="utf-8").replace(str(LAUNCHER), str(t / "gone.py")))
@@ -1467,14 +1467,14 @@ def demo_install_all():
         def no_renderer(*a, **k):
             sys.exit("ERROR: drawing a test frame failed (exit 1); its output is above.")
         quiet = no_renderer
-        assert step_warm() == "skipped"
+        assert step_warm(force=True) == "skipped"   # force: a machine already warmed up still takes the failure path
 
         def disk_full(*a, **k):
             raise OSError(28, "No space left on device")
         quiet = disk_full
         import glob as g
         before = set(g.glob(os.path.join(tempfile.gettempdir(), "ave-warm-*")))
-        assert step_warm() == "skipped" and set(g.glob(os.path.join(tempfile.gettempdir(), "ave-warm-*"))) == before
+        assert step_warm(force=True) == "skipped"   # force: a machine already warmed up still takes the failure path and set(g.glob(os.path.join(tempfile.gettempdir(), "ave-warm-*"))) == before
         models.fetch = lambda *a, **k: sys.exit("ERROR: no connection")
         with tempfile.TemporaryDirectory() as d:
             keep_dir, models.DIR = models.DIR, Path(d)

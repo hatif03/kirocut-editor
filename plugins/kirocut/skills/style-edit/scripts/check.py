@@ -1077,7 +1077,7 @@ def prof():
 
 
 def style_pick(edit, style):
-    """FAIL when the edit's style.json is not the style the user picked for this video (the home job's as=): a Claude
+    """FAIL when the edit's style.json is not the style the user picked for this video (the home job's as=): a Kiro
     that skipped `profile.py style --as` styles it as the default instead (QA round 3, Motion design)."""
     try:
         import os

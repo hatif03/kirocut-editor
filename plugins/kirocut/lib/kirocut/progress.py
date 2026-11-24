@@ -1,13 +1,13 @@
-"""Long scripts put their own progress on the home page, so the window moves without Claude remembering to.
+"""Long scripts put their own progress on the home page, so the window moves without Kiro remembering to.
 Stdlib only. style-match keeps a byte-identical copy as scripts/_progress.py (check_plugins.py checks).
 
     import progress; progress.step("Transcribed every word", detail="video 3 of 7", progress=3 / 7, key=handle)
     python3 progress.py demo     self-check
 
-Only when the page has a job of that type taken by Claude ($KIROCUT_HOME/home/state.json): then it is
-one `home.py status <job> --if-active --step ...` call, the same write Claude makes, so a step Claude also
+Only when the page has a job of that type taken by Kiro ($KIROCUT_HOME/home/state.json): then it is
+one `home.py status <job> --if-active --step ...` call, the same write Kiro makes, so a step Kiro also
 reports (same text as the newest step) is updated in place, never listed twice. A script never takes a
-queued job: only Claude's `wait` does. `key` names the job (a video's edit folder, a
+queued job: only Kiro's `wait` does. `key` names the job (a video's edit folder, a
 teardown's handle) so separate videos each get their own steps; with no key, only a lone taken job gets
 them. No page, no job, a broken state file or a slow lock: nothing happens, and the script never stops
 or waits more than a few seconds for it.
@@ -30,9 +30,9 @@ def step(text, detail=None, progress=None, job="teardown", key=None, timeout=5):
         return False
     try:
         d = json.loads(state_file().read_text(encoding="utf-8"))
-        sid = os.environ.get("CLAUDE_CODE_SESSION_ID", "").strip()
+        sid = os.environ.get("KIROCUT_SESSION", "").strip()
         if not any(j.get("type") == job and j.get("state") == "taken" and (not sid or j.get("owner") in (None, sid))
-                   for j in d.get("jobs", [])):   # another Claude session's job: not ours to report on
+                   for j in d.get("jobs", [])):   # another Kiro session's job: not ours to report on
             return False
         home_py = Path(__file__).with_name("home.py")   # kirocut: the home.py beside this file
         if not home_py.is_file():   # style-match's copy: the path home.py writes into state.json
@@ -55,7 +55,7 @@ def ticker(text, n, job="teardown", key=None):
 def demo():
     import tempfile
     with tempfile.TemporaryDirectory() as tmp:
-        os.environ.pop("CLAUDE_CODE_SESSION_ID", None)   # run from inside Claude Code: not that session
+        os.environ.pop("KIROCUT_SESSION", None)   # run from inside Kiro: not that session
         os.environ["KIROCUT_HOME"], os.environ["KIROCUT_SKILLS"] = tmp, os.path.join(tmp, "skills")
         f = state_file()
         assert step("Listed their videos") is False   # no state file: a no-op
@@ -82,16 +82,16 @@ def demo():
         assert ticker("Transcribed every word", 7)(4) and step("Transcribed every word")   # keyless, lone job; in place
         d = json.loads(f.read_text(encoding="utf-8"))
         j = d["jobs"][0]
-        assert j["state"] == "taken" and d["claude_seen"]
+        assert j["state"] == "taken" and d["agent_seen"]
         assert [s["text"] for s in j["steps"]] == ["Listed their videos", "Transcribed every word"], j["steps"]
         assert j["steps"][0]["done"] and j["steps"][1]["detail"] == "video 4 of 7" and abs(j["steps"][1]["progress"] - 4 / 7) < 0.01
-        j["owner"] = "sess-A"   # another Claude session's job: a script in session B leaves it alone
+        j["owner"] = "sess-A"   # another Kiro session's job: a script in session B leaves it alone
         f.write_text(json.dumps(d), encoding="utf-8")
-        os.environ["CLAUDE_CODE_SESSION_ID"] = "sess-B"
+        os.environ["KIROCUT_SESSION"] = "sess-B"
         assert step("Writing the style") is False and len(json.loads(f.read_text(encoding="utf-8"))["jobs"][0]["steps"]) == 2
-        os.environ["CLAUDE_CODE_SESSION_ID"] = "sess-A"
+        os.environ["KIROCUT_SESSION"] = "sess-A"
         assert step("Transcribed every word")   # its own session: lands (same text, in place)
-        os.environ.pop("CLAUDE_CODE_SESSION_ID")
+        os.environ.pop("KIROCUT_SESSION")
         d = json.loads(f.read_text(encoding="utf-8"))
         j = d["jobs"][0]
         # separate videos: two taken video jobs, each script's report lands on its own edit folder
@@ -112,13 +112,13 @@ def demo():
         d = json.loads(f.read_text(encoding="utf-8"))
         d["jobs"][2]["owner"] = "sess-A"
         f.write_text(json.dumps(d), encoding="utf-8")
-        os.environ["CLAUDE_CODE_SESSION_ID"] = "sess-B"
+        os.environ["KIROCUT_SESSION"] = "sess-B"
         assert step("Rendering", job="video", key=ed[1]) is False
         assert step("Cutting out the mistakes", job="video") and len(json.loads(f.read_text(encoding="utf-8"))["jobs"][1]["steps"]) == 2, \
             "no key: B's only writable job (video-1, nobody's) gets it"
-        os.environ["CLAUDE_CODE_SESSION_ID"] = "sess-A"
+        os.environ["KIROCUT_SESSION"] = "sess-A"
         assert step("Rendering", job="video", key=ed[1])
-        os.environ.pop("CLAUDE_CODE_SESSION_ID")
+        os.environ.pop("KIROCUT_SESSION")
     print("progress demo ok")
 
 

@@ -7,7 +7,7 @@ next round on the same page. The stills before the render are Kiro's own check, 
 means make the edit (SKILL.md step 5). `round --stills` still works for a user who asks to see the frames first.
 The live preview (`preview.py`) is only for a user who asks to move cards by hand.
 
-Script: `${CLAUDE_PLUGIN_ROOT}/lib/kirocut/review.py` (stdlib), page `review.html` beside it.
+Script: `${KIROCUT_PLUGIN}/lib/kirocut/review.py` (stdlib), page `review.html` beside it.
 `review.py demo` self-checks. Mac, Windows and Linux: it opens the default browser.
 
 Notes save in the edit folder: `review.json` (rounds, notes, replies, send and approve) and
@@ -17,7 +17,7 @@ each round's video, so a new render to the same path never changes an earlier ro
 ## The loop
 
 ```bash
-R="${CLAUDE_PLUGIN_ROOT}/lib/kirocut/review.py"
+R="${KIROCUT_PLUGIN}/lib/kirocut/review.py"
 python3 "$R" edits/<name> start --video edits/<name>/cut.mp4 --stage cut --transcript edits/<name>/words.json
 python3 "$R" edits/<name> serve      # run in the background: opens the page; one server per folder, reused
 python3 "$R" edits/<name> wait       # run in the background: it exits when the user presses send or approve
@@ -27,9 +27,8 @@ python3 "$R" edits/<name> wait       # run in the background: it exits when the 
 pause, add a note, then **Submit feedback to Kiro** or **approve**. Then wait for `wait` to exit. Do not ask in
 the question box meanwhile.
 
-**In the Kiro desktop app** (`CLAUDE_CODE_ENTRYPOINT=claude-desktop`), run `wait` with the Bash tool's
-`run_in_background` and end your turn: the app wakes you with its output when the user sends. Start it again the
-same way after every `round`. Never run it in the foreground there. `wait` and `round` print this as a `DESKTOP:` line.
+**In the Kiro chat**, prefer `kirocut_events` over `wait`: it returns what the user pressed, and a hook adds a line
+between turns when something is waiting. Call it again after every `round`.
 
 `wait` prints `SEND` or `APPROVE`, then every note of the round:
 
@@ -134,12 +133,11 @@ With no `wait` running the page says Kiro is not listening, and notes still save
 
 ## Which Kiro gets the notes
 
-Every `review.py` command (and `scene.py` ops) records its session in `review.json` `claude.last`
-(`session`, `host_session`, `kind` desktop, terminal or other, `at`, `by`). A session that ran `wait` or `round`
+Every `review.py` command (and `scene.py` ops) records its session in `review.json` `agent.last`
+(`session`, `host_session`, `kind`, `at`, `by`). A session that ran `wait` or `round`
 keeps it against other sessions' other commands. Notes go to the `wait` that is listening; only the newest `wait`
-on a video listens (an older one prints `STOPPED LISTENING` and exits). With none listening: a Terminal Kiro is
-typed into or resumed as before; a desktop session is never replaced by a Terminal one. The top bar says the desktop session is not listening, with **Open the desktop app** (and **Start a new Kiro**
-in the more menu) (`claude.how` = `desktop-idle`). The top bar always says where notes go, with the session's first 8 characters.
+on a video listens (an older one prints `STOPPED LISTENING` and exits). With none listening the notes wait
+on the page and the top bar's **Tell Kiro** copies a line to paste in the chat. The top bar always says whether Kiro is listening.
 
 ## After send: fix, show the work, open the next round
 

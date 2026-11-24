@@ -57,7 +57,7 @@ python3 <setup skill folder>/scripts/setup.py awskey
 ## 5. Check
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/setup.py" lambda
+python3 "${KIROCUT_SKILL}/scripts/setup.py" lambda
 ```
 
 Every line should read as passing. A failure names the missing permission: re-check the policy

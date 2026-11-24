@@ -14,7 +14,7 @@ reel.json: {"source", "duration", "width", "height",      (+ reel/ocr.json: ever
   OCR slips ("Al" for "AI") and a caption read late or merged with a line from the footage: read the shot frames and fix.
   `color` is the text's fill, `box_color` the solid box behind it when there is one (else null: plain text, drawn
   with a dark stroke). Edit texts here before build to change the words (Additional instructions, review notes).
-picks.json (Claude writes it from the contact sheets, broll.py sheet): {"shots": [{"clip": "<path>", "from": 0.0}]},
+picks.json (Kiro writes it from the contact sheets, broll.py sheet): {"shots": [{"clip": "<path>", "from": 0.0}]},
   one per reel shot, in order. A clip shorter than its shot loops.
 build: each pick cut to its shot, filled to 1080x1920, joined, the reel's sound under it -> base.mp4; plan.json for
   style-edit's renderer (StyleEdit: base.mp4, no captions, the texts as "onscreen" items). Then
@@ -155,9 +155,9 @@ def read(edit, src, ocr=None, cuts=None):
     data = {"source": str(src), "duration": round(dur, 3), "width": w, "height": h, "shots": shots,
             "texts": [x for x in found if caption(x)]}
     (edit / "reel.json").write_text(json.dumps(data, indent=1), encoding="utf-8")
-    for s in shots:   # each shot full size: Claude reads the real words here and fixes OCR slips in reel.json
+    for s in shots:   # each shot full size: Kiro reads the real words here and fixes OCR slips in reel.json
         ff("-ss", (s["start"] + s["end"]) / 2, "-i", src, "-frames:v", "1", "-vf", "scale=540:-2", out / f"shot-{s['n']:02d}.jpg")
-    # one frame from the middle of each shot, numbered left to right: what Claude matches b-roll against
+    # one frame from the middle of each shot, numbered left to right: what Kiro matches b-roll against
     with tempfile.TemporaryDirectory() as tmp:
         for s in shots:
             ff("-ss", (s["start"] + s["end"]) / 2, "-i", src, "-frames:v", "1", "-vf",

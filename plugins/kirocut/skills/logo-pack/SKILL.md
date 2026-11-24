@@ -7,9 +7,9 @@ compatibility: Node 18+ and the Chrome Headless Shell the setup skill installs (
 
 # Logo pack
 
-Paths: `${CLAUDE_SKILL_DIR}` means the folder containing this SKILL.md, and `${CLAUDE_PLUGIN_ROOT}` the plugin folder two levels above it.
+Paths: `${KIROCUT_SKILL}` means the folder containing this SKILL.md, and `${KIROCUT_PLUGIN}` the plugin folder two levels above it (`plugins/kirocut` here).
 
-Every question to the user goes in the question box: call the AskUserQuestion tool (2-4 options, the recommended one first). Only in an agent without that tool, ask numbered questions in text.
+Every question to the user goes in the question box: call the kirocut_ask tool (2-4 options, the recommended one first). No form in the IDE: say the numbered text it returns, then pass the reply to `kirocut_answer`.
 
 This skill drives the logo code style-edit already uses (`capture.mjs` `fetchLogos`) and writes to the
 same files, so plan.py, `logo` beats, `logo_cluster` and flow diagrams pick the logos up with no extra step.
@@ -48,7 +48,7 @@ they have their own. People, places and generic words ("AI", "the cloud") are no
 ## 3. Fetch, trim, check
 
 ```bash
-node "${CLAUDE_SKILL_DIR}/scripts/logos.mjs" edits/<name>
+node "${KIROCUT_SKILL}/scripts/logos.mjs" edits/<name>
 ```
 
 Source order: `url`, then Simple Icons in the brand colour, the site's own SVG or apple-touch icon, and Google's

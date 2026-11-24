@@ -34,7 +34,7 @@ non-commercial use only**: say this before installing, and skip it for anyone ma
 business or paid work.
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/setup.py" crisper
+python3 "${KIROCUT_SKILL}/scripts/setup.py" crisper
 ```
 
 Once installed, the cut uses it automatically when there is no ElevenLabs key. If it stops with

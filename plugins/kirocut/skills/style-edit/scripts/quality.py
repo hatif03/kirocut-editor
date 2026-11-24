@@ -1276,7 +1276,7 @@ def demo():
     assert jitter([0, 5, 10, 15, 20, 15, 10, 5])
     assert not jitter(list(30 * np.sin(np.linspace(0, np.pi, 40))))
     assert not jitter([0, 1, 0, 1, 0])                           # 1 px flicker: under the visible floor
-    # the sample's 'Claude' logo fading in: its top edge flickers 5 px for one frame as thin rays cross the ink
+    # the sample's logo fading in: its top edge flickers 5 px for one frame as thin rays cross the ink
     # threshold (WARN "turns back at speed 4 time(s)"); a spring's wobble over several frames still counts
     assert not jitter([36, 35, 29, 29, 34, 29, 29, 29, 28, 28, 28])
     assert jitter([0, 6, 12, 18, 22, 18, 14, 10, 12, 14, 16])

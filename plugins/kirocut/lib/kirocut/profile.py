@@ -24,12 +24,12 @@ File: ~/.kirocut/profile.json (KIROCUT_HOME overrides). Shape:
 
   {"platform": "tiktok", "aspect": "9:16",
    "creators": [{"handle": "somecreator", "take": ["captions", "pace", "visuals"]}],
-   "audience": "developers who use Claude", "goal": "follow + comment for the guide",
+   "audience": "developers who use Kiro", "goal": "follow + comment for the guide",
    "brand": {"colors": ["#F2EEE6", "#E5482C"], "font": "Archivo", "logo": "/path/logo.svg"}  or {"use_creator": true},
             a BRAND.md kit (brandkit.py, the home page's Brand) adds roles, font_body, voice, use, avoid, do, dont, notes, kit
    "assets_dir": "/path/to/my/screenshots",
    "broll": {"travel": "/path/to/Drive/B-roll/Travel"},  b-roll libraries by type of video (broll.py)
-   "names": [{"name": "Claude", "domain": "claude.com"}],
+   "names": [{"name": "Kiro", "domain": "kiro.dev"}],
    "avoid": {"emoji": true, "stock": true, "icons": true, "colors": ["#7B61FF"], "notes": ""},
    "captions": {"on": true, "style": "creator"},     style: creator | plain | bold | karaoke | minimal
    "sound": {"sfx": true, "music": false},           music: unset follows the style (a bed when the creator uses one)

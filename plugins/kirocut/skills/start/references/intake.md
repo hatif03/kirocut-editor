@@ -53,10 +53,10 @@ python3 "$P" set liked_videos '["https://www.tiktok.com/@someone/video/123"]'
 python3 "$P" set audience '"developers who use Kiro"'
 python3 "$P" set goal '"follow, then comment router for the guide"'   # saved with audience
 python3 "$P" set brand '{"use_creator": true}'           # or {"colors": ["#F2EEE6", "#E5482C"], "font": "Archivo", "logo": "/path/logo.svg"}
-python3 "${CLAUDE_PLUGIN_ROOT}/lib/kirocut/brandkit.py" import /path/BRAND.md   # a brand file they have: read and saved as brand
+python3 "${KIROCUT_PLUGIN}/lib/kirocut/brandkit.py" import /path/BRAND.md   # a brand file they have: read and saved as brand
 python3 "$P" set assets_dir '"/Users/me/Pictures/screens"'
 python3 "$P" set 'broll.travel="/Users/me/Library/CloudStorage/GoogleDrive-me@gmail.com/My Drive/B-roll/Travel"'   # a b-roll library per type of video (lib/kirocut/broll.py); set when the user names one
-python3 "$P" set names '[{"name": "Jev", "domain": "typesafe.ai"}, {"name": "Claude", "domain": "claude.com"}]'
+python3 "$P" set names '[{"name": "Jev", "domain": "typesafe.ai"}, {"name": "Kiro", "domain": "kiro.dev"}]'
 python3 "$P" set avoid '{"emoji": true, "stock": true, "icons": true, "colors": ["#7B61FF"]}'
 python3 "$P" set captions '{"on": true, "style": "creator"}'   # creator | plain | bold | karaoke | minimal; "on": false for none
 python3 "$P" set sound '{"sfx": true}'                  # music like the creator; '{"sfx": true, "music": false}' for none

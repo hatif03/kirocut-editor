@@ -209,8 +209,8 @@ full-frame scene). Labels are measured with `@remotion/layout-utils` and never s
   leaves. Each chip feeds the first landing after it.
 - **Stacked names**: a Part's `lines: [{text, word}]` stacks several names on one card ("Opus" /
   "Fable"), each lighting on its own word.
-- `accent`: the ring, hot wire and chosen name; use the destination's real brand colour (Claude's
-  `#D97757`). Unset: the look's accent, or its highlighter when that accent is near black. A name keeps
+- `accent`: the ring, hot wire and chosen name; use the destination's real brand colour (Kiro's
+  `#7B5CFF`). Unset: the look's accent, or its highlighter when that accent is near black. A name keeps
   the ink when the accent is too light to read on white.
 
 A Part is `{src?, label?, lines?, at?, off_at?}` (plan.py turns `icon`/`logo` into `src` and

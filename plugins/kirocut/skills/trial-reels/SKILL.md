@@ -1,20 +1,20 @@
 ---
 name: trial-reels
-description: Makes Instagram Trial Reels of a reel the user already made or posted. A trial reel is a re-cut of the same take, never the posted file again. Names the video's type first (story, list or pitch), because that decides what may change, then makes 2-4 versions that each look like a different video at a glance (their own hook, start point, opening, overlays, caption look and sound), every element inside the Reels safe zone, all in the user's own style. Each version goes on the review page as a trial, and only the ones the user names are posted as Trial Reels through post.py, spread over the day. Use when the user says "trial reels", "make trial reels of this", "a few more versions of this reel", "post the trial reels", "test other hooks on this", presses Make on the review page's Trial reels tab, or `wait` prints TRIALS. Not the main edit of a new video (start, cut, style-edit), not clips from a long video (clips).
+description: Makes Instagram Trial Reels of a reel the user already made or posted. A trial reel is a re-cut of the same take, never the posted file again. Names the video's type first (story, list or pitch), because that decides what may change, then makes 2-4 versions that each look like a different video at a glance (their own hook, start point, opening, overlays, caption look and sound), every element inside the Reels safe zone, all in the user's own style. Each version goes on the review page as a trial, and only the ones the user names are posted as Trial Reels through post.py, spread over the day. Use when the user says "trial reels", "make trial reels of this", "a few more versions of this reel", "post the trial reels", "test other hooks on this", presses Make on the review page's Trial reels tab, or `kirocut_events` returns TRIALS. Not the main edit of a new video (start, cut, style-edit), not clips from a long video (clips).
 license: MIT
 compatibility: Python 3.9+, ffmpeg, Node and the renderer the setup skill installs. Posting needs a Zernio key and an Instagram account (the post skill). Runs from the full kirocut plugin folder (uses lib/, the cut, style-edit and post skills).
 ---
 
 # Trial reels
 
-Paths: `${CLAUDE_SKILL_DIR}` means the folder containing this SKILL.md, and `${CLAUDE_PLUGIN_ROOT}` the plugin folder two levels above it.
+Paths: `${KIROCUT_SKILL}` means the folder containing this SKILL.md, and `${KIROCUT_PLUGIN}` the plugin folder two levels above it (`plugins/kirocut` here).
 
-Read `${CLAUDE_PLUGIN_ROOT}/PRINCIPLES.md` first: the rules every video in this plugin follows (asking, looking real, motion, story and framing, privacy, cost).
+Read `${KIROCUT_PLUGIN}/PRINCIPLES.md` first: the rules every video in this plugin follows (asking, looking real, motion, story and framing, privacy, cost).
 
-Every question to the user goes in the question box: call the AskUserQuestion tool (2-4 options, the recommended one first). Only in an agent without that tool, ask numbered questions in text.
+Every question to the user goes in the question box: call the kirocut_ask tool (2-4 options, the recommended one first). No form in the IDE: say the numbered text it returns, then pass the reply to `kirocut_answer`.
 
-`L="${CLAUDE_PLUGIN_ROOT}/lib/kirocut"`, `C="${CLAUDE_PLUGIN_ROOT}/skills/cut/scripts"`,
-`S="${CLAUDE_PLUGIN_ROOT}/skills/style-edit/scripts"`, `EDIT` the approved reel's folder (`edits/<name>`).
+`L="${KIROCUT_PLUGIN}/lib/kirocut"`, `C="${KIROCUT_PLUGIN}/skills/cut/scripts"`,
+`S="${KIROCUT_PLUGIN}/skills/style-edit/scripts"`, `EDIT` the approved reel's folder (`edits/<name>`).
 Run the scripts with `python3` on Mac and Linux, `py` on Windows.
 
 A trial reel tests a new opening on people who do not follow the user. Same take, same story, a different first
@@ -25,7 +25,7 @@ does well (or when the user says, with manual graduation).
 
 The take, never the posted file: a posted reel has its captions and title burned in.
 
-- **From the review page** (TRIALS from `wait`, or the user asks on an approved reel): `EDIT` already holds the
+- **From the review page** (TRIALS from `kirocut_events`, or the user asks on an approved reel): `EDIT` already holds the
   take, its transcript (`words.raw.json`), the cut (`spans.json`) and the style. Use them.
 - **From a reel link or a posted file:** ask for the raw take (the phone's camera roll, the editing app's project
   folder). Never re-cut the posted file. With the take, run the cut skill as for any new video first.
@@ -65,9 +65,9 @@ python3 "$L/review.py" EDIT trials --propose '{"message": "...", "hooks": [{"tex
 python3 "$L/review.py" EDIT wait
 ```
 
-`kinds` per version: `"claude"` (you decide) or some of `hooks`, `same` (posted order), `rewind` (a later start),
+`kinds` per version: `"kiro"` (you decide) or some of `hooks`, `same` (posted order), `rewind` (a later start),
 `section` (one section only), `animations`. TRIALS ASK is a question from the tab: answer with `--propose` and a
-`"reply"`, then `wait` again.
+`"reply"`, then `kirocut_events` again.
 
 ## 3. Build each version
 

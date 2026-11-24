@@ -42,7 +42,7 @@ pieces, each its own Chrome, joined like the GitHub render. Nothing to do: it sa
 ## Modal
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/edit.py" render edits/<name> --modal
+python3 "${KIROCUT_SKILL}/scripts/edit.py" render edits/<name> --modal
 ```
 
 Needs the setup skill's step 5b. `edit.py` bundles the renderer with the media into
@@ -84,9 +84,9 @@ image). Containers stop 2 s after their piece (`scaledown_window`), not Modal's 
 GitHub Actions, three steps. The repo name is the user's choice (`video-<name>` is a fine default):
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/edit.py" render edits/<name> --github               # package
-python3 "${CLAUDE_SKILL_DIR}/scripts/edit.py" github-push edits/<name> --repo <repo>      # after the user says yes
-python3 "${CLAUDE_SKILL_DIR}/scripts/edit.py" github-fetch edits/<name> --repo <repo>    # waits, downloads
+python3 "${KIROCUT_SKILL}/scripts/edit.py" render edits/<name> --github               # package
+python3 "${KIROCUT_SKILL}/scripts/edit.py" github-push edits/<name> --repo <repo>      # after the user says yes
+python3 "${KIROCUT_SKILL}/scripts/edit.py" github-fetch edits/<name> --repo <repo>    # waits, downloads
 ```
 
 `render --github` writes `edits/<name>/github-render/` (renderer source, plan, workflow; no footage)

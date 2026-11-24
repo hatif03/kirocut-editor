@@ -2,14 +2,14 @@
 """The home page: first run in the browser. Setup checks, optional keys, pick a creator, watch their
 videos get studied, see the style and the skill it became, drop a video. Stdlib only.
 
-Claude stays the brain. The page only queues jobs; Claude takes each one with `wait`, runs the skill
+Kiro stays the brain. The page only queues jobs; Kiro takes each one with `wait`, runs the skill
 for it, and reports back with `status`:
 
     python3 home.py serve [--root DIR] [--no-open]   serve the page and open it (run in the background);
                                                  DIR defaults to the library (library.py), wherever this runs
     python3 home.py wait [--job ID]              block until the page queues a job, print it as one line,
                                                  exit (run in the background, again after each job).
-                                                 --job: take that one job (a Claude the page opened for it)
+                                                 --job: take that one job (a Kiro the page opened for it)
         JOB teardown @handle platform=tiktok take=captions,pace root=DIR
         JOB teardown @name urls=DIR/style-matches/name/picks.txt take= root=DIR
         JOB skill @handle take=captions,pace,graphics,entrances,layout root=DIR
@@ -26,14 +26,14 @@ for it, and reports back with `status`:
         JOB skill-new [text=<what it should do>]  Skills: Make a new skill (skill-maker)
         JOB cancel <type>                         the user pressed Cancel or Stop on that job: stop it
         ALREADY ...                               another wait is running: nothing to do
-        GONE ...                                  (--job) that job is done, cancelled or another Claude's
+        GONE ...                                  (--job) that job is done, cancelled or another Kiro's
     python3 home.py status <job> [--step "..."] [--detail "video 6 of 10"] [--progress 0.6]
                                  [--result '<json>' | --result @file.json] [--done] [--failed "..."]
                                  <job> is teardown, skill, video or setup: its latest job
     python3 home.py chain <style> <skill> --at before|after   chain a skill onto a style's What runs (--off: take it off)
     python3 home.py demo                         self-check (no network, no keys)
 
-Connect Modal, Test render and Update run here, not through Claude: the server runs `setup.py modal-connect`,
+Connect Modal, Test render and Update run here, not through Kiro: the server runs `setup.py modal-connect`,
 `modal-test` or `update.py market` and shows its STEP lines as the job's steps (jobs `modal`, `modal-test` and
 `update`, owner "home"). A finished update restarts the server from the new version (restart_on).
 
@@ -42,7 +42,7 @@ straight to keys.py (prefix check, one free verify request, then saved 0600); a 
 written to state.json, printed, logged or sent back to the page.
 
 Numbers on the page come from the teardown's own style.json and videos.json, read by this server.
-Claude's `--result` adds words only (the skill, prompts, what not to copy). Nothing is made up: a part
+Kiro's `--result` adds words only (the skill, prompts, what not to copy). Nothing is made up: a part
 not measured yet shows as empty.
 
 The server listens on 127.0.0.1 only and every request needs the token in the URL it prints (then a
@@ -50,12 +50,11 @@ SameSite cookie), as review.py does. The address stays the same: port 47821 (the
 taken, remembered in state.json) and one random token per install ($KIROCUT_HOME/home/token, 0600), so
 the launcher and a bookmark always open the same page.
 
-Sessions: the window is shared by every Claude Code session on the computer, so each job remembers the
-session that took it (`owner`, from CLAUDE_CODE_SESSION_ID). `status` from another session never writes
-to it, `wait` never takes a job reserved for the Claude opened for that video (every video gets one, claude_for), and a
-question (askhook.py) reaches this page only from a session holding one of its jobs or listening for one, or when
-the hook knows which video it is about (askhook.asking_edit), labelled with that video's name.
-Every video job also gets <edit>/style.json from its as= (seed_style) when it is made and when a Claude takes it.
+Sessions: the window is shared by every Kiro session on the computer, so each job remembers the
+session that took it (`owner`, the chat's KIROCUT_SESSION, set by the MCP server). `status` from another session never
+writes to it, and one chat makes one video at a time: the next one waits in the queue until that chat (or another) takes it.
+Questions are asked in the chat (kirocut_ask), never on this page.
+Every video job also gets <edit>/style.json from its as= (seed_style) when it is made and when a Kiro takes it.
 """
 import argparse
 import base64
@@ -83,7 +82,8 @@ from concurrent.futures import ThreadPoolExecutor
 from urllib.parse import parse_qs, quote, unquote, urlsplit
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import askhook  # noqa: E402
+import pagekit  # noqa: E402
+import authcookie  # noqa: E402
 import shortcuts  # noqa: E402
 import assets  # noqa: E402
 import brandkit  # noqa: E402
@@ -211,37 +211,6 @@ def script_text(name, data):
 
 def home():
     return Path(os.environ.get("KIROCUT_HOME", "").strip() or Path.home() / ".kirocut") / "home"
-
-
-def claudes():
-    """The Claude page: one row per video that has had a Claude (review/.claude) or has one listening, running ones
-    first, then the latest: {"dir", "name", "video", **review.claude_state}."""
-    import review
-    out = []
-    for e in library.entries():
-        d = Path(e["dir"])
-        if not (d / "review" / ".kiro").exists() and not (d / "review" / ".claude").exists() and not review.listening(d):
-            continue
-        out.append({"dir": e["dir"], "name": e["name"], "video": e.get("video"), **review.claude_state(d)})
-    return sorted(out, key=lambda x: (x["state"] == "off", -(x["last"] or 0)))
-
-
-def claude_act(edit, act):
-    """Show, Start or Stop the Claude of one video in the library. (ok, what the page says)."""
-    import review
-    d = Path(str(edit or "")).resolve()
-    if not any(d == Path(x).resolve() for x in library.edit_dirs()):
-        return False, "That video is not in your library."
-    if act == "show":
-        return (True, "") if review.show_claude(d) else (False, "Its Terminal window was not found. Start Claude opens it again.")
-    if act == "stop":
-        return (True, "Stopped. Your video, notes and drafts stay.") if review.stop_claude(d) else (False, "That Claude was not running.")
-    if act == "start":
-        r = review.reopen(d, d / "review.json", force=True) or {}
-        if r.get("opened"):
-            return True, "Claude is opening in Terminal."
-        return False, ("Terminal did not open. Run this in a terminal: " + r["command"]) if r.get("command") else "Claude did not start."
-    return False, "show, start or stop"
 
 
 def staged():
@@ -382,8 +351,6 @@ def latest(d, kind):
 
 
 REF_EXT = links.VIDEO_EXT + (".png", ".jpg", ".jpeg", ".webp", ".gif", ".heic", ".pdf", ".txt", ".md", ".docx")   # Analyse a format's files
-RESERVE_S = 180   # a job the page opened a new Claude for: other waits leave it alone this long (home.html too)
-OPENED_S = 900    # ... and this long once its Terminal window opened (a trust prompt can hold it there)
 STALE_S = 900     # a taken job nobody reported on this long: its session stopped, another may adopt it
 
 
@@ -417,7 +384,7 @@ def stale(j):
 
 
 def may_write(j, sid):
-    """True when session sid may write to job j: it took it, nobody did, sid is unknown (outside Claude), or
+    """True when session sid may write to job j: it took it, nobody did, sid is unknown (outside Kiro), or
     its session stopped (stale: sid adopts it)."""
     return not sid or not j.get("owner") or j["owner"] == sid or stale(j)
 
@@ -426,33 +393,8 @@ def adopt(j, sid):
     """sid takes over a stale job of a stopped session. A line to print, or None."""
     if sid and j.get("owner") and j["owner"] != sid:
         j["owner"] = sid
-        return f"adopted {j['id']}: the Claude session that had it stopped reporting {STALE_S // 60} minutes ago"
+        return f"adopted {j['id']}: the Kiro session that had it stopped reporting {STALE_S // 60} minutes ago"
     return None
-
-
-def asks_for(sid):
-    """askhook's owner rule for the home page: the job sid is working on, "" when it only listens, else None.
-    Nobody listening and no job owned: only the session that started this server, or a question with no session
-    (Claude Code without CLAUDE_CODE_SESSION_ID). Another project's Claude never asks here."""
-    d = read()
-    taken = [j for j in reversed(d["jobs"]) if j["state"] == "taken"]
-    j = next((j for j in taken if sid and j.get("owner") == sid), None)
-    if j:
-        return job_name(j)
-    lis = listener()
-    if sid and sid == lis:
-        return ""
-    if not lis and not any(j.get("owner") for j in taken) and (not sid or sid == askhook.session()):
-        return job_name(taken[0]) if taken else ""
-    return None
-
-
-def asks_dir(sid):
-    """Where an answer's images are saved: the asking session's edit folder (<edit>/asks) once it exists, else
-    $KIROCUT_HOME/asks."""
-    j = next((j for j in reversed(read()["jobs"]) if sid and j["state"] == "taken" and j.get("owner") == sid), None)
-    e = Path((j or {}).get("args", {}).get("edit") or "")
-    return e / "asks" if str(e) != "." and e.is_dir() else home().parent / "asks"
 
 
 def listening():
@@ -754,9 +696,9 @@ def find_skill(root, name, calls=False):
 
 
 def editing_skills(root):
-    """The Skills view and "Use your own skill": every skill Claude Code loads in the library outside the editor's
+    """The Skills view and "Use your own skill": every skill Kiro loads in the library outside the editor's
     own plugins, split into skills for editing videos (skillrules.for_editing on the name and the whole description,
-    or a style runs it) and the rest ("Not for editing"). A plugin skill is named plugin:skill, as Claude Code
+    or a style runs it) and the rest ("Not for editing"). A plugin skill is named plugin:skill, as Kiro
     calls it, with "plugin" set. Each one says whether the user hid it and whether Delete may move it to the Trash.
     First found wins."""
     from kirocut import skillrules
@@ -770,12 +712,15 @@ def editing_skills(root):
             pass
     hidden = set(read().get("hidden_skills") or [])
     seen, video, other = set(), [], []
-    for plug, d in skill_dirs(root):
+    dirs = skill_dirs(root)
+    # this folder's .kiro/skills holds a stub for each of the editor's own skills: they are not the user's
+    builtin = {md.parent.name for plug, d in dirs if plug in OWN_PLUGINS for md in d.glob("*/SKILL.md")}
+    for plug, d in dirs:
         if plug in OWN_PLUGINS:   # the editor's own steps (cut, overlays, logo-pack...) already run inside every edit
             continue
         for md in sorted(d.glob("*/SKILL.md")):
             n = (plug + ":" if plug else "") + md.parent.name
-            if n in seen or md.parent.name in ours or md.parent.name.startswith("edit-like-") or not skill_of({"skill": n}):
+            if n in seen or md.parent.name in ours or md.parent.name in builtin or md.parent.name.startswith("edit-like-") or not skill_of({"skill": n}):
                 continue
             seen.add(n)
             desc, _ = skill_head(md)
@@ -844,7 +789,7 @@ def chain_steps(sp, sk, motion):
 
 
 def chain_arg(sp, sk):
-    """A video job's chain= (home.md): the extra skills Claude runs around the edit, when not the default (logo-pack)."""
+    """A video job's chain= (home.md): the extra skills Kiro runs around the edit, when not the default (logo-pack)."""
     _, ss = _taste()
     c = ss.chain(sp)
     steps = (["logo-pack"] if c["logos"] else []) + (["motion"] if sk and c["motion"] else [])
@@ -1185,7 +1130,7 @@ def fetch_latest():
 
 
 def my_version():
-    """This copy's plugin.json version, or None. A Claude session's commands run the copy it loaded, so after an
+    """This copy's plugin.json version, or None. A Kiro session's commands run the copy it loaded, so after an
     update this says whether that session has typed /reload-plugins yet."""
     try:
         return json.loads(PLUGIN_JSON.read_text(encoding="utf-8"))["version"]
@@ -1221,7 +1166,7 @@ def update_info():
 
 def auto_update(d, u, start=None):
     """A new version installs itself while this window or a video page is open: never for a checkout or a fork, not after
-    Settings turned it off, and only while nothing is being made (no job running, no video's Claude working). One try per
+    Settings turned it off, and only while nothing is being made (no job running, no video's Kiro working). One try per
     version: a failure leaves the Update button. True when it started."""
     if d.get("auto_update") is False or not u.get("newer") or u.get("dev") or u.get("fork") or d.get("auto_tried") == u["latest"]:
         return False
@@ -1231,7 +1176,7 @@ def auto_update(d, u, start=None):
     if any(j.get("state") in ("queued", "taken") for j in d.get("jobs") or []):
         return False
     import review
-    if any(review.claude_state(Path(e["dir"]))["state"] == "working" for e in library.entries()):
+    if any(review.agent_state(Path(e["dir"]))["state"] == "working" for e in library.entries()):
         return False
     update(lambda x: x.__setitem__("auto_tried", u["latest"]))
     (start or start_modal)("update")
@@ -1438,7 +1383,7 @@ def new_own_style(root, name, skill=None, start=None):
 
 def combine_styles(root, ids, name=None):
     """Combine styles: one new own style from 2+ styles (profile.blend; the first picked gives every part, the
-    words the user wrote go to Claude as a style-change). Skill styles run their own skill, so they cannot mix.
+    words the user wrote go to Kiro as a style-change). Skill styles run their own skill, so they cannot mix.
     Returns (new id, [(name, style.json path)] of the sources)."""
     from kirocut import profile
     styles, src = {}, []
@@ -1567,7 +1512,7 @@ _SRV = []   # the running window server, for the restart onto a new version
 
 
 def run_home(kind, jid):
-    """A job the window runs itself, without Claude: Connect Modal (setup.py modal-connect), Test render
+    """A job the window runs itself, without Kiro: Connect Modal (setup.py modal-connect), Test render
     (modal-test) or Update (update.py market). Each STEP line becomes a step, LOGIN/CREDIT/TIME/VERSION/PATH go into
     the result, FAIL fails the job. Modal's CLI keeps the token itself; no line here carries it. A finished update
     restarts the window on the new version (restart_on)."""
@@ -1638,7 +1583,7 @@ def restart_on(plugin):
 
 def drop_modal_runs(d):
     """A server starting: a Connect, Test or Update left running by the last one has no thread watching it now.
-    An Update a Claude session took (before the window ran updates itself) is closed too: none finishes it."""
+    An Update a Kiro session took (before the window ran updates itself) is closed too: none finishes it."""
     for j in d["jobs"]:
         if j["type"] in ("modal", "modal-test") and j["state"] == "taken" and j.get("owner") == "home" \
                 or j["type"] == "update" and j["state"] in ("queued", "taken"):
@@ -1672,17 +1617,11 @@ def queue(d, kind, args):
 
 
 def phase(e):
-    """Where a library video is, in the words the cards use: ask (Claude's question about it waits on the user,
-    askhook's <edit>/review/asking), cutting, notes (Claude has the user's notes), stills
+    """Where a library video is, in the words the cards use: cutting, notes (Kiro has the user's notes), stills
     (making the stills after the cut was approved), rendering (the stills approved), cut / approve / edit (the
     user's turn: watch the cut, approve the stills, watch the edit), done (the finished video exists)."""
     r = library._review(Path(e["dir"])) or {}
     last = (r.get("events") or [{}])[-1]
-    try:   # Claude's question waits on the user (askhook.mark): their turn, whatever the step
-        if e["status"] != "done" and time.time() - (Path(e["dir"]) / "review" / "asking").stat().st_mtime < askhook.MARK_S:
-            return "ask"
-    except OSError:
-        pass
     if e["status"] == "cutting":
         return "cutting"
     if e["status"] == "done" or r.get("final") and r.get("sent") and last.get("type") == "approve":
@@ -1738,7 +1677,7 @@ def getting_started(d):
 
 def seed_style(args, root):
     """<edit>/style.json from the job's as= (profile.py style --as), written by the page when the job is made and again
-    when a Claude takes it, so the style the user picked is the edit's whichever Claude makes it. Left alone when it
+    when a Kiro takes it, so the style the user picked is the edit's whichever Kiro makes it. Left alone when it
     already is that style. "written", "kept", or None (the sample, or a creator still being analysed: the take writes it)."""
     if args.get("sample") or not args.get("edit") or not args.get("as"):
         return None
@@ -1759,43 +1698,17 @@ def seed_style(args, root):
         return None
 
 
-def claude_for(jid):
-    """A new terminal with a Claude that takes video job jid only ("take job <id>", `wait --job`): reserved first, so
-    the listening Claude leaves it alone. {opened, command} (also kept on the job as "claude", so the page shows it, or
-    the command to run where no terminal opened), or None when the job is not queued any more."""
-    def reserve(d):
-        j = next((j for j in d["jobs"] if j["id"] == jid and j["state"] == "queued"), None)
-        if j:
-            j["reserved"] = time.time()
-        return d["root"] if j else None
-    root = update(reserve)
-    if not root:
-        return None
-    import launcher
-    opened, cmd = launcher.open_claude(root, f"/kirocut:start take job {jid}")
-    r = {"opened": opened, "command": cmd}
-    update(lambda d: [j.__setitem__("claude", r) for j in d["jobs"] if j["id"] == jid])
-    return r
-
-
 def stop_file(sid):
-    """toolhook.py denies every tool call of this session while the file is fresh: the window's Stop."""
+    """The kirocut-window-stop hook (kirohook.py pretool) blocks the chat's tool calls while a file here is fresh."""
     return home().parent / "stop" / sid
 
 
-def claude_unless_idle(jid):
-    """A Claude of its own for job jid (claude_for), unless a listening Claude is idle and takes it now."""
-    lis = listener()
-    if lis is None or busy_with(read(), lis):
-        return claude_for(jid)
-
-
-WORK_S = 3600   # any file in an edit written this recently: its Claude is still on it (a render, a plan, a round)
+WORK_S = 3600   # any file in an edit written this recently: its Kiro is still on it (a render, a plan, a round)
 
 
 def edit_touched(e):
     """Seconds since anything in an edit was last written: its own files, review/ and the render folders. A render or a
-    long round writes files for many minutes without touching review/.claude."""
+    long round writes files for many minutes without touching review/.kiro."""
     newest = 0.0
     for d in (e, e / "review", e / ".render", e / "stills"):
         try:
@@ -1811,16 +1724,16 @@ def edit_touched(e):
 
 
 def editing(j):
-    """A video whose cut is done but whose edit is not finished, with its Claude still on it: the editor's `wait`
-    listening (review/.listening) in the last 30 s, Claude working there (review/.claude) in the last STALE_S, or any
+    """A video whose cut is done but whose edit is not finished, with its Kiro still on it: the editor's `wait`
+    listening (review/.listening) in the last 30 s, Kiro working there (review/.kiro) in the last STALE_S, or any
     file of the edit written in the last WORK_S. A render or a long round with no session touch for 15 minutes
-    would look idle, so the session's home `wait` would take the next new video too and two projects would clog one Claude."""
+    would look idle, so the session's home `wait` would take the next new video too and two projects would clog one Kiro."""
     try:
         e = Path(j["args"]["edit"])
         if library.status(library._review(e)) == "done":
             return False
         ago = lambda n: time.time() - (e / "review" / n).stat().st_mtime
-        for n, s in ((".listening", 30), (".kiro", STALE_S), (".claude", STALE_S)):
+        for n, s in ((".listening", 30), (".kiro", STALE_S)):
             try:
                 if ago(n) < s:
                     return True
@@ -1834,8 +1747,8 @@ def editing(j):
 
 def busy_with(d, sid):
     """The job session sid is on now, or None: one it holds (a creator, a video's cut, a skill; setup is left out, the
-    Claude installing takes the next video, as a second one would install again), or a video whose cut it made and
-    whose edit it is still on (editing). A new video then gets a Claude of its own."""
+    Kiro installing takes the next video, as a second one would install again), or a video whose cut it made and
+    whose edit it is still on (editing). A new video then gets a Kiro of its own."""
     if not sid:
         return None
     mine = [j for j in reversed(d["jobs"]) if j.get("owner") == sid and j["type"] not in ("setup", "modal", "modal-test")]
@@ -1843,29 +1756,23 @@ def busy_with(d, sid):
         next((j for j in mine if j["type"] == "video" and j["state"] == "done" and editing(j)), None)
 
 
-def takeable(j, sid, d, job=None):
-    """A queued job this wait may take: --job names it, else one not reserved for a new Claude. One video at
-    a time per session: the next one waits for it, and meanwhile the page offers a new Claude for it."""
+def takeable(j, sid, d):
+    """A queued job this session may take. One video at a time per session: the next one waits for it."""
     if j["state"] != "queued":
         return False
-    if job:
-        return j["id"] == job
-    if j.get("reserved") and time.time() - j["reserved"] < (OPENED_S if (j.get("claude") or {}).get("opened") else RESERVE_S):
-        return False
-    return not (j["type"] == "video" and not j["args"].get("sample") and busy_with(d, sid))   # the sample: the first Claude
+    return not (j["type"] == "video" and not j["args"].get("sample") and busy_with(d, sid))   # the sample: the first Kiro
 
 
-def cmd_wait(poll=1.0, job=None):
-    sid = askhook.session()
-    if job:   # the Claude the page opened for this job: it takes that job and nothing else
-        return _take_one(job, sid, poll)
+def cmd_wait(poll=1.0):
+    """Block until a job is there for this session, take it and print its line (kirocut_events does the same in turns)."""
+    sid = pagekit.session()
     beat = home() / ".listening"
     beat.parent.mkdir(parents=True, exist_ok=True)
     if listening():   # one waiter at a time, so each job reaches exactly one background task
         print("ALREADY: another `home.py wait` is running; the next job comes out of that one.", flush=True)
         return "ALREADY"
-    update(lambda d: d.update(claude_seen=time.time(), claude_v=my_version()) or d.pop("connect", None))   # a pending "Connect Claude" has connected
-    beat.write_text(sid, encoding="utf-8")   # who listens: the page's "busy" and askhook read it
+    update(lambda d: d.update(agent_seen=time.time(), agent_v=my_version()))
+    beat.write_text(sid, encoding="utf-8")   # who listens: the page's "busy" reads it
     try:
         while True:
             beat.touch()
@@ -1875,6 +1782,23 @@ def cmd_wait(poll=1.0, job=None):
             time.sleep(poll)
     finally:
         beat.unlink(missing_ok=True)
+    line = take_next(sid)
+    if line is None:   # another session took it between the read and the lock: wait again
+        return cmd_wait(poll)
+    print(line, flush=True)
+    return line
+
+
+def ready(sid, d=None):
+    """A job this session may take now (or a cancel it has to hear), without taking it."""
+    d = d or read()
+    return any(takeable(j, sid, d) or (j.get("cancel") and not j.get("cancel_sent") and may_write(j, sid)) for j in d["jobs"])
+
+
+def take_next(sid):
+    """The next job for session sid as its one line (`JOB <type> ...`, or `JOB cancel ...`), marked taken by that
+    session; None when there is none. Never waits: `wait` loops on it, the MCP server's kirocut_events asks it once."""
+    got = []
 
     def take(d):
         for j in d["jobs"]:
@@ -1882,51 +1806,17 @@ def cmd_wait(poll=1.0, job=None):
                 j["cancel_sent"] = True
                 return f"JOB cancel {j['type']}" + (f" @{j['args']['handle']}" if j["type"] == "teardown" and j["args"].get("handle") else "")
         j = next((j for j in d["jobs"] if takeable(j, sid, d)), None)
-        if not j:   # a --job Claude took it between the read and the lock: wait again
+        if not j:
             return None
         j["state"], j["u"] = "taken", time.time()
         if sid:
             j["owner"] = sid
-        d["claude_seen"] = j["u"]
+        d["agent_seen"] = j["u"]
         got[:] = [j["type"], j["args"], d["root"]]
         return job_line(j, d["root"])
-    got = []
     line = update(take)
-    if line is None:
-        return cmd_wait(poll)
-    if got and got[0] == "video":   # the picked style is in the edit before Claude reads the line
+    if line is not None and got and got[0] == "video":   # the picked style is in the edit before the agent reads the line
         seed_style(got[1], got[2])
-    print(line, flush=True)
-    return line
-
-
-def _take_one(job, sid, poll):
-    for _ in range(int(60 / poll) + 1):   # the job is there by the time the new Claude starts; a minute at most
-        def take(d):
-            j = next((j for j in d["jobs"] if j["id"] == job), None)
-            if not j or j["state"] in ("done", "failed", "cancelled") or not may_write(j, sid):
-                return "GONE"
-            if j["state"] == "taken" and (j.get("owner") == sid or stale(j)):
-                note = adopt(j, sid)
-                j["u"] = time.time()
-                return (note + "\n" if note else "") + job_line(j, d["root"])   # asked twice: the same job again
-            if not takeable(j, sid, d, job):
-                return "GONE"
-            j["state"], j["u"] = "taken", time.time()
-            if sid:
-                j["owner"] = sid
-            d["claude_seen"] = j["u"]
-            return job_line(j, d["root"])
-        line = update(take)
-        if line != "GONE" or any(j["id"] == job for j in read()["jobs"]):
-            break
-        time.sleep(poll)
-    j = next((j for j in read()["jobs"] if j["id"] == job and j["type"] == "video"), None)
-    if j and line != "GONE":   # the picked style is in the edit before Claude reads the line
-        seed_style(j["args"], read()["root"])
-    if line == "GONE":
-        line = f"GONE: {job} is finished, cancelled or another Claude has it. Nothing to do."
-    print(line, flush=True)
     return line
 
 
@@ -1955,8 +1845,8 @@ def mine(d, kind, key=None, sid=""):
 def cmd_status(a):
     def f(d):
         t = time.time()
-        d["claude_seen"], d["claude_v"] = t, my_version()   # the page's heartbeat: Claude (or a script it runs) is still at work
-        sid = askhook.session()
+        d["agent_seen"], d["agent_v"] = t, my_version()   # the page's heartbeat: Kiro (or a script it runs) is still at work
+        sid = pagekit.session()
         if if_active:   # a script's own report (progress.py): only onto a taken job of this session, never makes or takes one
             j = mine(d, a.job, getattr(a, "key", None), sid)
             if not j:
@@ -1965,7 +1855,7 @@ def cmd_status(a):
             every = [j for j in d["jobs"] if j["type"] == a.job and j["state"] in ("queued", "taken")]
             taken = [j for j in reversed(every) if j["state"] == "taken"]
             j = next((j for j in taken if sid and j.get("owner") == sid), None) or next((j for j in taken if may_write(j, sid)), None)
-            if not j and not sid:   # outside Claude only: inside, `wait` hands queued jobs out
+            if not j and not sid:   # outside Kiro only: inside, `wait` hands queued jobs out
                 j = next((j for j in reversed(every) if j["state"] == "queued"), None)
             if not j and every:
                 return None
@@ -2015,7 +1905,7 @@ def cmd_status(a):
             raise
         j = None
     if j is None:
-        print(f"no {a.job} job on the page" + (" for this Claude session" if askhook.session() else ""))
+        print(f"no {a.job} job on the page" + (" for this Kiro session" if pagekit.session() else ""))
         return 1   # progress.py reads the exit code: nothing was written
     if a.job == "setup" and (a.step or a.done or a.failed):   # a step finished: the tool rows tick as it goes
         run_doctor()
@@ -2057,7 +1947,7 @@ def make_handler(token):
                 body = body.encode()
             self.send_response(code)
             if cookie:
-                self.send_header("Set-Cookie", f"{self.cookie_name()}={token}; Path=/; HttpOnly; SameSite=Strict")
+                self.send_header("Set-Cookie", authcookie.header(self, self.cookie_name(), token))
             self.send_header("Content-Type", ctype)
             self.send_header("Content-Length", str(len(body)))
             self.send_header("Cache-Control", cache)
@@ -2068,12 +1958,12 @@ def make_handler(token):
             if not self.authorized():
                 return self.send(403, {"error": "open the page with the URL home.py printed"})
             path = unquote(urlsplit(self.path).path)
-            if askhook.route(self, "GET", path, {k: v[0] for k, v in parse_qs(urlsplit(self.path).query).items()}):   # Claude's questions
-                return
             if shortcuts.route(self, "GET", path):   # the keyboard shortcuts, Settings edits them (shortcuts.py)
                 return
             if brandkit.route(self, "GET", path, parse_qs(urlsplit(self.path).query)):   # the Brand page
                 return
+            if path == "/alerts.js":   # the chime and notifications (alerts.js)
+                return self.send(200, HTML.with_name("alerts.js").read_bytes(), "text/javascript; charset=utf-8")
             if path == "/":
                 return self.send(200, themed(HTML.read_bytes()), "text/html; charset=utf-8", cookie=True)
             if path == "/post/accounts":   # Settings, Auto-post your videos: asked when the card opens and on return from a sign-in, never per poll
@@ -2088,15 +1978,13 @@ def make_handler(token):
                 d["listening"], d["keys"], d["theme"] = listening(), key_rows(d), theme()
                 d["modal"] = modal_state()
                 d.pop("keychecks", None)
-                bz = busy_with(d, listener())   # the listening Claude is making a video: the next one can get its own
+                bz = busy_with(d, listener())   # the listening Kiro is making a video: the next one can get its own
                 d["busy"] = bz and {"id": bz["id"], "name": job_name(bz)}
                 d["profile"] = (home().parent / "profile.json").exists()   # set up before: a returning user
-                d["update"] = {**update_info(), "claude": d.get("claude_v")}   # the version the last Claude command ran
+                d["update"] = {**update_info(), "agent": d.get("agent_v")}   # the version the last Kiro command ran
                 auto_update(d, d["update"])
                 d["getting_started"] = getting_started(d)
-                import launcher   # a Claude of its own per video only where a terminal window can be opened
-                d["new_claude"] = bool(launcher.terminal(d["root"], ["claude"], platform.system()))
-                d["page"] = f'{live.page_version(HTML, HTML.with_name("ask.js"), shortcuts.JS)}-{my_version()}'   # the tab reloads when this changes (an update too)
+                d["page"] = f'{live.page_version(HTML, HTML.with_name("alerts.js"), shortcuts.JS)}-{my_version()}'   # the tab reloads when this changes (an update too)
                 lk = d.get("lookup") or {}
                 if lk.get("handle"):
                     lk["listing"] = listing(d["root"], lk["handle"])
@@ -2152,8 +2040,6 @@ def make_handler(token):
                     dict(r, duration=m["duration"], vertical=bool(m["h"] and m["w"] and m["h"] > m["w"]),
                          raw=not is_output(Path(r["path"]).resolve(), eds),
                          thumb=f"/thumb?p={quote(r['path'])}&m={int(r['mtime'])}") for r, m in zip(rs, ms)]})
-            if path == "/claudes":   # the Claude page: every video's Claude and its state
-                return self.send(200, {"claudes": claudes()})
             if path == "/broll":   # New video's B-roll: the saved libraries and the Drive app's mounts
                 rows = broll.listing()
                 return self.send(200, {"libraries": [dict(r, thumb=f"/thumb?p={quote(r['first'])}" if r["first"] else "") for r in rows],
@@ -2260,7 +2146,7 @@ def make_handler(token):
         def do_POST(self):
             if not self.authorized():
                 return self.send(403, {"error": "open the page with the URL home.py printed"})
-            if not askhook.same_origin(self):   # a POST from another site's page, even with the cookie
+            if not pagekit.same_origin(self):   # a POST from another site's page, even with the cookie
                 return self.send(403, {"error": "not from this page"})
             path = urlsplit(self.path).path
             if path == "/script":
@@ -2269,12 +2155,10 @@ def make_handler(token):
                 with live.busy():   # no live-reload restart under an upload
                     return self.upload() if path == "/upload" else self.cover()
             try:
-                cap = askhook.MAX_BODY if path in ("/ask/answer", "/job", "/brand/claude") else 1 << 20   # an answer or a new video can carry images
+                cap = pagekit.MAX_BODY if path in ("/job", "/brand/kiro") else 1 << 20   # a new video or a brand kit can carry images
                 body = json.loads(self.rfile.read(min(int(self.headers.get("Content-Length") or 0), cap)) or b"{}")
             except ValueError:
                 return self.send(400, {"error": "not json"})
-            if askhook.route(self, "POST", path, {}, body):
-                return
             if shortcuts.route(self, "POST", path, {}, body):
                 return
             if brandkit.route(self, "POST", path, {}, body):
@@ -2502,11 +2386,10 @@ def make_handler(token):
                 except ValueError as e:
                     return self.send(400, {"error": str(e)})
                 text = re.sub(r"\s+", " ", str(body.get("text") or "")).strip()[:1000]
-                if text:   # the user's words decide which part comes from which style: Claude, as a style-change
+                if text:   # the user's words decide which part comes from which style: Kiro, as a style-change
                     sp, _, _ = style_of(d["root"], nid)
                     froms = "; ".join(f"{n} ({p})" for n, p in src)
-                    cj = update(lambda dd: queue(dd, "style-change", {"style": nid, "path": str(sp), "text": f"Combined from {froms}. {text}"}))
-                    claude_unless_idle(cj["id"])
+                    update(lambda dd: queue(dd, "style-change", {"style": nid, "path": str(sp), "text": f"Combined from {froms}. {text}"}))
                 return self.send(200, {"ok": True, "id": nid})
             if path == "/style/skill":   # {id, skill}: a skill style runs another skill (its skill was deleted)
                 try:
@@ -2591,9 +2474,6 @@ def make_handler(token):
                 m = library.meta(msg)
                 return self.send(200, {"ok": True, "path": msg, "name": d.name, "duration": m["duration"],
                                        "thumb": f"/thumb?p={quote(msg)}"})
-            if path == "/claudes/act":   # the Claude page's Show, Start and Stop
-                ok, msg = claude_act(body.get("edit"), body.get("act"))
-                return self.send(200 if ok else 409, {"ok": ok, "msg": msg})
             if path == "/broll/add":   # Connect a folder: a Drive folder picked in the browser, or a path typed in
                 err = broll.add(body.get("name"), body.get("folder"))
                 return self.send(400 if err else 200, {"ok": not err, "msg": err})
@@ -2625,18 +2505,14 @@ def make_handler(token):
                 return self.send(200, {"path": str(p)})
             if path == "/sample":   # "Try it with a sample video"
                 return self.sample()
-            if path == "/connect":   # "Connect Claude": a new terminal with a listening Claude, one at a time
-                import launcher
-                st, cmd = launcher.connect(read()["root"])
-                return self.send(200, {"status": st, "command": cmd})
-            if path == "/stop" and body.get("edit"):   # {edit}: Stop on a video Claude is fixing from its review page
+            if path == "/stop" and body.get("edit"):   # {edit}: Stop on a video Kiro is fixing from its review page
                 e = Path(str(body["edit"])).resolve()
                 if e not in library.edit_dirs():
                     return self.send(400, {"ok": False, "msg": "That is not one of your videos."})
                 import review
-                err = review.stop_round(e)   # the same Stop as the review page's: notes open again, Claude stops
+                err = review.stop_round(e)   # the same Stop as the review page's: notes open again, Kiro stops
                 return self.send(409 if err else 200, {"ok": not err, "stopped": not err, **({"msg": err} if err else {})})
-            if path == "/stop":   # {id}: the sidebar's Stop. The job ends, and its Claude stops at its next step (toolhook)
+            if path == "/stop":   # {id}: the sidebar's Stop. The job ends, and its Kiro stops at its next step (kirohook)
                 def st(d):
                     j = next((j for j in d["jobs"] if j["id"] == body.get("id")), None)
                     if j and j["state"] in ("queued", "taken"):
@@ -2718,15 +2594,15 @@ def make_handler(token):
                 args = {"handle": td["args"]["handle"], "take": take}
             elif kind == "video":
                 return self.videos(b, d)
-            elif kind == "update":   # Settings, Update: the window runs it itself (run_home), no Claude needed
+            elif kind == "update":   # Settings, Update: the window runs it itself (run_home), no Kiro needed
                 if update_info()["fork"]:
-                    return self.send(409, {"error": "Your editor is your own copy (a fork). Ask Claude Code: update my editor."})
+                    return self.send(409, {"error": "Your editor is your own copy (a fork). Ask Kiro: update my editor."})
                 return self.send(200, {"id": start_modal("update")["id"]})
             elif kind == "setup":   # the first run's Start setup (JOB setup, install-all --report)
                 if any(j["type"] == "setup" and j["state"] in ("queued", "taken") for j in d["jobs"]):
                     return self.send(200, {"id": latest(d, "setup")["id"]})
                 args = {}
-            elif kind == "style-change":   # "Tell it what to change": Claude turns the words into rules at that style's scope
+            elif kind == "style-change":   # "Tell it what to change": Kiro turns the words into rules at that style's scope
                 text = re.sub(r"\s+", " ", str(b.get("text") or "")).strip()[:1000]
                 try:
                     sp, _, _ = style_of(d["root"], b.get("style") or "mine")
@@ -2750,8 +2626,6 @@ def make_handler(token):
             else:
                 return self.send(400, {"error": "unknown job"})
             j = update(lambda d: queue(d, kind, args))
-            if kind in ("style-change", "skill-change", "skill-new"):   # typed in a chat box: a Claude opens for it
-                claude_unless_idle(j["id"])
             return self.send(200, {"id": j["id"], "handle": j["args"].get("handle")})
 
         def sample(self):
@@ -2809,8 +2683,8 @@ def make_handler(token):
             sample = bool(b.get("sample"))
             if not sample:   # the sample stays off the recent takes
                 update(remember)
-            # the same clips in the same style while their video waits for its Claude (Make pressed again because that
-            # Terminal window did not start): that video again, never a second job and a second Claude
+            # the same clips in the same style while their video waits for its Kiro (Make pressed again because that
+            # Terminal window did not start): that video again, never a second job and a second Kiro
             making = {tuple(j["args"].get("paths") or [j["args"].get("path")]): j for j in d["jobs"]
                       if j["type"] == "video" and j["state"] == "queued" and j["args"].get("as") == style
                       and j["args"].get("mode") == ("broll-reel" if reel else None)}
@@ -2840,9 +2714,9 @@ def make_handler(token):
                 assets.add(edit, adds, staged())   # "Add videos, images or links": edit/assets/ + assets.json, before the job line is read
                 args.update(broll.brief(edit, [str(x) for x in b.get("broll") or []], b.get("note"), b.get("broll_auto") is True,
                                         picks, staged()))   # B-roll ticks, Specific clips + Additional instructions
-                if not sample:   # the style the user picked, in the edit before any Claude takes it (the sample ships its own)
+                if not sample:   # the style the user picked, in the edit before any Kiro takes it (the sample ships its own)
                     seed_style(args, d["root"])
-                if sample:   # its transcript, cut, style and visuals, so Claude skips transcribing, deciding and judging
+                if sample:   # its transcript, cut, style and visuals, so Kiro skips transcribing, deciding and judging
                     for f in SAMPLE.glob("*.json"):
                         shutil.copyfile(f, edit / f.name)
                     st = json.loads((edit / "style.json").read_text(encoding="utf-8"))   # named Card edit, as its style
@@ -2851,21 +2725,12 @@ def make_handler(token):
                     args["sample"] = 1
                 ids.append(update(lambda d: queue(d, "video", args))["id"])
                 edits.append(str(edit))
-                # the editor opens at once on the clip (round 0, "The cut / your clip"); Claude's cut lands there
+                # the editor opens at once on the clip (round 0, "The cut / your clip"); Kiro's cut lands there
                 subprocess.run([sys.executable, str(REVIEW), str(edit), "start", "--raw", "--video", g[0]["path"], "--stage", "edit" if reel else "cut"],
                                capture_output=True, timeout=60)
                 if sample:   # its name in Your videos and on the editor
                     rj = edit / "review.json"
                     save(rj, {**load(rj), "name": SAMPLE_NAME, "sample": True})   # Getting started: the sample is not your first video
-            # every video gets a Claude of its own in a new Terminal window, unless an idle listening Claude takes it now
-            lis, d = listener(), read()
-            idle = lis is not None and not busy_with(d, lis) and not any(takeable(j, lis, d) for j in d["jobs"] if j["id"] not in ids)
-            # the sample before setup is done: the Claude installing takes it next, as a second one would install again
-            # and the sample always stays with the listening Claude (setup, analysis and the sample are the first Claude's)
-            idle = idle or sample and (lis is not None or not getting_started(d)["setup"])
-            fresh = [i for i in ids if i not in again]
-            for jid in fresh[1:] if idle else fresh:
-                claude_for(jid)
             return self.send(200, {"id": ids[0], "ids": ids, "edits": edits})
 
         def cover(self):
@@ -2924,7 +2789,7 @@ def make_handler(token):
                 kind = assets.kind_of(name) or ("video" if Path(name).suffix.lower() in broll.EXTS else None)
                 if not kind or n <= 0:
                     return self.send(400, {"ok": False, "msg": "Add a video (.mp4, .mov, .m4v, .webm) or an image (.png, .jpg, .gif, .webp)."})
-                if n > (askhook.MAX_IMAGE if kind == "image" else assets.MAX_VIDEO):
+                if n > (pagekit.MAX_IMAGE if kind == "image" else assets.MAX_VIDEO):
                     return self.send(400, {"ok": False, "msg": f"{name} is over {'15 MB' if kind == 'image' else '2 GB'}."})
             elif not name.lower().endswith(REF_EXT if ref else links.VIDEO_EXT) or n <= 0:
                 return self.send(400, {"ok": False, "msg": "Add a video, picture, PDF or text file." if ref else "Drop a .mov, .mp4 or .mkv video."})
@@ -3109,7 +2974,7 @@ def bind(handler, port=None):
 
 def serve(root=None, port=None, open_browser=True):
     """(server, url). A server already running is reused: (None, its url), with the root moved to this one.
-    root defaults to the library, so the page works on the same videos wherever Claude Code was started."""
+    root defaults to the library, so the page works on the same videos wherever Kiro was started."""
     root = Path(root or library.path()).resolve()
     update(lambda d: d.__setitem__("root", str(root)))
     url = running()
@@ -3124,8 +2989,8 @@ def serve(root=None, port=None, open_browser=True):
         update(lambda d: d.__setitem__("port", srv.server_address[1]))
     url = f"http://127.0.0.1:{srv.server_address[1]}/?t={token}"
     (home() / ".server").write_text(url, encoding="utf-8")
+    (home() / "server.pid").write_text(str(os.getpid()), encoding="utf-8")   # so whoever started this server (or a test) can end exactly it
     update(drop_modal_runs)
-    askhook.register(srv, url, "home", asks_for, asks_dir)
     threading.Thread(target=run_doctor, daemon=True).start()
     try:   # an update adds a new plugin folder: point kirocut at this one (the installed copy only)
         import launcher
@@ -3165,17 +3030,17 @@ def demo():
     import atexit
     atexit.register(lambda: [p.terminate() for p in _spawned])   # a failed check leaves no review server behind
     os.environ["KIROCUT_HOME"] = str(tmp / "home")
-    # a Claude mid-render is still busy: an old review/.claude but a render file written a minute ago (two projects
-    # used to land in one Claude); nothing written for 2 hours, it is free for the next video
+    # a Kiro mid-render is still busy: an old review/.kiro but a render file written a minute ago (two projects
+    # used to land in one Kiro); nothing written for 2 hours, it is free for the next video
     ed = tmp / "render-busy-check"
     (ed / "review").mkdir(parents=True)
-    (ed / "review" / ".claude").touch()
-    os.utime(ed / "review" / ".claude", (time.time() - 1800,) * 2)
+    (ed / "review" / ".kiro").touch()
+    os.utime(ed / "review" / ".kiro", (time.time() - 1800,) * 2)
     (ed / "render.mp4").write_bytes(b"x")
     real_status, library.status = library.status, lambda *a, **k: "editing"
     jb = {"args": {"edit": str(ed)}}
-    assert editing(jb), "a render written a minute ago keeps its Claude busy"
-    for f in (ed / "render.mp4", ed / "review" / ".claude", ed / "review", ed):
+    assert editing(jb), "a render written a minute ago keeps its Kiro busy"
+    for f in (ed / "render.mp4", ed / "review" / ".kiro", ed / "review", ed):
         os.utime(f, (time.time() - 7200,) * 2)
     assert not editing(jb), "two hours of nothing: free for the next video"
     library.status = real_status
@@ -3195,7 +3060,7 @@ def demo():
     root = tmp / "work"
     os.environ["KIROCUT_LIBRARY"] = str(root)          # never the real ~/Movies
     os.environ["KIROCUT_SCAN_DIRS"] = str(tmp / "Desktop")
-    os.environ["KIROCUT_SKILLS"] = str(tmp / "skills")   # style skills land here, never in ~/.claude/skills
+    os.environ["KIROCUT_SKILLS"] = str(tmp / "skills")   # style skills land here, never in ~/.kiro/skills
     td = root / "style-matches" / "sample.creator"
     td.mkdir(parents=True)
     vids = [{"id": str(i), "title": f"v{i}", "view_count": v, "duration": 30, "thumbnail": f"https://x/{i}.jpg"}
@@ -3208,9 +3073,7 @@ def demo():
         "--   gemini key           Recommended"), "at": now()}))
     globals()["run_listing"] = lambda *a: calls.append(a)
     globals()["fetch_latest"] = lambda: ("99.0.0", ["Dark mode in the window"])   # never the network in a self-check
-    os.environ.pop("CLAUDE_CODE_SESSION_ID", None)   # run from inside Claude Code: never that session
-    real_claude_for, own = claude_for, []
-    globals()["claude_for"] = own.append   # no Terminal opens here: the plain `wait` below takes each video (sessions part: the real one)
+    os.environ.pop("KIROCUT_SESSION", None)   # run from inside a Kiro chat: never that session
     srv, url = serve(root, 0, open_browser=False)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     base, tok = url.split("/?t=")
@@ -3240,11 +3103,20 @@ def demo():
     page = r.read()   # the brand: K mark, "KiroCut" and the favicon
     assert b'class="mark"' in page and b"<b>KiroCut</b>" in page and b'rel="icon" href="data:image/svg+xml' in page, "brand"
     assert "SameSite=Strict" in r.headers["Set-Cookie"]
+    # framed in the IDE (a webview or the Simple Browser): the cookie must be sent from inside the frame, so SameSite=None
+    fr = urllib.request.urlopen(urllib.request.Request(base + "/?t=" + tok, headers={"Sec-Fetch-Dest": "iframe"}))
+    assert "SameSite=None; Secure" in fr.headers["Set-Cookie"] and "HttpOnly" in fr.headers["Set-Cookie"], fr.headers["Set-Cookie"]
+    assert "SameSite=None" in urllib.request.urlopen(base + "/?t=" + tok + "&embed=1").headers["Set-Cookie"]
+    try:
+        urllib.request.urlopen(urllib.request.Request(base + "/state", headers={"Sec-Fetch-Dest": "iframe"}))
+        raise AssertionError("framed or not, no token means no page")
+    except urllib.error.HTTPError as e:
+        assert e.code == 403
     # one theme for the window and every review page: saved in $KIROCUT_HOME/ui.json, on <html> before first paint
     assert get("/state")["theme"] == "system" and b"<html data-theme" not in urllib.request.urlopen(base + "/?t=" + tok).read()
     assert post("/theme", {"theme": "light"})["theme"] == "light" and get("/state")["theme"] == "light"
     assert b'<html data-theme="light" lang="en">' in urllib.request.urlopen(base + "/?t=" + tok).read()
-    # the Brand page (brandkit.py): the template, import / Edit > Save, the switch, Make one with Claude on a stub CLI
+    # the Brand page (brandkit.py): the template, import / Edit > Save, the switch, Make one with Kiro on a stub CLI
     assert get("/brand")["kit"] is None and b"## Colours" in urllib.request.urlopen(base + "/brand/template?t=" + tok).read()
     bs = post("/brand/save", {"md": "## Colours\n- Background: #F5F2EC\n- Accent: #E5482C\n## Fonts\n- Display: Fraunces\n- Body: IBM Plex Sans\n"})
     assert bs["use"] and [c["role"] for c in bs["kit"]["colors"]] == ["ground", "accent"] and bs["kit"]["fonts"]["body"] == "IBM Plex Sans", bs
@@ -3255,18 +3127,23 @@ def demo():
         raise AssertionError("an empty file saved")
     except urllib.error.HTTPError as e:
         assert e.code == 400
-    keep_cli = os.environ.get("KIROCUT_CLAUDE")
-    os.environ["KIROCUT_CLAUDE"] = shutil.which("true") or "/usr/bin/true"
+    import launcher
+    noop = tmp / "noop_cli.py"   # the Kiro CLI, as a script that runs and writes nothing, on every OS
+    noop.write_text("", encoding="utf-8")
+    real_headless, keep_cli = launcher.headless, os.environ.get("KIROCUT_KIRO")
+    launcher.headless = lambda prompt, exe=None, os_name=None: [sys.executable, str(noop), prompt]
+    os.environ["KIROCUT_KIRO"] = "kiro-cli"
     try:
-        assert post("/brand/claude", {"url": "example.com", "about": "calm"})["job"]["state"] in ("running", "failed")
+        assert post("/brand/kiro", {"url": "example.com", "about": "calm"})["job"]["state"] in ("running", "failed")
         for _ in range(100):
             if get("/brand")["job"]["state"] != "running":
                 break
             time.sleep(0.05)
         assert "without writing" in get("/brand")["job"]["why"], get("/brand")["job"]
-        assert post("/brand/claude", {"clear": True})["job"] is None
+        assert post("/brand/kiro", {"clear": True})["job"] is None
     finally:
-        os.environ.pop("KIROCUT_CLAUDE") if keep_cli is None else os.environ.__setitem__("KIROCUT_CLAUDE", keep_cli)
+        launcher.headless = real_headless
+        os.environ.pop("KIROCUT_KIRO") if keep_cli is None else os.environ.__setitem__("KIROCUT_KIRO", keep_cli)
     (tmp / "home" / "profile.json").unlink()   # the checks below start with no profile
     shutil.rmtree(tmp / "home" / "brand")
     try:
@@ -3293,27 +3170,13 @@ def demo():
         except urllib.error.HTTPError as e:
             assert e.code == 400
     assert post("/keys", {"reset": "play"})["keys"] == {} and post("/keys", {"reset_all": True})["keys"] == {} and get("/keys") == {"keys": {}}
-    # Claude's question (askhook.py): the hook posts it, the showing page polls it and answers, the hook clears it
-    assert b'src="/ask.js"' in HTML.read_bytes() and b"askq" in urllib.request.urlopen(base + "/ask.js?t=" + tok).read()
-    assert askhook.live() == []   # served, but no page has polled yet
-    qs = [{"question": "Tight or loose?", "header": "Cut", "options": [{"label": "Tight", "description": ""}], "multiSelect": False}]
-    # no session known anywhere (Claude Code without CLAUDE_CODE_SESSION_ID): any question, as before
-    post("/ask", {"id": "q-any", "questions": qs, "session": ""})
-    assert get("/ask?v=1")["ask"]["id"] == "q-any"
-    post("/ask/clear", {"id": "q-any"})
-    (home() / ".listening").write_text("sess-A", encoding="utf-8")   # session A's `wait` is listening
-    try:   # a session with no job here and not listening: its question stays in its own terminal
-        post("/ask", {"id": "q0", "questions": qs, "session": "sess-Z"})
-        raise AssertionError("took another session's question")
-    except urllib.error.HTTPError as e:
-        assert e.code == 409
-    post("/ask", {"id": "q1", "questions": qs, "session": "sess-A"})
-    assert get("/ask?v=1")["ask"] == {"id": "q1", "questions": qs, "about": ""} and askhook.live("home") == [url]
-    post("/ask/answer", {"id": "q1", "answers": ["Tight"]})
-    assert get("/ask?id=q1")["result"] == {"answers": ["Tight"]} and get("/ask")["ask"] is None
-    post("/ask/clear", {"id": "q1"})
-    assert not srv.asks
-    (home() / ".listening").unlink()
+    assert b'src="/alerts.js"' in HTML.read_bytes() and b"aveAlert" in urllib.request.urlopen(base + "/alerts.js?t=" + tok).read()
+    for gone in ("/ask", "/ask.js"):   # questions are asked in the chat
+        try:
+            get(gone)
+            raise AssertionError(f"{gone} still answers")
+        except urllib.error.HTTPError as e:
+            assert e.code == 404, (gone, e.code)
     try:   # a POST from another site's page, even with the cookie
         urllib.request.urlopen(urllib.request.Request(base + "/theme?t=" + tok, b'{"theme":"dark"}', {"Origin": "http://evil.example"}, method="POST"))
         raise AssertionError("took a cross-site POST")
@@ -3422,7 +3285,7 @@ def demo():
     post("/job", {"type": "teardown", "handle": "sample.creator", "platform": "tiktok", "take": ["captions", "pace", "evil"]})
     assert out(cmd_wait, 0.01) == f"JOB teardown @sample.creator platform=tiktok take=captions,pace root={root.resolve()}"
     assert latest(read(), "teardown")["state"] == "taken"
-    # Claude reports steps; the page reads measured numbers from style.json only, as they appear
+    # Kiro reports steps; the page reads measured numbers from style.json only, as they appear
     ns = argparse.Namespace
     st = lambda **k: out(cmd_status, ns(**{"job": "teardown", "step": None, "detail": None, "progress": None,
                                            "result": None, "done": False, "failed": None, **k}))
@@ -3432,10 +3295,10 @@ def demo():
     S = get("/state")
     t = S["jobs"][-1]
     assert t["measured"]["tiles"] == [] and [s["done"] for s in t["steps"]] == [True, False]
-    assert t["steps"][-1]["detail"] == "video 4 of 7" and S["claude_seen"] >= t["u"] - 1, "heartbeat recorded"
+    assert t["steps"][-1]["detail"] == "video 4 of 7" and S["agent_seen"] >= t["u"] - 1, "heartbeat recorded"
     assert out(cmd_status, ns(job="modal", step="x", detail=None, progress=None, result=None, done=False, failed=None,
                               if_active=True)).startswith("no modal job on the page") and latest(read(), "modal") is None, "--if-active never makes a job"
-    # Connect Modal runs in this server, not through Claude: setup.py's lines become steps, the result, a failure
+    # Connect Modal runs in this server, not through Kiro: setup.py's lines become steps, the result, a failure
     fake = tmp / "fake_setup.py"
     fake.write_text("import sys\nif sys.argv[1] == 'modal-connect':\n    print('STEP Installing Modal')\n"
                     "    print('LOGIN https://modal.com/token-flow/tf-x', flush=True)\n    print('STEP Building')\n"
@@ -3500,7 +3363,7 @@ def demo():
     post("/job", {"type": "video", "path": str(vid), "aspect": "9:16"})
     ed = root.resolve() / "edits" / "take"
     assert out(cmd_wait, 0.01) == f"JOB video {vid.resolve()} as=@sample.creator aspect=9:16 edit={ed} root={root.resolve()}"
-    # the picked style is the edit's style.json before Claude reads the line (QA round 3: Motion design came out default)
+    # the picked style is the edit's style.json before Kiro reads the line (QA round 3: Motion design came out default)
     assert json.loads((ed / "style.json").read_text(encoding="utf-8"))["handle"] == "sample.creator"
     (ed / "style.json").write_text('{"handle": "default"}', encoding="utf-8")
     assert seed_style({"edit": str(ed), "as": "@sample.creator"}, root) == "written"
@@ -3561,13 +3424,9 @@ def demo():
     assert gs["sample"] and not gs["video"], gs
     save(rj, was)
     assert running() == url and serve(root, 0, open_browser=False) == (None, url)
-    # sessions: a job sticks to the Claude Code session that took it
-    os.environ["CLAUDE_CODE_SESSION_ID"] = "sess-A"
+    # sessions: a job sticks to the Kiro chat that took it (KIROCUT_SESSION, the MCP server's own id)
+    os.environ["KIROCUT_SESSION"] = "sess-A"
     held = update(lambda d: [j.update(state="done") or j["id"] for j in d["jobs"] if j["state"] in ("queued", "taken")])
-    import launcher
-    opened = []
-    launcher.open_claude = lambda folder, prompt: (opened.append((folder, prompt)) or True, "claude '" + prompt + "'")
-    globals()["claude_for"] = real_claude_for
     vs = lambda **k: out(cmd_status, ns(**{"job": "video", "step": None, "detail": None, "progress": None, "result": None,
                                          "done": False, "failed": None, "if_active": False, **k}))
     ja = update(lambda d: queue(d, "video", {"path": str(vid), "as": "mine", "aspect": "9:16", "edit": str(root / "edits" / "team-250k-general")}))
@@ -3576,13 +3435,13 @@ def demo():
     assert ja["state"] == "taken" and ja["owner"] == "sess-A", ja
     (home() / ".listening").write_text("sess-A", encoding="utf-8")   # A listens again while it works: still busy
     assert get("/state")["busy"] == {"id": ja["id"], "name": "team-250k-general"}
-    # Make my video while the listening Claude is busy: a Claude of its own opens for the new one at once (claude_for)
+    # Make my video while A is busy: the new one waits in the queue, A never takes a second video at once
     jx = post("/job", {"type": "video", "path": str(vid), "aspect": "9:16", "as": "mine"})["id"]
     jxj = next(j for j in read()["jobs"] if j["id"] == jx)
-    assert opened == [(str(root.resolve()), f"/kirocut:start take job {jx}")] and jxj["claude"]["opened"] and jxj["reserved"], (opened, jxj)
-    assert not takeable(jxj, "sess-A", read()), "the busy Claude never takes it"
-    # A's cut is out (its job done) but A is still on that video's edit (the editor's wait listens): still busy, so
-    # the next video gets a Claude of its own (QA round 3: one Claude took both videos)
+    assert jxj["state"] == "queued" and "reserved" not in jxj, jxj
+    assert not takeable(jxj, "sess-A", read()), "the busy Kiro never takes it"
+    assert take_next("sess-A") is None, "nothing for A while it makes a video"
+    # A's cut is out (its job done) but A is still on that video's edit (the editor's wait listens): still busy
     be = tmp / "busy-edit"
     (be / "review").mkdir(parents=True)
     (be / "review" / ".listening").touch()
@@ -3592,7 +3451,7 @@ def demo():
         queue(d, "video", {"edit": str(be), "as": "mine"}).update(state="done", owner="sess-A")
     update(swap)
     assert busy_with(read(), "sess-A")["args"]["edit"] == str(be)
-    assert takeable(dict(jxj, reserved=0, args=dict(jxj["args"], sample=1)), "sess-A", read()), "the sample: the first Claude's"
+    assert takeable(dict(jxj, args=dict(jxj["args"], sample=1)), "sess-A", read()), "the sample: the first Kiro's"
     (be / "review" / ".listening").unlink()
     assert busy_with(read(), "sess-A"), "its edit written a moment ago (a render, a round): still busy"
     for j in read()["jobs"]:   # an hour later: nothing in A's edits written since
@@ -3603,74 +3462,43 @@ def demo():
     assert busy_with(read(), "sess-A") is None, "its edit left an hour ago: free again"
     update(lambda d: next(j for j in d["jobs"] if j["id"] == ja["id"]).update(state="taken"))
     update(lambda d: next(j for j in d["jobs"] if j["id"] == jx).update(state="done"))
-    opened.clear()
     (home() / ".listening").unlink()
-    post("/ask", {"id": "qa", "questions": qs, "session": "sess-A"})
-    assert get("/ask?v=1")["ask"]["about"] == "team-250k-general"
-    # an image on the answer (over the 1 MB cap of other POSTs): saved beside A's edit, its path in the answer
-    edir = root / "edits" / "team-250k-general"
-    assert srv.asks["qa"]["dir"] == str((edir / "asks") if edir.is_dir() else home().parent / "asks")
-    big = "data:image/png;base64," + base64.b64encode(b"\x89PNG\r\n\x1a\n" + bytes(2 << 20)).decode()
-    post("/ask/answer", {"id": "qa", "answers": ["like this"], "images": [[big]]})
-    shot = Path(srv.asks["qa"]["dir"]) / "ask-qa-q1-img1.png"
-    assert get("/ask?id=qa")["result"] == {"answers": [f"like this\nAttached images: {shot} (Read each one to see it)"]}
-    assert shot.stat().st_size == (2 << 20) + 8
-    post("/ask/clear", {"id": "qa"})
-    os.environ["CLAUDE_CODE_SESSION_ID"] = "sess-B"   # a second terminal: never writes to A's job
+    os.environ["KIROCUT_SESSION"] = "sess-B"   # a second chat: never writes to A's job
     assert vs(step="B was here", done=True).startswith("no video job")
     assert next(j for j in read()["jobs"] if j["id"] == ja["id"]) == ja, "A's job untouched"
-    # Make my video with nobody listening: a Claude of its own opens with that one job, which no other wait takes
-    opened.clear()
+    # Make my video with nobody listening: the job waits for a chat; status never takes it, a script's report neither
     jb = post("/job", {"type": "video", "path": str(vid), "aspect": "9:16", "as": "mine"})["id"]
-    assert opened == [(str(root.resolve()), f"/kirocut:start take job {jb}")], opened
-    assert next(j for j in read()["jobs"] if j["id"] == jb)["claude"] == {"opened": True, "command": f"claude '/kirocut:start take job {jb}'"}
-    assert vs(step="B grabs it").startswith("no video job"), "status never takes a queued job inside Claude"
-    os.environ.pop("CLAUDE_CODE_SESSION_ID")
-    vs(step="a script", if_active=True)   # nor a script's own report (it lands on the taken job, A's, outside Claude)
-    os.environ["CLAUDE_CODE_SESSION_ID"] = "sess-B"
+    assert vs(step="B grabs it").startswith("no video job"), "status never takes a queued job inside Kiro"
+    os.environ.pop("KIROCUT_SESSION")
+    vs(step="a script", if_active=True)   # nor a script's own report (it lands on the taken job, A's, outside Kiro)
     assert next(j for j in read()["jobs"] if j["id"] == jb)["state"] == "queued"
     assert not takeable(next(j for j in read()["jobs"] if j["id"] == jb), "sess-A", read()), "A makes one video at a time"
-    assert not takeable(next(j for j in read()["jobs"] if j["id"] == jb), "sess-B", read()), "reserved for the new Claude"
-    update(lambda d: next(j for j in d["jobs"] if j["id"] == jb).__setitem__("reserved", time.time() - RESERVE_S - 1))
-    assert not takeable(next(j for j in read()["jobs"] if j["id"] == jb), "sess-B", read()), "its window opened: held longer"
-    update(lambda d: next(j for j in d["jobs"] if j["id"] == jb).__setitem__("reserved", time.time()))
-    os.environ["CLAUDE_CODE_SESSION_ID"] = "sess-C"
-    assert out(cmd_wait, 0.01, jb).startswith("JOB video ") and next(j for j in read()["jobs"] if j["id"] == jb)["owner"] == "sess-C"
+    os.environ["KIROCUT_SESSION"] = "sess-C"
+    assert take_next("sess-C").startswith("JOB video ") and next(j for j in read()["jobs"] if j["id"] == jb)["owner"] == "sess-C"
+    assert take_next("sess-B") is None, "each job reaches one chat"
     (home() / ".listening").write_text("sess-A", encoding="utf-8")   # A's wait still listens while C works
-    assert get("/state")["busy"]["id"] == ja["id"], "busy follows the listening session, not the newest Claude"
-    (home() / ".listening").unlink()
-    os.environ["CLAUDE_CODE_SESSION_ID"] = "sess-B"
-    assert out(cmd_wait, 0.01, jb).startswith("GONE"), "another Claude has it"
-    assert claude_for(jb) is None, "never a second Claude for a taken job"
-    # "Connect Claude" (nobody listening): one terminal with the listen prompt, none while it is pending or once one listens
-    opened.clear()
-    assert post("/connect", {})["status"] == "opened" and opened == [(str(root.resolve()), launcher.LISTEN)], opened
-    assert post("/connect", {})["status"] == "pending" and len(opened) == 1, "no second terminal while one is pending"
-    assert get("/state")["connect"] > time.time() - 5, "the page knows a connect is pending"
-    (home() / ".listening").touch()
-    assert post("/connect", {})["status"] == "listening" and len(opened) == 1
+    assert get("/state")["busy"]["id"] == ja["id"], "busy follows the listening session, not the newest chat"
     (home() / ".listening").unlink()
     tj = post("/job", {"type": "teardown", "handle": "listen", "platform": "youtube"})["id"]
-    assert out(cmd_wait, 0.01).startswith("JOB teardown") and "connect" not in read(), "the new Claude's wait ends the pending connect"
+    os.environ["KIROCUT_SESSION"] = "sess-B"
+    assert out(cmd_wait, 0.01).startswith("JOB teardown")
     update(lambda d: next(j for j in d["jobs"] if j["id"] == tj).__setitem__("state", "done"))
-    os.environ["CLAUDE_CODE_SESSION_ID"] = "sess-A"   # A's status goes to A's job, never C's
+    os.environ["KIROCUT_SESSION"] = "sess-A"   # A's status goes to A's job, never C's
     vs(step="Cutting out the mistakes", done=True)
     j1, j2 = (next(j for j in read()["jobs"] if j["id"] == i) for i in (ja["id"], jb))
     assert j1["state"] == "done" and j1["steps"][-1]["text"] == "Cutting out the mistakes" and j2["state"] == "taken" and not j2["steps"]
-    # C stops (closed its terminal): after STALE_S with no report, another session adopts the job
+    # C stops (its chat closed): after STALE_S with no report, another chat adopts the job
     update(lambda d: next(j for j in d["jobs"] if j["id"] == jb).__setitem__("u", time.time() - STALE_S - 1))
-    os.environ["CLAUDE_CODE_SESSION_ID"] = "sess-B"
+    os.environ["KIROCUT_SESSION"] = "sess-B"
     assert vs(step="Picked up where it stopped").startswith("adopted " + jb)
     assert next(j for j in read()["jobs"] if j["id"] == jb)["owner"] == "sess-B"
-    os.environ["CLAUDE_CODE_SESSION_ID"] = "sess-C"
+    os.environ["KIROCUT_SESSION"] = "sess-C"
     assert vs(done=True).startswith("no video job"), "the stopped session's job is B's now"
-    os.environ["CLAUDE_CODE_SESSION_ID"] = "sess-B"
+    os.environ["KIROCUT_SESSION"] = "sess-B"
     vs(done=True)
     assert next(j for j in read()["jobs"] if j["id"] == jb)["state"] == "done" and get("/state")["busy"] is None
-    os.environ.pop("CLAUDE_CODE_SESSION_ID")
-    # one Make, two separate videos: an idle listening Claude takes the first now, the second gets a Claude of its own;
-    # with nobody listening, each gets its own. Images and links go with each video (assets.json, the job line)
-    opened.clear()
+    os.environ.pop("KIROCUT_SESSION")
+    # one Make, two separate videos: both wait in the queue. Images and links go with each video (assets.json, the job line)
     (home() / ".listening").write_text("sess-L", encoding="utf-8")
     png = ("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJ"
            "RU5ErkJggg==")
@@ -3678,13 +3506,13 @@ def demo():
     adds = [{"url": "https://github.com/a/b", "say": "the repo"}, {"image": png, "name": "chart.png", "say": "the chart"},
             {"image": big, "name": "big.png"}]
     r2 = post("/job", {"type": "video", "paths": [str(vid), str(vid)], "join": False, "aspect": "9:16", "as": "mine", "assets": adds})
-    assert [p for _, p in opened] == [f"/kirocut:start take job {r2['ids'][1]}"], opened
+    assert [next(j for j in read()["jobs"] if j["id"] == i)["state"] for i in r2["ids"]] == ["queued", "queued"]
     for jid, e in zip(r2["ids"], r2["edits"]):
         items = json.loads((Path(e) / "assets.json").read_text(encoding="utf-8"))["items"]
         assert [x.get("url") or x["name"] for x in items] == ["https://github.com/a/b", "chart.png", "big.png"], items
         assert items[0]["site"] == "github" and items[1]["say"] == "the chart" and (Path(e) / items[1]["src"]).is_file()
         assert f" assets={Path(e) / 'assets.json'} " in job_line(next(j for j in read()["jobs"] if j["id"] == jid), root)
-    # B-roll: a library connected from the page, ticked (or Claude decides) and the Additional instructions, with the job
+    # B-roll: a library connected from the page, ticked (or Kiro decides) and the Additional instructions, with the job
     assert get("/broll")["libraries"] == []
     assert post("/broll/add", {"name": "Desk", "folder": str(vid.parent)})["ok"]
     lib = get("/broll")["libraries"][0]
@@ -3722,29 +3550,22 @@ def demo():
     except urllib.error.HTTPError as e:
         assert e.code == 400
     assert takeable(next(j for j in read()["jobs"] if j["id"] == r2["ids"][0]), "sess-L", read())
-    assert not takeable(next(j for j in read()["jobs"] if j["id"] == r2["ids"][1]), "sess-L", read()), "the other Claude's job"
     try:
         post("/job", {"type": "video", "path": str(vid), "as": "mine", "assets": [{"url": f"https://a.co/{i}"} for i in range(assets.MAX_ITEMS + 1)]})
         raise AssertionError("51 assets were taken")
     except urllib.error.HTTPError as e:
         assert e.code == 400
+    brolls = {str(Path(x)) for x in r4["edits"] + r6["edits"]}   # the b-roll jobs are made: the queue below starts clean
+    update(lambda d: [j.update(state="done") for j in d["jobs"] if str(Path(j["args"].get("edit") or "")) in brolls])
     (home() / ".listening").unlink()
-    opened.clear()
     update(lambda d: [j.update(state="done") for j in d["jobs"] if j["id"] in r2["ids"]])   # the same clip again below
     r3 = post("/job", {"type": "video", "paths": [str(vid), str(vid)], "join": False, "aspect": "9:16", "as": "mine"})
-    assert [p for _, p in opened] == [f"/kirocut:start take job {i}" for i in r3["ids"]], opened
     assert not (Path(r3["edits"][0]) / "assets.json").exists() and " assets=" not in job_line(latest(read(), "video"), root)
-    # no terminal can open (Linux without x-terminal-emulator): the job keeps the command, the editor shows it to run
-    rec = launcher.open_claude
-    launcher.open_claude = lambda folder, prompt: (False, "claude '" + prompt + "'")
     update(lambda d: [j.update(state="done") for j in d["jobs"] if j["id"] in r3["ids"]])
     r4 = post("/job", {"type": "video", "path": str(vid), "aspect": "9:16", "as": "mine"})["id"]
-    assert next(j for j in read()["jobs"] if j["id"] == r4)["claude"] == {"opened": False, "command": f"claude '/kirocut:start take job {r4}'"}
-    n4 = len(read()["jobs"])   # Make my video again on the same clip while it is made: the same job, no second Claude
+    n4 = len(read()["jobs"])   # Make my video again on the same clip while it is made: the same job, no second one
     assert post("/job", {"type": "video", "path": str(vid), "aspect": "9:16", "as": "mine"})["id"] == r4 and len(read()["jobs"]) == n4
-    launcher.open_claude = rec
     update(lambda d: [j.update(state="done") for j in d["jobs"] if j["id"] in r2["ids"] + r3["ids"] + [r4]])
-    globals()["claude_for"] = own.append
     update(lambda d: [j.update(state="taken") for j in d["jobs"] if j["id"] in held])   # the earlier checks' jobs, as they were
 
     # New video: several picked clips as one video -> one JOB with the takes file, in the order picked
@@ -3765,12 +3586,12 @@ def demo():
     r = post("/job", {"type": "video", "paths": order, "join": True, "as": "mine", "aspect": "16:9"})
     assert len(r["ids"]) == 1
     ea = root.resolve() / "edits" / "a"
-    assert out(cmd_wait, 0.01) == f"JOB video takes={ea / 'takes.txt'} as=mine aspect=16:9 edit={ea} root={root.resolve()}"
+    got = out(cmd_wait, 0.01)
+    assert got == f"JOB video takes={ea / 'takes.txt'} as=mine aspect=16:9 edit={ea} root={root.resolve()}", got
     assert (ea / "takes.txt").read_text(encoding="utf-8").split() == [str(Path(x).resolve()) for x in order]
     # ...or separate videos: one JOB each, each with its own edit folder
-    own.clear()
     r = post("/job", {"type": "video", "paths": order, "join": False, "as": "@sample.creator", "aspect": "9:16"})
-    assert len(r["ids"]) == 3 and own == r["ids"], (own, r)   # nobody listening: a Claude of its own for each
+    assert len(r["ids"]) == 3, r   # they wait in the queue for the chat, one at a time
     lines = [out(cmd_wait, 0.01) for _ in range(3)]
     assert [ln.split(" edit=")[1].split()[0] for ln in lines] == [str(root.resolve() / "edits" / n) for n in ("a-2", "b", "c")], lines
 
@@ -3869,7 +3690,7 @@ def demo():
     ok_rows = {"rows": [{"ok": True}]}   # every tool passes mid-install: Set up still waits for the setup job to end
     assert not getting_started({**read(), "jobs": [{"type": "setup", "state": "taken"}], "doctor": ok_rows, "root": str(tmp)})["setup"]
     assert getting_started({**read(), "jobs": [], "doctor": ok_rows, "root": str(tmp)})["setup"]
-    # a video's real step: the user's turn (cut, stills, edit), what Claude is doing, done only once the finished video exists
+    # a video's real step: the user's turn (cut, stills, edit), what Kiro is doing, done only once the finished video exists
     pd = tmp / "phase-check"
     pd.mkdir()
     for rj, want in [({"stage": "cut", "round": 1}, "cut"), ({"stage": "edit", "stills": True}, "approve"), ({"stage": "edit"}, "edit"),
@@ -3896,7 +3717,7 @@ def demo():
     ft = latest(read(), "teardown")
     assert ft["args"]["handle"].startswith("links-") and ft["args"]["platform"] == "tiktok" and ft["args"]["take"] == ["captions", "pace"], ft
     assert Path(ft["args"]["urls"]).read_text(encoding="utf-8").split() == fl
-    update(lambda d: d.__setitem__("jobs", [j for j in d["jobs"] if j["id"] != ft["id"]]))   # not Claude's to take here
+    update(lambda d: d.__setitem__("jobs", [j for j in d["jobs"] if j["id"] != ft["id"]]))   # not Kiro's to take here
     # Analysed from: references.json first, else the measured videos (a transcript each); http(s) only
     rd = tmp / "refs"
     (rd / "transcripts").mkdir(parents=True)
@@ -3913,7 +3734,7 @@ def demo():
     assert references(rd)["videos"][0]["title"] == "one"   # kept in references.json once the analysis ended
     # Build it yourself: a second own style, listed as own, can be the default, and goes when deleted
     oid = post("/style/new", {"name": "Clean talking head"})["id"]
-    # Combine styles: a new own style from two, the first giving every part; the words go to Claude as a style-change
+    # Combine styles: a new own style from two, the first giving every part; the words go to Kiro as a style-change
     cid = post("/style/combine", {"ids": [oid, "mine"], "text": "captions from My style, the rest from Clean talking head"})["id"]
     cj = next(j for j in reversed(read()["jobs"]) if j["type"] == "style-change")
     assert cj["args"]["style"] == cid and "Combined from Clean talking head" in cj["args"]["text"] and "captions from My style" in cj["args"]["text"]
@@ -3991,7 +3812,7 @@ def demo():
     kj = next(j for j in read()["jobs"] if j["id"] == kj)
     assert kj["args"]["skill"] == "my-edit-style" and " skill=my-edit-style root=" in job_line(kj, root), kj
     assert " chain=" not in job_line(kj, root) and [x["key"] for x in kp["chain"]] == ["cut", "logos", "motion", "edit"], kp["chain"]
-    update(lambda d: d.__setitem__("jobs", [j for j in d["jobs"] if j["id"] != kj["id"]]))   # not Claude's to take here
+    update(lambda d: d.__setitem__("jobs", [j for j in d["jobs"] if j["id"] != kj["id"]]))   # not Kiro's to take here
     shutil.rmtree(kj["args"]["edit"])
     # the chain: logos off and animations on for this skill style; the next video's job carries it (home.md)
     assert post("/style/chain", {"id": "@own-skilled", "step": "motion", "on": True})["chain"][2]["on"] is True
@@ -4002,7 +3823,7 @@ def demo():
     assert " skill=my-edit-style chain=motion root=" in job_line(kj, root), job_line(kj, root)
     update(lambda d: d.__setitem__("jobs", [j for j in d["jobs"] if j["id"] != kj["id"]]))
     shutil.rmtree(kj["args"]["edit"])
-    # chain other skills on: one before the edit, one after; they show in What runs and go to Claude with the video
+    # chain other skills on: one before the edit, one after; they show in What runs and go to Kiro with the video
     post("/style/chain", {"id": "@own-skilled", "skill": "my-broll", "at": "before"})
     kp = post("/style/chain", {"id": "@own-skilled", "skill": "/my-thumbnail", "at": "after"})
     assert [x["name"] for x in kp["chain"]] == ["Cut", "Real logos", "Animations", "/my-broll", "/my-edit-style", "/my-thumbnail"], kp["chain"]
@@ -4046,7 +3867,7 @@ def demo():
     except urllib.error.HTTPError as e:
         assert e.code == 400
     assert post("/style/forget", {"id": "@own-skilled", "text": "Fewer zooms"})["rules"] == [] and "Fewer zooms. Why" not in own.read_text(encoding="utf-8")
-    # Improve with feedback and Make a new skill: jobs for Claude (skill-improver, skill-maker); a plugin's skill is refused
+    # Improve with feedback and Make a new skill: jobs for Kiro (skill-improver, skill-maker); a plugin's skill is refused
     j = post("/job", {"type": "skill-change", "skill": "own-cuts", "text": "never  zoom in the first second"})
     jj = next(x for x in read()["jobs"] if x["id"] == j["id"])
     assert job_line(jj, root) == f"JOB skill-change own-cuts path={own} text=never zoom in the first second", job_line(jj, root)
@@ -4086,30 +3907,30 @@ def demo():
         (tmp / "skills" / n_ / "SKILL.md").write_text(f"---\nname: {n_}\ndescription: {d_}\n---\n", encoding="utf-8")
     (tmp / "elsewhere" / "linked-cuts").mkdir(parents=True)
     (tmp / "elsewhere" / "linked-cuts" / "SKILL.md").write_text("---\ndescription: Cuts video.\n---\n", encoding="utf-8")
-    (tmp / "skills" / "linked-cuts").symlink_to(tmp / "elsewhere" / "linked-cuts")
+    try:
+        (tmp / "skills" / "linked-cuts").symlink_to(tmp / "elsewhere" / "linked-cuts")
+    except OSError:   # Windows without Developer Mode: a directory junction is the link a user can make there
+        subprocess.run(["cmd", "/c", "mklink", "/J", str(tmp / "skills" / "linked-cuts"), str(tmp / "elsewhere" / "linked-cuts")],
+                       check=True, capture_output=True)
     sl = get("/skills")
     vsk, oth = {x["name"]: x for x in sl["skills"]}, {x["name"]: x for x in sl["other"]}
     assert "notion-editing" in oth and "notion-editing" not in vsk and oth["notion-editing"]["deletable"], sl
     assert vsk["gone-cuts"]["deletable"] and not vsk["my-captions"]["deletable"] and not vsk["linked-cuts"]["deletable"], vsk   # a project's; a link out
     # plugin skills: every installed, enabled plugin but the editor's own, named plugin:skill, sorted by the same test
-    cc, old_cc = tmp / "claude-config", os.environ.get("CLAUDE_CONFIG_DIR")
+    kh, old_kh = tmp / "kiro-home", os.environ.get("KIRO_HOME")
     for plug, n_, d_ in (("fx", "broll-picker", "Picks b-roll for a video."), ("fx", "notion-sync", "Syncs Notion pages."),
-                         ("off", "captions-x", "Captions a video."), ("kirocut", "cut", "Cuts a video.")):
-        (cc / "p" / plug / "skills" / n_).mkdir(parents=True, exist_ok=True)
-        (cc / "p" / plug / "skills" / n_ / "SKILL.md").write_text(f"---\nname: {n_}\ndescription: {d_}\n---\n", encoding="utf-8")
-    (cc / "plugins").mkdir()
-    (cc / "plugins" / "installed_plugins.json").write_text(json.dumps({"version": 2, "plugins": {
-        f"{q}@m": [{"version": "1.0.0", "installPath": str(cc / "p" / q)}] for q in ("fx", "off", "kirocut")}}), encoding="utf-8")
-    (cc / "settings.json").write_text(json.dumps({"enabledPlugins": {"off@m": False}}), encoding="utf-8")
-    os.environ["CLAUDE_CONFIG_DIR"] = str(cc)
+                         ("kirocut", "cut", "Cuts a video.")):
+        (kh / "powers" / plug / "skills" / n_).mkdir(parents=True, exist_ok=True)
+        (kh / "powers" / plug / "skills" / n_ / "SKILL.md").write_text(f"---\nname: {n_}\ndescription: {d_}\n---\n", encoding="utf-8")
+    os.environ["KIRO_HOME"] = str(kh)
     try:
         sl = get("/skills")
         vsk, oth = {x["name"]: x for x in sl["skills"]}, {x["name"]: x for x in sl["other"]}
         assert vsk["fx:broll-picker"]["plugin"] == "fx" and not vsk["fx:broll-picker"]["deletable"] and "fx:notion-sync" in oth, sl
-        assert not any(k.startswith(("off:", "kirocut:")) for k in [*vsk, *oth]), sl   # turned off; the editor's own steps
+        assert not any(k.startswith("kirocut:") for k in [*vsk, *oth]), sl   # the editor's own steps
         assert find_skill(root, "fx:broll-picker")["description"] == "Picks b-roll for a video."
     finally:
-        os.environ.pop("CLAUDE_CONFIG_DIR") if old_cc is None else os.environ.__setitem__("CLAUDE_CONFIG_DIR", old_cc)
+        os.environ.pop("KIRO_HOME") if old_kh is None else os.environ.__setitem__("KIRO_HOME", old_kh)
     assert post("/skill/hide", {"name": "notion-editing"})["ok"] and next(x for x in get("/skills")["other"] if x["name"] == "notion-editing")["hidden"]
     assert (tmp / "skills" / "notion-editing" / "SKILL.md").is_file()   # hidden, still on disk
     assert post("/skill/hide", {"name": "notion-editing", "on": False})["ok"] and not next(x for x in get("/skills")["other"] if x["name"] == "notion-editing")["hidden"]
@@ -4132,7 +3953,10 @@ def demo():
     assert gp["skill"]["name"] == "notion-editing" and gp["skill"]["found"], gp["skill"]
     assert "notion-editing" in [x["name"] for x in get("/skills")["skills"]]   # a style runs it now
     assert post("/style/delete", {"id": gid})["ok"] and (tmp / "skills" / "notion-editing" / "SKILL.md").is_file()
-    (tmp / "skills" / "linked-cuts").unlink()
+    try:
+        (tmp / "skills" / "linked-cuts").unlink()
+    except OSError:   # a junction
+        os.rmdir(tmp / "skills" / "linked-cuts")
     post("/scanhome", {"on": False})   # picked files stay listed without the opt-in
     assert {r["name"] for r in get("/recent")["videos"]} == {"a.mov", "b.mov", "c.mp4", "drop.mp4", "take.mp4"}
 
@@ -4259,33 +4083,34 @@ def demo():
     assert pg["rules"] == [] and pg["presets"]["cards"]["on"] and pg["presets"]["zoom"]["tag"] != "you changed this", pg["rules"]
     pm = get("/style?id=mine")["presets"]   # My style started from the creator: the creator's captions on, zooms closest to measured
     assert pm["captions"]["sel"] == "" and pm["zoom"]["sel"] == "none", pm["zoom"]   # taste.json zoom.per_min 0 above
-    # Tell it what to change: one JOB line for Claude, at that style's scope
+    # Tell it what to change: one JOB line for Kiro, at that style's scope
     sc = post("/job", {"type": "style-change", "style": "@sample.creator", "text": "captions a bit bigger,\n fewer zooms"})
-    assert claude_for.__self__[-1] == sc["id"], "nobody listening: a Claude opens for the style's chat"
+    assert latest(read(), "style-change")["id"] == sc["id"] and latest(read(), "style-change")["state"] == "queued"
     assert out(cmd_wait, 0.01) == f"JOB style-change @sample.creator style={(td / 'style.json').resolve()} text=captions a bit bigger, fewer zooms"
     post("/job", {"type": "style-change", "style": "mine", "text": "no whooshes"})
-    os.environ["CLAUDE_CODE_SESSION_ID"] = "sess-S"
+    os.environ["KIROCUT_SESSION"] = "sess-S"
     assert out(cmd_wait, 0.01) == "JOB style-change my-style text=no whooshes"
-    os.environ.pop("CLAUDE_CODE_SESSION_ID")
+    os.environ.pop("KIROCUT_SESSION")
     out(cmd_status, argparse.Namespace(job="style-change", step="Saved: no sound effects", detail=None, progress=None,
                                        result=json.dumps({"changed": ["No sound effects"]}), done=True, failed=None))
     assert get("/style?id=mine")["job"]["result"]["changed"] == ["No sound effects"]
-    # the sidebar's Stop: the job ends and its session's tool calls are denied (toolhook) until STOP_S passes
+    # the sidebar's Stop: the job ends and the chat's tool calls are blocked (the kirocut-window-stop hook) for a while
     post("/job", {"type": "style-change", "style": "mine", "text": "fewer cards"})
-    os.environ["CLAUDE_CODE_SESSION_ID"] = "sess-S"
+    os.environ["KIROCUT_SESSION"] = "sess-S"
     out(cmd_wait, 0.01)
-    os.environ.pop("CLAUDE_CODE_SESSION_ID")
+    os.environ.pop("KIROCUT_SESSION")
     sj = latest(read(), "style-change")
     assert post("/stop", {"id": sj["id"]})["stopped"] and latest(read(), "style-change")["state"] == "cancelled"
-    import toolhook
-    assert toolhook.stopped("sess-S") and not toolhook.stopped("sess-T")
+    import kirohook
+    assert kirohook.stopped() and stop_file("sess-S").is_file()
     stop_file("sess-S").unlink()
-    assert out(cmd_wait, 0.01) == "JOB cancel style-change", "a listening Claude hears it too"
+    assert not kirohook.stopped()
+    assert out(cmd_wait, 0.01) == "JOB cancel style-change", "a listening Kiro hears it too"
     # previews prefer raw takes: a finished render (its own captions) is never used behind a sample caption
     assert is_output(root / "edits" / "x" / "render.mp4") and is_output(tmp / "v-edit2.mp4") and is_output(root / "edits" / "x" / "review" / "a.mp4")
     assert is_output(ed / "anything.mp4", [ed]) and not is_output(root / "videos" / "drop.mp4", [ed])
     assert all("raw" in v for v in get("/recent")["videos"])
-    assert get("/state")["page"] == f'{live.page_version(HTML, HTML.with_name("ask.js"), shortcuts.JS)}-{my_version()}', "the tab's reload key"
+    assert get("/state")["page"] == f'{live.page_version(HTML, HTML.with_name("alerts.js"), shortcuts.JS)}-{my_version()}', "the tab's reload key"
     # hide or trash a listed clip, remove an edit: only what the page listed, to the Trash (faked here), never a folder
     assert library.trash_cmd("/a b/x.mov", "Darwin")[-1] == "/a b/x.mov" and "item 1 of argv" in " ".join(library.trash_cmd("x", "Darwin"))
     assert library.trash_cmd("C:/x y.mp4", "Windows")[-1] == "C:/x y.mp4" and library.trash_cmd("/x", "Linux") == ["gio", "trash", "/x"]
@@ -4320,7 +4145,7 @@ def demo():
         assert next(v for v in get("/library")["videos"] if v["dir"] == str(hid.resolve()))["name"] == "My first video"
         assert post("/edit/rename", {"dir": str(hid), "name": ""})["ok"]
         assert next(v for v in get("/library")["videos"] if v["dir"] == str(hid.resolve()))["name"] == "hide-me"
-        # the sidebar's Stop on a video Claude is fixing from its review page: the round comes back, notes open again
+        # the sidebar's Stop on a video Kiro is fixing from its review page: the round comes back, notes open again
         (hid / "review.json").write_text(json.dumps({"stage": "edit", "round": 1, "sent": True, "comments": [],
                                                      "events": [{"type": "send", "stage": "edit", "round": 1, "handled": False}]}),
                                          encoding="utf-8")
@@ -4329,7 +4154,7 @@ def demo():
         rv = json.loads((hid / "review.json").read_text(encoding="utf-8"))
         assert not rv["sent"] and rv["stopped"] and rv["events"][-1]["type"] == "stop", rv
         # Rules to review: a video whose learn panel waits lists first with its rule count; one stuck reading gets the learn job
-        os.environ.setdefault("KIROCUT_CLAUDE", shutil.which("true") or "true")   # never the real Claude Code here
+        os.environ.setdefault("KIROCUT_KIRO", "kiro-cli-not-here")   # never the real Kiro here
         rv["learn"] = {"state": "proposed", "rules": [{"rule": "a", "section": "cut"}, {"rule": "b", "section": "cut"}]}
         (hid / "review.json").write_text(json.dumps(rv), encoding="utf-8")
         assert get("/library")["to_review"] == [{"slug": "hide-me", "title": "hide-me", "count": 2,
@@ -4337,7 +4162,7 @@ def demo():
         rv["learn"] = {"state": "reading", "at": time.time() - 3600}
         (hid / "review.json").write_text(json.dumps(rv), encoding="utf-8")
         assert get("/library")["to_review"] == [] and json.loads((hid / "review.json").read_text(encoding="utf-8"))["learn"]["job"]
-        for _ in range(200):   # the stub CLI posts nothing: the page says Claude could not read the notes
+        for _ in range(200):   # the stub CLI posts nothing: the page says Kiro could not read the notes
             if json.loads((hid / "review.json").read_text(encoding="utf-8"))["learn"]["state"] == "failed":
                 break
             time.sleep(0.05)
@@ -4426,7 +4251,7 @@ def demo():
             assert e.code == 400
     assert post("/style/cover/remove", {"id": "mine"})["ok"] and get("/style?id=mine")["cover"] is None
     # naming My style right away: empty falls back to the suggestion; the skill moves and its description
-    # (what Claude matches on) carries the new name; keeping "My style" on purpose is a name too
+    # (what Kiro matches on) carries the new name; keeping "My style" on purpose is a name too
     pg = post("/style/rename", {"id": "mine", "name": "  "})
     assert pg["name"] == "Like @sample.creator" and pg["named"] and pg["skill"]["name"] == "like-sample-creator", pg["name"]
     t = (tmp / "skills" / "like-sample-creator" / "SKILL.md").read_text(encoding="utf-8")
@@ -4529,13 +4354,13 @@ def demo():
     assert not any([try_auto({"auto_update": False}), try_auto({}, {**fresh, "dev": True}), try_auto({}, {**fresh, "fork": True}),
                     try_auto({}, {**fresh, "newer": False}), try_auto({"jobs": [{"state": "taken"}]}), try_auto({"auto_tried": "99.0.0"})]) and not tried
     import review as rv
-    keep = library.entries, rv.claude_state
-    library.entries, rv.claude_state = (lambda: [{"dir": "x"}]), (lambda f: {"state": "working"})
-    assert not try_auto({}) and not tried, "a video's Claude is working"
-    library.entries, rv.claude_state = keep[0], (lambda f: {"state": "open"})
+    keep = library.entries, rv.agent_state
+    library.entries, rv.agent_state = (lambda: [{"dir": "x"}]), (lambda f: {"state": "working"})
+    assert not try_auto({}) and not tried, "a video's Kiro is working"
+    library.entries, rv.agent_state = keep[0], (lambda f: {"state": "open"})
     assert try_auto({}) and tried == ["update"] and read()["auto_tried"] == "99.0.0"
     assert not real_auto({}, fresh, start=tried.append) and tried == ["update"], "the library is read once a minute at most"
-    rv.claude_state = keep[1]
+    rv.agent_state = keep[1]
     update(lambda d: d.pop("auto_tried", None))
     post("/update/auto", {"on": False})
     assert get("/state")["auto_update"] is False
@@ -4555,7 +4380,7 @@ def demo():
     except urllib.error.HTTPError as e:
         assert e.code == 400
     update(lambda d: d.pop("support", None))
-    # Update runs in the window itself (no Claude): a fork is refused (the update skill merges it with the user); any
+    # Update runs in the window itself (no Kiro): a fork is refused (the update skill merges it with the user); any
     # other install runs update.py window, shows its steps, keeps the new version and restarts from its folder
     real_info = update_info
     globals()["update_info"] = lambda: {**real_info(), "fork": True}
@@ -4573,7 +4398,7 @@ def demo():
     try:
         update(lambda d: d["jobs"].append({"id": "update-old", "type": "update", "args": {}, "state": "taken", "owner": "sess-gone",
                                            "at": now(), "steps": [], "result": {}}))
-        update(drop_modal_runs)   # a server start closes an Update a Claude session took and never finished
+        update(drop_modal_runs)   # a server start closes an Update a Kiro session took and never finished
         assert next(j for j in read()["jobs"] if j["id"] == "update-old")["state"] == "failed"
         j = start_modal("update")
         assert start_modal("update")["id"] == j["id"] or latest(read(), "update")["state"] == "done", "one at a time"
@@ -4584,7 +4409,7 @@ def demo():
         j = latest(read(), "update")
         assert j["state"] == "done" and j["owner"] == "home" and j["result"] == {"version": "99.0.0", "path": (tmp / "v99").as_posix()}, j
         assert [s["text"] for s in j["steps"]] == ["Getting the list of new versions", "Updating kirocut"] and restarted == [(tmp / "v99").as_posix()]
-        assert not any(x["type"] == "update" and x["state"] == "queued" for x in read()["jobs"]), "nothing queued for Claude"
+        assert not any(x["type"] == "update" and x["state"] == "queued" for x in read()["jobs"]), "nothing queued for Kiro"
         assert read()["just_updated"]["version"] == "99.0.0" and read()["just_updated"]["notes"] == ["Dark mode in the window"], "What's new survives the restart"
     finally:
         globals().update(UPDATE=real_update, restart_on=real_restart)
@@ -4636,14 +4461,6 @@ def demo():
     if os.name != "nt":
         assert (home() / "token").stat().st_mode & 0o777 == 0o600
     s2.server_close()
-    # the Claude page: only videos that had a Claude; an edit outside the library is refused
-    assert claude_act(str(tmp / "elsewhere"), "stop") == (False, "That video is not in your library.")
-    ed = Path(library.entries()[0]["dir"])
-    (ed / "review").mkdir(exist_ok=True)
-    (ed / "review" / ".claude").write_text(json.dumps({"pid": 999999}), encoding="utf-8")
-    cl = [c for c in claudes() if c["dir"] == str(ed)]
-    assert cl and cl[0]["state"] == "off" and cl[0]["last"], cl
-    assert claude_act(str(ed), "stop") == (False, "That Claude was not running.") and claude_act(str(ed), "jump")[0] is False
     shutil.rmtree(tmp, ignore_errors=True)
     print("home demo ok")
 
@@ -4658,7 +4475,7 @@ def main():
     s.add_argument("--port", type=int, help=f"default {PORT}, or the port it had last time")
     s.add_argument("--no-open", action="store_true")
     s = sp.add_parser("wait")
-    s.add_argument("--job", help="take this job only (the page opened a new Claude for it)")
+    s.add_argument("--job", help="take this job only (the page opened a new Kiro for it)")
     s = sp.add_parser("status")
     s.add_argument("job", choices=JOBS)
     s.add_argument("--step")

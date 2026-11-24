@@ -8,7 +8,7 @@
                      graphics on screen, cards a minute, how long they hold, how fast
                      they land, and the graphics palette. Writes video/<id>.look.json,
                      merges captions, face, graphics and motion into style.json, and
-                     writes look.md: the summary Claude reads instead of frame images.
+                     writes look.md: the summary Kiro reads instead of frame images.
   summary <handle>   rewrite look.md from style.json and print it.
   demo               self-check on a synthetic clip with drawn captions. No network.
 
@@ -1097,7 +1097,7 @@ def pct(d):
 
 
 def summary(style, rows_n=None):
-    """The <48-line text Claude reads instead of frames."""
+    """The <48-line text Kiro reads instead of frames."""
     c, f, g, m = (style.get(k) or {} for k in ("captions", "face", "graphics", "motion"))
     # One source for the graphics numbers: graphics.py's per-card measure when it has run (report.py
     # shows the same), else look.py's frame estimate, labelled as such.

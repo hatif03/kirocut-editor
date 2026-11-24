@@ -21,7 +21,7 @@ types a timestamp. A restored cut is frozen in judge-ledger.json, so a later rou
 W6 (under-cut) adds never auto-apply without --tighten: an add on a warning can destroy a good take.
 
 Precision gate: once 5+ applied findings are scored and fewer than 60% survived the user's review,
-apply stops writing and lists the findings for Claude to weigh by hand.
+apply stops writing and lists the findings for Kiro to weigh by hand.
 Stdlib only. Exit codes: 0 ok, 1 error, 2 usage, 3 changed (judge again)
 """
 import datetime

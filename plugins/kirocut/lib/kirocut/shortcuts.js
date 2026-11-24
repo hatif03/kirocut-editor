@@ -70,10 +70,10 @@ const KM=(()=>{
     if(!ms)return /^[A-Z]$/.test(k)?k.toLowerCase():n;
     if(MAC)return (ms.includes('Alt')?'⌥':'')+(ms.includes('Shift')?'⇧':'')+(ms.includes('Mod')?'⌘':'')+n;
     return [ms.includes('Mod')&&'Ctrl',ms.includes('Alt')&&'Alt',ms.includes('Shift')&&'Shift',n.length>1&&!KN[k]?n:n[0].toUpperCase()+n.slice(1)].filter(Boolean).join('+')}
-  // keys stay off while recording, while a dialog, a popover or Claude's question is open, and while the editor shows
+  // keys stay off while recording, while a dialog, a popover or Kiro's question is open, and while the editor shows
   const shown=()=>eds.some(el=>el.isConnected&&el.getClientRects().length>0);
   function off(){try{if(document.querySelector('dialog[open],:popover-open'))return true}catch(x){if(document.querySelector('dialog[open]'))return true}
-    return !!document.documentElement.dataset.askOpen||shown()}
+    return shown()}
   async function post(b){let r,j={};try{r=await fetch('/keys',{method:'POST',body:JSON.stringify(b)});j=await r.json()}catch(x){}
     if(r&&r.ok&&j.keys){user=j.keys;return null}return j.error||'That did not save.'}
   setInterval(async()=>{try{const r=await fetch('/keys');if(!r.ok)return;const j=await r.json();

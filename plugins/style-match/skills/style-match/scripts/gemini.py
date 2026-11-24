@@ -244,7 +244,7 @@ in order from 0. Many are false alarms: a patch of the camera shot itself. Name 
   this and b-roll, pick this.
 Each image's label gives its size on the video: a crop is enlarged to the same size here, so a small
 near-square on screen is likely a logo, a wide one a card or page.
-what: under 8 words, what it shows ("Reddit post about ad copy", "Claude pricing table")."""
+what: under 8 words, what it shows ("Reddit post about ad copy", "Notion pricing table")."""
 
 
 def image_part(path):

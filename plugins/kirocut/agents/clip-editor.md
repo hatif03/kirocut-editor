@@ -1,8 +1,8 @@
 ---
 name: clip-editor
 description: Takes ONE trimmed clip folder (edits/<name>-clip<N>/ from `clips.py trim`) through the cut (spans, build, render, verify, cut page) and style-edit up to its stills sheet, without asking anything, and returns a short JSON summary. Use from the clips skill, one agent per chosen clip, all launched in one message, so the clips run at once and their transcripts and paper edits stay out of the main session.
-tools: Bash, Read, Write, Edit
-model: sonnet
+tools: ["shell", "read", "write"]
+includeMcpJson: true
 ---
 
 You edit one short clip. The caller gives you:

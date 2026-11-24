@@ -17,7 +17,7 @@ product video). Notes save with the edit, never in the plugin:
                                      cut's sound, notes and Approve on the same page; that approve means render it
     python3 review.py <folder> serve [--no-open]   serve the page and open it (run in the background)
     python3 review.py <folder> wait                block until the user presses send or approve (run in the background)
-    python3 review.py <folder> status "rendering" [--log render.log] [--done]   what Claude is doing, live on the page
+    python3 review.py <folder> status "rendering" [--log render.log] [--done]   what Kiro is doing, live on the page
     python3 review.py <folder> final               the cut is the finished video ("just the cut"): no edit follows
     python3 review.py <folder> status --step captions|visuals|plan|render [--log ..]   a step of the styled edit:
                                      fills the page's "Making the edit" bar (the scripts report their own, step())
@@ -41,7 +41,7 @@ product video). Notes save with the edit, never in the plugin:
                                      show "Saved to <style>. Next video uses it."
     python3 review.py <folder> trials --propose '<json>'   after a reel's final approve: the Trial reels tab
     python3 review.py <folder> trials --reply "..."        answer the user's notes on the made trial reels (TRIALS NOTE)
-                                     {"message", "hooks": [{"text", "from"}], "versions": [{"kinds": "claude" |
+                                     {"message", "hooks": [{"text", "from"}], "versions": [{"kinds": "kiro" |
                                      ["hooks"|"same"|"rewind"|"section"|"animations", ...], "line"}], "idea"?, "reply"?}.
                                      `wait` prints the user's Make (TRIALS), Skip, or question (TRIALS ASK);
                                      each render goes up with `alt t1 --video t1.mp4 --trial`
@@ -49,8 +49,8 @@ product video). Notes save with the edit, never in the plugin:
                                      round on the same video with no render (--alt: on that version's scene)
     python3 review.py demo                         self-check on a generated 6 s clip
 
-KIROCUT_NO_REOPEN=1 (tests only): the server never opens, resumes or types into a Claude Code session (reopen()),
-so a test that posts notes or approves with no `wait` listening cannot start one on the real Mac.
+Notes sent or an approve with nobody listening wait in review.json: the Kiro chat picks them up with kirocut_events (the MCP
+server), and the page's Tell Kiro button copies a line for the user to paste into the chat.
 
 A note that reads as a lasting preference ("always ...", "never ...", "too many zooms") is offered as a rule: the page
 ticks "Keep as a rule for <style>" (POST /keep unticks it) and `wait` marks it [keep as a rule for <style>]. Every
@@ -62,7 +62,7 @@ the stills, the stills check, the render) from the home job and review.json, and
 the page shows under it, "Made in 6 min (cut 3:10, edit 1:40, render 0:52)". `round --stills` starts the laptop
 render in the background (edit.py render --speculative); notes sent on the stills, or Stop, end it.
 Every round snapshots the edit's own files (top-level .json/.txt under 2 MB, .sfx/music.wav and the card files plan.json shows) into
-review/snap-<stage><round>/, so the page can show what changed ("Changed in this draft": the notes Claude answered,
+review/snap-<stage><round>/, so the page can show what changed ("Changed in this draft": the notes Kiro answered,
 then cards, zooms, captions, title, music and cut words that differ from the round before, plus each --changed line)
 and go back to any round. On the edit, a click on a card, caption, title or zoom on the frame starts a note naming it
 (the round's data "items"), and `wait` prints what is on screen at each note ([caption '...'], [zoom ...]).
@@ -70,7 +70,7 @@ Each round also gets review/data-<stage><round>.json for the page, built from th
 the files are there: the cut's transcript with every cut word and pause struck (decisions.json +
 words.raw.json), the timeline's segments (cut points, or chapters.txt on the edit), and the edit's
 Cards / Zooms / Captions tracks (plan.json). A missing file leaves that part out.
-A note saved while a round is with Claude (after send) is queued for the next round: "queued": true, round
+A note saved while a round is with Kiro (after send) is queued for the next round: "queued": true, round
 n+1. `wait` never sees it. `round` makes it an open note of the new round, moved to where the same words
 are said when both rounds have the cut's transcript (else at the same time), with a new frame still.
 Stop merges queued notes into the reopened round.
@@ -81,7 +81,7 @@ to spans.json: rebuild, render, verify, round". Stop puts spans.prev.json and ke
 
 `wait` exits when the user presses send or approve, and prints every note of the round: its time,
 the text, the words being said, the card on screen (from plan.json) and the frame still's path.
-While `wait` runs the page says Claude is listening; without it the notes still save, and the next
+While `wait` runs the page says Kiro is listening; without it the notes still save, and the next
 `wait` returns at once with them.
 
 The server listens on 127.0.0.1 only, and every request needs the random token in the URL it
@@ -118,7 +118,9 @@ from urllib.parse import parse_qs, quote, unquote, urlsplit
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(1, str(Path(__file__).resolve().parent.parent))   # `from kirocut import ...` (styleskill, taste)
-import askhook  # noqa: E402
+import pagekit  # noqa: E402
+import legacy  # noqa: E402
+import authcookie  # noqa: E402
 import shortcuts  # noqa: E402
 import assets  # noqa: E402
 import live  # noqa: E402
@@ -326,7 +328,7 @@ def round_data(folder, video, stage, rnd, plan, prev=None):
                                         music=snap_sha(folder, prev.get("snap")) != music_sha(folder))
         if old.get("duration") and dur and abs(old["duration"] - dur) >= 0.1:
             d["changes"].append({"t": None, "text": f"{abs(old['duration'] - dur):.1f} s {'shorter' if dur < old['duration'] else 'longer'}"})
-    try:   # the rules this draft used: what plan.py, the cut and Claude's taste read handed over (taste.record)
+    try:   # the rules this draft used: what plan.py, the cut and Kiro's taste read handed over (taste.record)
         from kirocut import taste
         d["rules"] = taste.applied_ids(folder)
     except Exception:
@@ -1211,7 +1213,7 @@ def timeline_cuts(body):
 
 def cuts_text(transcript, gone):
     """The note for the timeline's cut pieces: each range on the edit's clock with the words said in it (a word is
-    in when its middle is, apply_edits' rule), for Claude to take out of spans.json and render again. "" for none."""
+    in when its middle is, apply_edits' rule), for Kiro to take out of spans.json and render again. "" for none."""
     if not gone:
         return ""
     said = lambda a, b: said_in(transcript, a, b)
@@ -1230,7 +1232,7 @@ def said_in(transcript, a, b):
 
 
 def typed_labels(folder):
-    """texts.json as plan.json's "label" texts (plan.py typed_texts does the same when Claude plans)."""
+    """texts.json as plan.json's "label" texts (plan.py typed_texts does the same when Kiro plans)."""
     f = Path(folder) / "texts.json"
     keep = ("text", "start", "end", *TEXT_KEYS)
     sys.path.insert(0, str(EDIT_PY.parent))
@@ -1335,9 +1337,9 @@ def cards_added(folder, d):
 
 def bake_ready(folder, d):
     """Why the typed texts cannot go into this draft by themselves now (None: they can). A patch render needs the
-    edit's final render and the plan it was made from; while Claude has the round it plans them in itself."""
+    edit's final render and the plan it was made from; while Kiro has the round it plans them in itself."""
     why = live_ready(folder, d)
-    return why if why == "not the edit" else "Claude has this draft" if d.get("sent") or busy(folder) and not listening(folder) \
+    return why if why == "not the edit" else "Kiro has this draft" if d.get("sent") or busy(folder) and not listening(folder) \
         else None if layer_of(folder, d) else why   # waiting for notes: idle; a layer draft bakes its layers (bake_layers)
 
 
@@ -1486,10 +1488,10 @@ def on_cut(t, gone):
     return round(t - s, 3), False
 
 
-def tell_claude(folder, d, layer=False):
-    """A hand edit needs a note only when it cannot go in by itself: Claude has the round (it plans it in itself), or the
+def needs_agent(folder, d, layer=False):
+    """A hand edit needs a note only when it cannot go in by itself: Kiro has the round (it plans it in itself), or the
     draft cannot be baked (finished by hand, no render). Otherwise the page's change is the whole job. A layer draft
-    takes texts, placed sounds and cuts by itself (layer=True for those); anything else on it still needs Claude."""
+    takes texts, placed sounds and cuts by itself (layer=True for those); anything else on it still needs Kiro."""
     return bake_ready(folder, d) is not None or not layer and layer_of(folder, d) is not None
 
 
@@ -1705,7 +1707,7 @@ def scene_for(folder, d, alt=None):
 def scene_duplicate(folder, alt=None):
     """Copy a version's timeline (the main draft's when alt is None) into a new version beside it, named "<name> copy"
     (then "copy 2", ...): the same video, transcript and plan, and the scene exactly as it is now, every hand edit kept.
-    Claude's change log stays with the original. Returns the new version's name."""
+    Kiro's change log stays with the original. Returns the new version's name."""
     d = load(folder / "review.json")
     sc = scene_for(folder, d, alt)
     if sc is None:
@@ -1729,7 +1731,7 @@ def scene_duplicate(folder, alt=None):
     return name
 
 
-def claude_changes(folder, d):
+def agent_changes(folder, d):
     """The agent's changes to the scene on this draft (scene.py ops, review/agent.json, a version's review/agent.<alt>.json):
     the ones made on it, and on the round a `round --scene` came from. What the page lists and undoes: n, why, t, undone,
     items, and alt (the version it was made on, None for the main draft)."""
@@ -1745,7 +1747,7 @@ def claude_changes(folder, d):
 
 def scene_vs(folder, d):
     """/state.scene_v: each version's scene file's stamp ("" the main draft), so the page fetches the one it shows when
-    Claude changed it."""
+    Kiro changed it."""
     alts = ["", *(a["name"] for a in d.get("alts") or [] if a.get("name"))]
     return {a: (folder / scene.name_of(a)).stat().st_mtime_ns if (folder / scene.name_of(a)).exists() else None for a in alts}
 
@@ -1861,7 +1863,7 @@ def plan_base(folder, d, plan_f, keep=False):
 
 
 def bake_now(folder, run=subprocess.run):
-    """The texts in texts.json into the draft the page shows, with no Claude: plan.json's label texts swapped for
+    """The texts in texts.json into the draft the page shows, with no Kiro: plan.json's label texts swapped for
     them, `edit.py patch` re-renders those seconds into render.mp4, and the round's video and snapshot take it."""
     folder, rj = Path(folder), Path(folder) / "review.json"
     b = BAKE.setdefault(str(folder), {})
@@ -1895,7 +1897,7 @@ def bake_now(folder, run=subprocess.run):
             return why
 
     def swap(d):
-        if d.get("sent") or d["stage"] != "edit" or Path(d.get("plan") or "-") != plan_f:   # Claude took it meanwhile
+        if d.get("sent") or d["stage"] != "edit" or Path(d.get("plan") or "-") != plan_f:   # Kiro took it meanwhile
             return
         clone(src.with_suffix(".cut.mp4") if gone else src, Path(d["video"]))
         shutil.copy2(plan_f, folder / "review" / Path(d["snap"]).name / plan_f.name)
@@ -1977,7 +1979,7 @@ def bake_layers(folder, base, b, run=subprocess.run, key=None):
         clone(folder / "render-layers.mp4", out)
 
     def swap(d):
-        if d.get("sent") or d["stage"] != "edit" or Path(d.get("base_video") or d["video"]) != base:   # Claude took it, or a new round
+        if d.get("sent") or d["stage"] != "edit" or Path(d.get("base_video") or d["video"]) != base:   # Kiro took it, or a new round
             return
         d.update(base_video=str(base), video=str(out if layered else base))
         d["baked"], d["baked_key"] = d.get("baked", 0) + 1, key
@@ -1995,13 +1997,13 @@ def bake_done(folder, b):
     return None
 
 
-# ---------------------------------------------------------------- Export: the page as one MP4, no Claude needed
+# ---------------------------------------------------------------- Export: the page as one MP4, no Kiro needed
 EXPORT = {}   # folder -> {"state": "working" | "done" | "failed", "at", "log", "since", "file", "why", "note", "done_at"}
 
 
 def export_left_out(folder, d):
     """What the export cannot put in, as one plain line (None: everything the page shows goes in). A layer draft's
-    base has its cards and captions burned in: moving one or retyping a caption needs Claude's next draft."""
+    base has its cards and captions burned in: moving one or retyping a caption needs Kiro's next draft."""
     if not layer_of(folder, d):
         return None
     sys.path.insert(0, str(EDIT_PY.parent))
@@ -2009,7 +2011,7 @@ def export_left_out(folder, d):
     ov, was = read_ov(folder), snap_file(folder, d.get("snap"), "overrides.json") or {}   # changed on this draft only
     ch = lambda *ks: any((ov.get(k) or None) != (was.get(k) or None) for k in ks)
     what = [w for w, on in (("card", ch("cards", "added_cards")), ("caption", ch("words", "cap_times"))) if on]
-    return f"Your {' and '.join(what)} changes need Claude on this draft, so the export leaves them out." if what else None
+    return f"Your {' and '.join(what)} changes need Kiro on this draft, so the export leaves them out." if what else None
 
 
 def exports_dir(folder):
@@ -2084,7 +2086,7 @@ def export_job(folder, run=subprocess.run):
 
 def export_src(folder, ex, run=subprocess.run):
     """The MP4 that is the page now (or why it stopped): the draft itself when its last bake has every hand edit in
-    (instant), else the bake those edits would run, waited for. While Claude has the round it never touches the draft:
+    (instant), else the bake those edits would run, waited for. While Kiro has the round it never touches the draft:
     the page's plan renders on its own (export_render)."""
     b = BAKE.setdefault(str(folder), {})
     while True:   # a bake running finishes first; one waiting runs now instead of after its timer
@@ -2105,14 +2107,14 @@ def export_src(folder, ex, run=subprocess.run):
                                     "render" + Path(d["plan"]).stem[len("plan"):]) ) + ".renderer.log")
         why = bake(folder, run)
         return why or Path(load(folder / "review.json")["video"])
-    if why == "Claude has this draft":
-        ex["note"] = "Claude is still working on a new draft. This exports what you see now."
+    if why == "Kiro has this draft":
+        ex["note"] = "Kiro is still working on a new draft. This exports what you see now."
         return export_render(folder, d, ex, run)
     return Path(d["video"])   # not the edit (a cut): the video as it is
 
 
 def export_render(folder, d, ex, run=subprocess.run):
-    """The page's draft rendered beside the draft, not into it (Claude has the round): plan-export.json into
+    """The page's draft rendered beside the draft, not into it (Kiro has the round): plan-export.json into
     render-export.mp4, by a patch of a copy of the draft when it can, else in full."""
     pf, out = folder / "plan-export.json", folder / "render-export.mp4"
     ex["log"] = str(out.with_name(out.stem + ".renderer.log"))
@@ -2217,7 +2219,7 @@ def seen(folder):
 
 
 # A note that reads as a lasting preference: the page offers it as a rule for the style ("Keep as a rule").
-# ponytail: a word list, not a model; Claude still judges every kept note when it saves it
+# ponytail: a word list, not a model; Kiro still judges every kept note when it saves it
 RULE_WORDS = re.compile(r"\b(always|never|every time|from now on|by default|in general|i prefer|prefer|i (?:don'?t |do not )?like|"
                         r"i hate|i'?d rather|i want (?:all|every|my)|too (?:many|much|few|little|big|small|long|short|fast|slow|loud|quiet)|"
                         r"fewer|stop (?:adding|using|putting))\b", re.I)
@@ -2301,8 +2303,8 @@ def ensure_home():
     """The home page's address, starting it (home.py serve) when it is not running. None when it does not start."""
     _HOME["at"] = 0.0
     if not home_url():
-        subprocess.Popen([sys.executable, str(Path(__file__).with_name("home.py")), "serve", "--no-open"],
-                         stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+        import proc   # detached on every OS: start_new_session means nothing on Windows
+        proc.spawn([sys.executable, str(Path(__file__).with_name("home.py")), "serve", "--no-open"])
         for _ in range(40):
             time.sleep(0.5)
             _HOME["at"] = 0.0
@@ -2328,12 +2330,11 @@ def start_update():
 
 
 def video_skills(folder, now=None):
-    """The skills on this video, for the notes panel: each one Claude ran (toolhook.py, <edit>/review/skills.jsonl), "now"
+    """The skills on this video, for the notes panel: each one Kiro ran (<edit>/review/skills.jsonl), "now"
     for the last one while the video is being made, then the style's skill and chained skills still to run ("next").
     [{"skill", "state": "done" | "now" | "next"}]."""
-    import toolhook
-    used = toolhook.used(folder)
-    f = askhook.pages().parent / "home" / "state.json"
+    used = skills_used(folder)
+    f = pagekit.home_dir() / "home" / "state.json"
     try:
         jobs = [j for j in json.loads(f.read_text(encoding="utf-8")).get("jobs") or [] if isinstance(j, dict)
                 and j.get("type") == "video" and Path((j.get("args") or {}).get("edit") or "/").resolve() == Path(folder).resolve()]
@@ -2348,6 +2349,29 @@ def video_skills(folder, now=None):
         out[-1]["state"] = "now"
     ran = {u["skill"].split(":")[-1] for u in used}
     return out + [{"skill": x, "state": "next"} for x in plan if x.split(":")[-1] not in ran]
+
+
+def skills_used(folder):
+    """The skills a video ran, in first-run order, with the last time each ran: [{"skill", "at", "last"}]."""
+    out = {}
+    try:
+        for ln in (Path(folder) / "review" / "skills.jsonl").read_text(encoding="utf-8").splitlines():
+            try:
+                r = json.loads(ln)
+                out.setdefault(r["skill"], r)["last"] = r["at"]
+            except (ValueError, KeyError, TypeError):
+                pass
+    except OSError:
+        pass
+    return list(out.values())
+
+
+def record_skill(folder, name):
+    """A skill this video ran (the start and style-edit skills note each one they hand over to), for the notes panel."""
+    d = Path(folder) / "review"
+    d.mkdir(parents=True, exist_ok=True)
+    with open(d / "skills.jsonl", "a", encoding="utf-8") as f:
+        f.write(json.dumps({"skill": str(name).strip().lstrip("/"), "at": round(time.time(), 2)}) + "\n")
 
 
 def library_status(folder):
@@ -2388,7 +2412,7 @@ CUT_ALIASES = {"Joined your clips in order": "join", "Wrote down every word you 
 
 def cut_steps(folder, d):
     """Round 0's checklist from the home window's job for this edit: [{text, state: done|now|todo}], or None when no
-    job made this edit (Claude Code alone). Also the job's state and its own Claude ("claude": opened, command)."""
+    job made this edit (Kiro alone). Also the job's state."""
     f = Path(os.environ.get("KIROCUT_HOME", "").strip() or Path.home() / ".kirocut") / "home" / "state.json"
     try:
         jobs = json.loads(f.read_text(encoding="utf-8")).get("jobs") or []
@@ -2405,9 +2429,9 @@ def cut_steps(folder, d):
     at = len(keys) if landed else max([keys.index(k) for k in seen if k in keys] or [-1])
     rows = [{"text": t, "state": "done" if i < at or landed else "now" if i == at else "todo"}
             for i, t in enumerate(dict(CUT_STEPS)[k] for k in keys)]
-    if at < 0 and j.get("state") == "taken":   # Claude has it, no script has reported yet: the first step is under way
+    if at < 0 and j.get("state") == "taken":   # Kiro has it, no script has reported yet: the first step is under way
         rows[0]["state"] = "now"
-    return {"steps": rows, "state": j.get("state"), "claude": j.get("claude"), "error": j.get("error")}
+    return {"steps": rows, "state": j.get("state"), "error": j.get("error")}
 
 
 def listening(folder):
@@ -2431,55 +2455,34 @@ TAKES = ("wait", "round")   # the commands that make a session the one notes go 
 
 
 def note_session(folder, cmd):
-    """Record in review.json claude.last which Claude Code ran this command: {session, host_session, kind, at, by}.
+    """Record in review.json agent.last which Kiro chat ran this command: {session, host_session, kind, at, by}.
     A session that ran `wait` or `round` keeps it against other sessions' other commands (a `status` elsewhere)."""
-    me = askhook.claude_env()
+    me = pagekit.agent_env()
     if not me:
         return
 
     def f(d):
-        c = d["claude"] = d.get("claude") or {}
+        c = d["agent"] = d.get("agent") or {}
         last = c.get("last") or {}
         if cmd in TAKES or last.get("session") == me["session"] or last.get("by") not in TAKES:
             c["last"] = {**me, "at": time.time(), "by": cmd}
     update(folder / "review.json", f)
 
 
-def is_desktop():
-    return askhook.claude_env().get("kind") == "desktop"
-
-
-def listen_hint(folder):
-    """What a desktop session is told to do after a round: listen in the background, end the turn. "" elsewhere."""
-    if not is_desktop():
-        return ""
-    return (f"DESKTOP: you run in the Claude desktop app. Listen for the user's notes in the background: run\n"
-            f"  python3 {shlex.quote(str(Path(__file__).resolve()))} {shlex.quote(str(folder))} wait\n"
-            f"with the Bash tool's run_in_background set, then end your turn. You are woken with the notes the moment the "
-            f"user sends them. Start it again after each round. Never run `wait` in the foreground: it blocks your turn.")
-
-
 BUSY_S = 900   # an agent command on this edit in the last 15 min: it is mid-round, not gone
 
 
 def mark_path(folder, write=False):
-    """review/.kiro says the agent is on this edit. review/.claude is an older session's file: still read, never written."""
-    folder = Path(folder)
-    new, old = folder / "review" / ".kiro", folder / "review" / ".claude"
-    if write or new.exists() or not old.exists():
-        return new
-    return old
+    """review/.kiro says the agent is on this edit."""
+    return Path(folder) / "review" / ".kiro"
 
 
 def mark_mtime(folder):
-    """Newest mtime of the agent mark, or None. An older review/.claude still counts until the next write."""
-    times = []
-    for name in (".kiro", ".claude"):
-        try:
-            times.append((Path(folder) / "review" / name).stat().st_mtime)
-        except OSError:
-            pass
-    return max(times) if times else None
+    """When the agent last ran a command on this edit (review/.kiro), or None."""
+    try:
+        return (Path(folder) / "review" / ".kiro").stat().st_mtime
+    except OSError:
+        return None
 
 
 def busy(folder):
@@ -2489,154 +2492,14 @@ def busy(folder):
     return last is not None and time.time() - last < BUSY_S
 
 
-REOPEN_S = 900   # one new Claude per edit this often at most (a trust prompt can hold it in its Terminal)
 
 
-def who_claude():
-    """The Claude Code running this command: {session, pid, tty, cwd, app} from the process tree (the nearest
-    `claude` above this process, and the app above that), or {} outside one (Windows has no ps: {})."""
-    pid, out = os.getpid(), {}
-    for _ in range(15):
-        try:
-            row = subprocess.run(["ps", "-o", "ppid=,tty=,comm=", "-p", str(pid)], capture_output=True, text=True,
-                                 timeout=3).stdout.split(None, 2)
-        except (OSError, subprocess.TimeoutExpired):
-            return {}
-        if len(row) < 3:
-            break
-        ppid, tty, comm = row[0], row[1], row[2].strip()
-        if not out and Path(comm).name.lower() in ("kiro-cli", "kiro-cli.exe", "kiro", "kiro.exe", "claude"):
-            out = {"pid": pid, "tty": "/dev/" + tty if tty not in ("?", "??") else ""}
-        elif out and ".app/" in comm:
-            out["app"] = comm.split(".app/")[0].rsplit("/", 1)[-1]
-            break
-        pid = int(ppid)
-    if not out:
-        return {}
-    try:   # the folder it runs in: `claude --resume` finds a conversation only from there
-        cwd = subprocess.run(["lsof", "-a", "-p", str(out["pid"]), "-d", "cwd", "-Fn"], capture_output=True, text=True,
-                             timeout=3).stdout
-        out["cwd"] = next((x[1:] for x in cwd.splitlines() if x.startswith("n")), "")
-    except (OSError, subprocess.TimeoutExpired):
-        out["cwd"] = ""
-    return {**out, "session": askhook.session()}
-
-
-def last_claude(folder):
-    """The agent that last ran a command on this edit (who_claude, kept in review/.kiro), or {}."""
-    try:
-        return json.loads(mark_path(folder).read_text(encoding="utf-8") or "{}")
-    except (OSError, ValueError):
-        return {}
-
-
-def claude_alive(w):
-    """That Claude Code is still running (its pid is a `claude`)."""
-    try:
-        comm = subprocess.run(["ps", "-o", "comm=", "-p", str(int(w.get("pid") or 0))], capture_output=True, text=True,
-                              timeout=3).stdout.strip()
-    except (OSError, subprocess.TimeoutExpired, ValueError):
-        return False
-    return Path(comm).name.lower() in ("kiro-cli", "kiro-cli.exe", "kiro", "kiro.exe", "claude")
-
-
-def claude_state(folder):
-    """The page's Claude control: {"state": "working" | "waiting" | "open" | "off", "show": its Terminal tab can come
-    to the front, "last": when it last ran a command here, "resume": the line that opens it again in any terminal}. waiting: a `wait` listens for notes; working: its process
-    runs and it ran a command lately (no process info, as on Windows: a command lately); open: running, idle."""
-    w, lis = last_claude(folder), listening(folder)
-    alive = bool(w.get("pid")) and claude_alive(w)
-    b = busy(folder)
-    st = "waiting" if lis else ("working" if b else "open") if alive else "working" if b and not w.get("pid") else "off"
-    try:
-        last = mark_mtime(folder)
-    except OSError:
-        last = None
-    try:
-        c = load(folder / "review.json").get("claude") or {}
-    except (OSError, ValueError):
-        c = {}
-    rec = c.get("last") or {}
-    who = listener(folder) if lis else {}   # notes go to the session listening, else the one that last had them
-    who = who if who.get("kind") else rec
-    where = who.get("kind") or ("terminal" if w.get("session") else "")
-    if where == "desktop" and not lis:   # a desktop session hears notes only through a background `wait`
-        st = "working" if b and rec.get("by") != "round" else "idle"
-    name = (who.get("host_session") or "").removeprefix("local_")[:8] or (who.get("session") or w.get("session") or "")[:8]
-    return {"state": st, "show": bool(alive and w.get("app") == "Terminal" and w.get("tty")), "last": last,
-            "resume": resume_cmd(w), "where": where, "name": name, "how": c.get("how") if st == "idle" else None}
-
-
-def show_claude(folder):
-    """Show Claude: its Terminal tab to the front. True when it was found."""
-    import launcher
-    w = last_claude(folder)
-    return bool(claude_alive(w) and w.get("app") == "Terminal" and launcher.show_tab(w.get("tty")))
-
-
-def stop_claude(folder):
-    """Stop: end this video's Claude Code (SIGTERM to its process). The video, notes and drafts stay; Start
-    carries on from them. True when one was running."""
-    import signal
-    w = last_claude(folder)
-    if not claude_alive(w):
-        return False
-    try:
-        os.kill(int(w["pid"]), signal.SIGTERM)
-    except (OSError, ValueError, KeyError):
-        return False
-    (folder / "review" / ".listening").unlink(missing_ok=True)
-    return True
-
-
-def resume_cmd(w):
-    """What to paste into a terminal to open that Claude's conversation again."""
-    return f"cd {shlex.quote(w['cwd'])} && claude --resume {w['session']}" if w.get("session") and w.get("cwd") else ""
-
-
-def reopen(folder, rj, force=False):
-    """Notes sent or approved with no Claude on this edit. The Claude that worked here first: still open in a
-    Terminal tab, the carry-on prompt is typed into it; closed, its conversation opens again (`claude --resume`).
-    Only with neither, a new Claude (`/kirocut:start carry on edits/<name>`, in the library). Never while a `wait`
-    listens; force (the page's "Open a new Claude") also when a Claude worked here lately, since it may have stopped.
-    Kept on review.json as "claude": {opened, how, command, session, at} so the page says where it went."""
-    rec = (load(rj).get("claude") or {}).get("last") or {}
-    if not force and not listening(folder) and claude_state(folder)["state"] == "idle":
-        # the last session is in the desktop app and not listening: never a Terminal Claude in its place; the page offers
-        # "Open the desktop app" and "Start a new Claude" (force)
-        r = {"opened": False, "how": "desktop-idle", "session": rec.get("session"), "at": time.time()}
-        update(rj, lambda d: d.update(claude={**r, "last": (d.get("claude") or {}).get("last")}))
-        return r
-    if os.environ.get("KIROCUT_NO_REOPEN"):   # tests: never a real Terminal or Claude Code session (the docstring up top)
-        return None
-    if listening(folder) or not force and (busy(folder) or time.time() - ((load(rj).get("claude") or {}).get("at") or 0) < REOPEN_S):
-        return None
-    import launcher
-    prompt, w = f"/kirocut:start carry on edits/{folder.name}", last_claude(folder)
-    alive = claude_alive(w)
-    if alive and w.get("app") == "Terminal" and launcher.type_into(w.get("tty"), prompt):
-        r = {"opened": True, "how": "typed", "command": resume_cmd(w), "session": w.get("session")}
-    elif not alive and w.get("session") and w.get("cwd"):
-        opened, cmd = launcher.open_claude(Path(w["cwd"]), prompt, session=w["session"], resume=True)
-        r = {"opened": opened, "how": "resumed", "command": cmd, "session": w["session"]}
-    else:   # none known, or one still open where it cannot be typed into: a second copy of it would clash
-        sid = str(uuid.uuid4())
-        opened, cmd = launcher.open_claude(folder.parent.parent, prompt, session=sid)
-        r = {"opened": opened, "how": "new", "command": cmd, "session": sid}
-        if opened:
-            r["resume"] = f"cd {shlex.quote(str(folder.parent.parent))} && claude --resume {sid}"
-    r.setdefault("resume", resume_cmd(w) if r["how"] != "new" else "")
-    r["at"] = time.time()
-    update(rj, lambda d: d.update(claude={**r, "last": (d.get("claude") or {}).get("last")}))
-    return r
-
-
-def open_desktop():
-    """The page's "Open the desktop app": the Claude app to the front (macOS). False in tests or elsewhere."""
-    if os.environ.get("KIROCUT_NO_REOPEN") or sys.platform != "darwin":
-        return False
-    return subprocess.run(["open", "-a", "Claude"], capture_output=True).returncode == 0
-
+def agent_state(folder):
+    """The page's Kiro control: {"state": "waiting" | "working" | "open", "last"}. waiting: kirocut_events (or `wait`) is
+    listening for this edit now; working: the chat ran a command here lately; open: neither. Kiro is the chat in the IDE,
+    so there is no process to look for and nothing to start: the page's Tell Kiro copies a line to paste there."""
+    lis = listening(folder)
+    return {"state": "waiting" if lis else "working" if busy(folder) else "open", "last": mark_mtime(folder)}
 
 def log_pct(path):
     """The last "N/M" in a render log (Remotion prints "Rendered 812/3255"), as a percent."""
@@ -2894,13 +2757,10 @@ def stage_name(s, stills=False):
 
 
 def resume_text(folder, d):
-    """The page's Copy for Claude: everything a new Claude Code session needs to pick this edit up when the
-    one that made it is closed (left overnight) or stopped answering."""
-    doc = Path(__file__).resolve().parents[2] / "skills" / "style-edit" / "references" / "review.md"
+    """The page's Copy for Kiro: the line a Kiro chat needs to pick this edit up (a new chat, or one that stopped)."""
     return (f'Pick up my KiroCut edit "{d.get("name") or folder.name}" where I left it '
-            f'({stage_name(d.get("stage"), d.get("stills"))}, round {d.get("round")}).\n'
-            f"Read {doc}, then run this in the background and apply the notes it prints:\n"
-            f'python3 "{Path(__file__).resolve()}" "{folder.resolve()}" wait')
+            f'({stage_name(d.get("stage"), d.get("stills"))}, round {d.get("round")}): call kirocut_open_editor with edit '
+            f'"{folder.resolve()}", then kirocut_events, and answer what it returns.')
 
 
 # ---------------------------------------------------------------- server
@@ -2942,7 +2802,7 @@ def make_handler(folder, token):
                 body = body.encode()
             self.send_response(code)
             if cookie:
-                self.send_header("Set-Cookie", f"{self.cookie_name()}={token}; Path=/; HttpOnly; SameSite=Strict")
+                self.send_header("Set-Cookie", authcookie.header(self, self.cookie_name(), token))
             self.send_header("Content-Type", ctype)
             self.send_header("Content-Length", str(len(body)))
             self.send_header("Cache-Control", "no-store")
@@ -2985,8 +2845,6 @@ def make_handler(folder, token):
                 return self.send(403, {"error": "open the page with the URL review.py printed"})
             path = urlsplit(self.path).path
             q = {k: v[0] for k, v in parse_qs(urlsplit(self.path).query).items()}
-            if askhook.route(self, "GET", path, q):   # Claude's questions (askhook.py)
-                return
             if shortcuts.route(self, "GET", path, q):   # the keyboard shortcuts (shortcuts.py)
                 return
             if path == "/":
@@ -3012,7 +2870,7 @@ def make_handler(folder, token):
                 d["texts_baked"] = baked_texts(folder, d) + d["texts_burned"] if d.get("stage") == "edit" else []   # the rest the page draws live
                 d["cards_pending"] = cards_pending(folder, d) if d.get("stage") == "edit" else []   # moved, not in the video yet
                 d["cards_added"] = cards_added(folder, d) if d.get("stage") == "edit" else []   # dropped on, not in the video yet
-                try:   # the Media panel: uploads, what was added for Claude, and the pictures the draft already shows
+                try:   # the Media panel: uploads, what was added for Kiro, and the pictures the draft already shows
                     used = [c.get("src") or ((c.get("anim") or {}).get("props") or {}).get("src") for c in load(Path(d["plan"])).get("cards") or []]
                 except (KeyError, TypeError, OSError, ValueError):
                     used = []
@@ -3021,14 +2879,13 @@ def make_handler(folder, token):
                 d["bake"] = {"state": b.get("state"), "why": b.get("why")}   # putting the texts in the video
                 d["layer"] = layer_of(folder, d) is not None   # plays base_video with the hand edits as layers (layer_plan)
                 d["export"] = export_state(folder, d) if d.get("stage") == "edit" else None   # Export, top right
-                d["session_cmd"] = resume_cmd(last_claude(folder)) or (d.get("claude") or {}).get("resume") or ""   # Start's fallback
-                d["claude_ui"] = claude_state(folder)   # the Claude control: working, waiting, open or off
-                d["page"] = live.page_version(HTML, HTML.with_name("ask.js"), shortcuts.JS, HTML.with_name("review-scene.js"))   # the tab reloads when this changes
+                d["agent_ui"] = agent_state(folder)   # the Kiro control: waiting, working or open
+                d["page"] = live.page_version(HTML, HTML.with_name("alerts.js"), shortcuts.JS, HTML.with_name("review-scene.js"))   # the tab reloads when this changes
                 d["cutcheck"] = (folder / "cut-check.html").exists()
                 d["scene"] = scene_mode(folder, d)   # the page edits the scene (SCENE.md)
-                d["scene_v"] = scene_vs(folder, d) if d["scene"] else None   # a change from Claude: the page fetches its version's scene
-                changes = claude_changes(folder, d) if d["scene"] else []   # the agent's changes on this draft, each undoable
-                d["agent_changes"] = d["claude_changes"] = changes
+                d["scene_v"] = scene_vs(folder, d) if d["scene"] else None   # a change from Kiro: the page fetches its version's scene
+                changes = agent_changes(folder, d) if d["scene"] else []   # the agent's changes on this draft, each undoable
+                d["agent_changes"] = changes
                 d["rawvideo"] = raw_video(folder, d) is not None   # the transcript editor's preview plays the raw take
                 d["home"] = home_url()   # the Home button: back to the editor's window, or how to start it
                 d["update"] = _HOME.get("update") if d["home"] else None   # the rail's Update
@@ -3059,13 +2916,15 @@ def make_handler(folder, token):
                 for x in d.get("activity", [])[-1:]:
                     if x.get("log") and not x.get("done"):
                         x["pct"] = log_pct(x["log"])
-                        try:   # a render still writing its log is alive even when Claude is quiet
+                        try:   # a render still writing its log is alive even when Kiro is quiet
                             x["log_age"] = round(time.time() - Path(x["log"]).stat().st_mtime)
                         except OSError:
                             pass
                 if making_edit(d):
                     d["making"] = {"style": making_style(folder), "steps": EDIT_STEPS}
                 return self.send(200, d)
+            if path == "/alerts.js":   # the chime and notifications (alerts.js)
+                return self.send(200, HTML.with_name("alerts.js").read_bytes(), "text/javascript; charset=utf-8")
             if path == "/review-scene.js":   # the edit page on a scene (review-scene.js)
                 return self.send(200, HTML.with_name("review-scene.js").read_bytes(), "text/javascript; charset=utf-8")
             if path == "/live/plan":   # the live player's plan (live_plan), or why the page plays the MP4
@@ -3210,7 +3069,7 @@ def make_handler(folder, token):
         def post(self):
             if not self.authorized():
                 return self.send(403, {"error": "open the page with the URL review.py printed"})
-            if not askhook.same_origin(self):   # a POST from another site's page, even with the cookie
+            if not pagekit.same_origin(self):   # a POST from another site's page, even with the cookie
                 return self.send(403, {"error": "not from this page"})
             if urlsplit(self.path).path == "/assets/upload":   # "Anything to add?": one video or image, streamed in
                 q = parse_qs(urlsplit(self.path).query)
@@ -3267,8 +3126,6 @@ def make_handler(folder, token):
             except ValueError:
                 return self.send(400, {"error": "not json"})
             path = urlsplit(self.path).path
-            if askhook.route(self, "POST", path, {}, body):
-                return
             if shortcuts.route(self, "POST", path, {}, body):
                 return
             if path == "/theme":   # the toggle: one choice for the window and every review page
@@ -3301,7 +3158,7 @@ def make_handler(folder, token):
                             c["keep"], c["keep_set"] = bool(body.get("keep")), True
                             return True
                     return False
-                return self.send(200, {}) if update(rj, kp) else self.send(409, {"error": "Claude has this note now."})
+                return self.send(200, {}) if update(rj, kp) else self.send(409, {"error": "Kiro has this note now."})
             if path == "/rule/off":   # "Turn off" / "Turn on" on a rule a draft used: kept, stops applying (taste.set_off)
                 from kirocut import taste
                 try:
@@ -3315,7 +3172,7 @@ def make_handler(folder, token):
                 except (TypeError, ValueError):
                     msg = None
                 return self.send(200, {"msg": msg}) if msg else self.send(409, {"error": "nothing to undo"})
-            if path == "/teach/rule":   # Teach anywhere: one rule saved now, no Claude, with a receipt Undo takes out
+            if path == "/teach/rule":   # Teach anywhere: one rule saved now, no Kiro, with a receipt Undo takes out
                 return self.send(*teach_rule(folder, body))
             if path == "/teach/style":   # a new style from this video, at any stage
                 try:
@@ -3324,7 +3181,7 @@ def make_handler(folder, token):
                     return self.send(409, {"error": str(e) or "That name is taken. Pick another."})
                 teach_choices(folder, fresh=True)
                 return self.send(200, {"ok": True, "id": ns_["id"], "name": ns_["name"]})
-            if path == "/learn" and body.get("retry"):   # Claude could not read the notes: Try again
+            if path == "/learn" and body.get("retry"):   # Kiro could not read the notes: Try again
                 def rt(d):
                     lr = d.get("learn") or {}
                     if lr.get("state") != "failed":
@@ -3380,7 +3237,7 @@ def make_handler(folder, token):
 
                 def tc(d):
                     t = d.get("trials") or {}
-                    if act == "note":   # once made: notes queue up, Claude takes them all on its next `wait`
+                    if act == "note":   # once made: notes queue up, Kiro takes them all on its next `wait`
                         if t.get("state") != "chosen":
                             return False
                         n = len((t.get("picks") or {}).get("versions") or [])
@@ -3393,7 +3250,7 @@ def make_handler(folder, token):
                                                           "t": at, "at": now()})
                         t["handled"] = False
                         return True
-                    if t.get("state") != "proposed" or t.get("handled") is False:   # nothing to pick, or Claude has it
+                    if t.get("state") != "proposed" or t.get("handled") is False:   # nothing to pick, or Kiro has it
                         return False
                     if act == "ask":
                         t["asks"].append({"text": text, "at": now()})
@@ -3401,7 +3258,7 @@ def make_handler(folder, token):
                         t.update(state="chosen" if act == "make" else "skipped", picks=picks)
                     t["handled"] = False
                     return True
-                return self.send(200, {}) if update(rj, tc) else self.send(409, {"error": "Claude is on it"})
+                return self.send(200, {}) if update(rj, tc) else self.send(409, {"error": "Kiro is on it"})
             if path == "/assets":   # "Anything to add?": add images or links ({"add": [...]}) or take one out ({"remove": i})
                 if "remove" in body:
                     try:
@@ -3447,7 +3304,7 @@ def make_handler(folder, token):
                         (k, was["mine"].get(k, was["base"].get(k)), cur["mine"].get(k)) for k, *_ in CAP_STYLE.values()]:
                     if b is not None and a != b:
                         log_edit(folder, "captions." + k, "captions", a, b)
-                if not tell_claude(folder, d):   # it just updates: the player has it at once, the bake puts it in the video
+                if not needs_agent(folder, d):   # it just updates: the player has it at once, the bake puts it in the video
                     self.drop_note("captions")
                     bake_soon(folder)
                     return self.send(200, {"ok": True})
@@ -3620,7 +3477,7 @@ def make_handler(folder, token):
                     return self.send(400, {"error": "sfx/add takes t and a library sound; sfx/remove takes t and placed or src"})
                 return self.timeline_note("sounds-timeline", "Sounds on the timeline", line,
                                           "Plan again so they are in (sounds.json and overrides.json sfx).", key=nk, drop=nd,
-                                          layer=not nk.startswith("draft@"))   # one the draft's own MP4 has needs Claude
+                                          layer=not nk.startswith("draft@"))   # one the draft's own MP4 has needs Kiro
             if path == "/captions/text":   # the Captions panel's lines or the timeline: one caption line retyped, or deleted ("")
                 d = load(rj)
                 last = d["events"][-1]["type"] if d["events"] else None
@@ -3639,7 +3496,7 @@ def make_handler(folder, token):
                 new = " ".join(w for w in words.values() if w)
                 log_edit(folder, "caption.retype", f"{t:.2f}", old, new)
                 line = f'"{old}" at {fmt(t)} now "{new}"' if new else f'"{old}" at {fmt(t)} taken out'
-                bake_soon(folder)   # into the video by itself; a note only while Claude has the round
+                bake_soon(folder)   # into the video by itself; a note only while Kiro has the round
                 if not d.get("sent"):
                     return self.send(200, {"ok": True})
                 return self.timeline_note("caption-text", "Captions retyped", line, "Plan again so they show (overrides.json words).", key=f"{t:.2f}")
@@ -3666,7 +3523,7 @@ def make_handler(folder, token):
                 return self.timeline_note("caption-times", "Caption timing", f'"{str(body.get("text") or "")[:60]}" now {fmt(a)}-{fmt(b)}',
                                           "Plan again so it shows (overrides.json cap_times).", key=key)
             if path == "/card/edit":   # the video page: a card moved, resized or deleted: overrides.json, baked in by itself
-                # (bake_soon); a note for Claude only while it has the round
+                # (bake_soon); a note for Kiro only while it has the round
                 d = load(rj)
                 last = d["events"][-1]["type"] if d["events"] else None
                 if d.get("stage") != "edit" or d.get("sent") and last not in ("send", "edits"):
@@ -3747,7 +3604,7 @@ def make_handler(folder, token):
                 lanes[kind] = {**(lanes.get(kind) or {}), **new}
                 save(ovf, ov)
                 if lane_out(kind, was) != lane_out(kind, lanes[kind]):   # locking alone changes nothing in the video
-                    bake_soon(folder)   # no note for Claude: plan.py applies overrides.json lanes on its own
+                    bake_soon(folder)   # no note for Kiro: plan.py applies overrides.json lanes on its own
                 return self.send(200, {"ok": True, "lanes": lanes})
             if path == "/media/add":   # the Media panel: a picture or a clip dropped on the video becomes a card there
                 # (overrides.json added_cards, its key moves it like any card), baked in by itself (bake_soon)
@@ -3784,9 +3641,10 @@ def make_handler(folder, token):
                     return self.send(200, {"ok": True, "key": key, "start": card["start"], "end": card["end"]})
                 return self.comment({"t": card["start"], "t_end": card["end"], "text": f"Add {Path(src).name} on screen as shown on the page: "
                                      f"overrides.json added_cards has it (card {key}). Plan again so it shows."})
-            if path == "/scene/ops":   # the page's edit of the scene: ops applied in order, kept for Undo (j); no note for Claude.
-                # by "claude": scene.py ops, Claude's change (SCENE.md): its items marked, listed under Claude's changes
-                by = "claude" if body.get("by") == "claude" else None
+            if path == "/scene/ops":   # the page's edit of the scene: ops applied in order, kept for Undo (j); no note for Kiro.
+                # by "kiro": scene.py ops or the MCP tools, the agent's change (SCENE.md): its items marked, listed under
+                # Kiro's changes
+                by = "kiro" if body.get("by") == "kiro" else None
                 try:
                     alt = body.get("alt") or None   # a version's own scene
                     sc0 = scene_for(folder, load(rj), alt)
@@ -3814,13 +3672,13 @@ def make_handler(folder, token):
                     return self.send(200, {"ok": True, **scene_import_asset(folder, body.get("from_edit"), body.get("src"))})
                 except (ValueError, OSError) as e:
                     return self.send(400, {"error": str(e)})
-            if path in ("/scene/agent", "/scene/claude"):   # Undo or Redo of one agent change, by its own ops: {"n", "undo": true | false, "alt"}
+            if path == "/scene/agent":   # Undo or Redo of one agent change, by its own ops: {"n", "undo": true | false, "alt"}
                 alt = body.get("alt") or None
                 try:
                     with JOURNAL_LOCK:
                         sc = scene.undo_change(folder, int(body["n"]), bool(body.get("undo", True)), alt)
                 except (scene.SceneError, KeyError, TypeError, ValueError) as e:
-                    return self.send(400, {"error": str(e) if isinstance(e, scene.SceneError) else "scene/claude takes n and undo"})
+                    return self.send(400, {"error": str(e) if isinstance(e, scene.SceneError) else "scene/agent takes n and undo"})
                 return self.send(200, {"ok": True, "scene": scene_out(folder, sc, alt)})
             if path == "/timeline/restore":   # Undo or Redo of a hand edit: its files as they were before it, or after it
                 d, js = load(rj), JOURNAL.get(str(folder)) or []
@@ -3869,7 +3727,7 @@ def make_handler(folder, token):
                 return self.comment({"t": c["start"], "t_end": c["end"], "text": f"Copy the card {body['key']} to {box} as shown on the page: "
                                      f"overrides.json added_cards has it (card {key}). Plan again so it shows."})
             if path == "/timeline/cut":   # the timeline's Video row: {splits: [t], gone: [[a, b]]} on the edit's clock.
-                # The page skips the gone pieces at once; one note tells Claude the words to cut from the next draft
+                # The page skips the gone pieces at once; one note tells Kiro the words to cut from the next draft
                 d = load(rj)
                 last = d["events"][-1]["type"] if d["events"] else None
                 if d.get("stage") != "edit" or d.get("sent") and last not in ("send", "edits"):
@@ -3889,7 +3747,7 @@ def make_handler(folder, token):
                 for g in was:
                     if g not in cuts["gone"]:
                         log_edit(folder, "cut.restore", f"{g[0]:.2f}", g, None)
-                if not tell_claude(folder, d, True):   # the bake cuts the MP4 itself (a layer draft's base, a plan draft's render)
+                if not needs_agent(folder, d, True):   # the bake cuts the MP4 itself (a layer draft's base, a plan draft's render)
                     self.drop_note("cuts")
                     if was != cuts["gone"]:   # a split or the ripple view alone changes nothing in the video
                         bake_soon(folder)
@@ -3903,7 +3761,7 @@ def make_handler(folder, token):
                             for c in x["comments"]:
                                 if c["id"] == old["id"]:
                                     c.update(text=text, t=cuts["gone"][0][0], t_end=cuts["gone"][-1][1], edited=now())
-                        else:   # every piece put back: nothing to tell Claude
+                        else:   # every piece put back: nothing to tell Kiro
                             x["comments"] = [c for c in x["comments"] if c["id"] != old["id"]]
                     update(rj, put)
                     return self.send(200, {"ok": True, "cuts": cuts})
@@ -3912,7 +3770,7 @@ def make_handler(folder, token):
                 return self.comment({"t": cuts["gone"][0][0], "t_end": cuts["gone"][-1][1], "text": text,
                                      "on": {"k": "cuts", "text": "cuts on the timeline"}})
             if path in ("/text/add", "/text/delete", "/text/edit"):   # the Text tool: texts.json changes on the spot and
-                # the page draws it at once; bake_soon puts it in the video with no Claude. Only while Claude has the
+                # the page draws it at once; bake_soon puts it in the video with no Kiro. Only while Kiro has the
                 # round does a note tell it as well (it plans texts.json in itself)
                 d, f = load(rj), folder / "texts.json"
                 last = d["events"][-1]["type"] if d["events"] else None
@@ -3959,7 +3817,7 @@ def make_handler(folder, token):
                     d["comments"] = [c for c in d["comments"] if not (c["id"] == body.get("id") and editable(d, c))]
                 update(rj, rm)
                 return self.send(200, {})
-            if path == "/check":   # "got it" on one of Claude's answers
+            if path == "/check":   # "got it" on one of Kiro's answers
                 ids = set(body.get("ids", []))
                 def ck(d):
                     for c in d["comments"]:
@@ -3969,7 +3827,7 @@ def make_handler(folder, token):
                 return self.send(200, {})
             if path == "/update":   # the rail's Update: the window installs it; this server then moves onto it (live.py)
                 return self.send(200 if start_update() else 409, {})
-            if path == "/export":   # Export: what the page shows, as one MP4 (export_job); never a note, never Claude
+            if path == "/export":   # Export: what the page shows, as one MP4 (export_job); never a note, never Kiro
                 d = load(rj)
                 if d.get("stage") != "edit" or d.get("stills") or d.get("raw"):
                     return self.send(409, {"error": "Export opens on the edit."})
@@ -3986,7 +3844,7 @@ def make_handler(folder, token):
                     return self.send(400, {})
                 if body["type"] == "approve" and load(rj).get("raw"):   # nothing to approve before the first cut
                     return self.send(409, {"error": "The cut is not ready yet."})
-                if body["type"] == "stop":   # the round's notes open again; `status` tells Claude to stop
+                if body["type"] == "stop":   # the round's notes open again; `status` tells Kiro to stop
                     err = stop_round(folder)
                     return self.send(409, {"error": err}) if err else self.send(200, {})
                 style = style_label(folder) if body["type"] == "approve" else None
@@ -3997,7 +3855,7 @@ def make_handler(folder, token):
 
                 def ev(d):
                     if d.get("sent") and d["events"] and d["events"][-1]["type"] == "edits":
-                        return False   # Claude is applying transcript changes: Stop first
+                        return False   # Kiro is applying transcript changes: Stop first
                     d["events"].append({"type": body["type"], "stage": d["stage"], "round": d["round"],
                                         "at": now(), "handled": False, **({"stills": True} if d.get("stills") else {})})
                     d["sent"] = True
@@ -4009,24 +3867,16 @@ def make_handler(folder, token):
                         prepared_steps(folder, d)
                     return True
                 if not update(rj, ev):
-                    return self.send(409, {"error": "Claude is applying your transcript changes."})
+                    return self.send(409, {"error": "Kiro is applying your transcript changes."})
                 if body["type"] == "send" and load(rj).get("stills"):   # notes on the stills: that render is not the one
                     drop_spec(folder)
-                if body["type"] == "approve" and not busy(folder):   # no Claude to read the notes: KiroCut reads them itself
+                if body["type"] == "approve" and not busy(folder):   # no Kiro to read the notes: KiroCut reads them itself
                     start_learn_job(folder)
-                with contextlib.suppress(Exception):   # the notes are saved either way
-                    reopen(folder, rj)   # no Claude on this edit any more: a new one takes the notes
                 return self.send(200, {})
-            if path == "/claude":   # Start Claude: carry on in the Claude that worked here, else a new one
-                return self.send(200, reopen(folder, rj, force=True) or {})
-            if path == "/claude/desktop":   # the desktop session is not listening: bring the Claude app forward
-                return self.send(200, {"opened": open_desktop()})
-            if path == "/claude/show":   # Show Claude: its Terminal tab to the front
-                return self.send(200, {"shown": show_claude(folder)})
             self.send(404, {})
 
         def drop_note(self, k):
-            """Take back this round's note of a kind: the edit it told Claude about no longer needs Claude."""
+            """Take back this round's note of a kind: the edit it told Kiro about no longer needs Kiro."""
             def f(x):
                 x["comments"] = [c for c in x["comments"] if not ((c.get("on") or {}).get("k") == k and c["stage"] == x["stage"]
                                                                   and c["round"] >= x["round"] and editable(x, c))]
@@ -4035,9 +3885,9 @@ def make_handler(folder, token):
         def timeline_note(self, k, title, line, tail, key=None, drop=False, layer=False):
             """One note per round for the timeline's changes of a kind, one line per thing changed (key): a later
             change replaces its line, and drop takes it out (a sound added then removed leaves nothing). layer: a
-            layer draft takes this change by itself (tell_claude)."""
+            layer draft takes this change by itself (needs_agent)."""
             d = load(rj)
-            if not tell_claude(folder, d, layer):   # it just updates: the player has it at once, the bake puts it in the video
+            if not needs_agent(folder, d, layer):   # it just updates: the player has it at once, the bake puts it in the video
                 self.drop_note(k)
                 bake_soon(folder)
                 return self.send(200, {"ok": True})
@@ -4081,13 +3931,13 @@ def make_handler(folder, token):
             last = d["events"][-1]["type"] if d["events"] else None
             if d.get("sent") and last not in ("send", "edits"):   # approved: nothing comes after it on this stage
                 return self.send(409, {"error": "This draft is approved."})
-            queued = bool(d.get("sent"))   # with Claude: the note waits for the next round
+            queued = bool(d.get("sent"))   # with Kiro: the note waits for the next round
             alt = body.get("alt") or None
             src = alt_of(d, alt if alt != "*" else None)
             cid = max([c["id"] for c in d["comments"]] + [0]) + 1
             frame = f"r{d['stage']}{d['round']}-c{cid}.jpg"
             grab(src["video"], t, folder / "review" / frame)
-            images = askhook.save_images(folder / "review", imgs, f"r{d['stage']}{d['round']}-c{cid}")
+            images = pagekit.save_images(folder / "review", imgs, f"r{d['stage']}{d['round']}-c{cid}")
             on = body.get("on") if isinstance(body.get("on"), dict) else None
             add = body.get("add_text")
             if add is not None:   # the Text tool: the note's words go on screen as typed, in one of TikTok's three looks
@@ -4119,7 +3969,7 @@ def make_handler(folder, token):
 
         def transcript_edits(self, body):
             """The transcript editor's Apply: restore/cut word ranges (raw-take seconds) into spans.json, then an
-            "edits" event, so `wait` exits and Claude rebuilds, renders, verifies and opens the next round."""
+            "edits" event, so `wait` exits and Kiro rebuilds, renders, verifies and opens the next round."""
             try:
                 restore, cut, pause = (list(body.get(k) or []) for k in ("restore", "cut", "pause"))
                 for r in restore + cut + pause:
@@ -4132,7 +3982,7 @@ def make_handler(folder, token):
                 if d.get("stage") != "cut" or d.get("raw"):
                     return self.send(409, {"error": "Words can only change on the cut."})
                 if d.get("sent"):
-                    return self.send(409, {"error": "Claude is working on this draft."})
+                    return self.send(409, {"error": "Kiro is working on this draft."})
                 try:
                     out = apply_edits(folder, restore, cut, pause)
                 except Exception as e:   # a spans.json or transcript this cannot read: say so, never drop the connection
@@ -4151,13 +4001,13 @@ def make_handler(folder, token):
 
         def edit(self, body):
             """A note changed in place: its text, its time (moved to the playhead: new frame still and words),
-            its version scope, its images (kept names plus new data urls). Same id; refused once Claude has it."""
+            its version scope, its images (kept names plus new data urls). Same id; refused once Kiro has it."""
             d = load(rj)
             c = next((x for x in d["comments"] if x["id"] == body.get("id")), None)
             if not c:
                 return self.send(404, {"error": "no such note"})
             if not editable(d, c):
-                return self.send(409, {"error": "Claude is working on this draft." if d.get("sent") else "This note is from an earlier draft."})
+                return self.send(409, {"error": "Kiro is working on this draft." if d.get("sent") else "This note is from an earlier draft."})
             new = dict(c)
             if "text" in body:
                 new["text"] = str(body["text"] or "").strip()
@@ -4173,7 +4023,7 @@ def make_handler(folder, token):
                 except ValueError as e:
                     return self.send(400, {"error": str(e)})
             if "images" in body:
-                new["images"] = askhook.save_images(folder / "review", body["images"] or [], f"r{c['stage']}{c['round']}-c{c['id']}",
+                new["images"] = pagekit.save_images(folder / "review", body["images"] or [], f"r{c['stage']}{c['round']}-c{c['id']}",
                                             keep=c.get("images") or [])
             if not new["text"] and not new["images"]:
                 return self.send(400, {"error": "empty"})
@@ -4198,7 +4048,7 @@ def make_handler(folder, token):
                                                       new.get("on"))
             new["edited"] = now()
 
-            def put(d):   # again under the lock: the round may have gone to Claude meanwhile
+            def put(d):   # again under the lock: the round may have gone to Kiro meanwhile
                 for i, x in enumerate(d["comments"]):
                     if x["id"] == new["id"]:
                         if not editable(d, x):
@@ -4207,7 +4057,7 @@ def make_handler(folder, token):
                         return True
                 return False
             if not update(rj, put):
-                return self.send(409, {"error": "Claude is working on this draft."})
+                return self.send(409, {"error": "Kiro is working on this draft."})
             return self.send(200, new)
     return H
 
@@ -4248,8 +4098,8 @@ def video_jobs(folder):
 
 
 def home_opens(folder):
-    """True when a showing home window holds this edit's video job: it goes to this page in its own tab."""
-    return bool(askhook.live("home")) and bool(video_jobs(folder))
+    """True when the home window is up and holds this edit's video job: it goes to this page in its own tab."""
+    return bool(video_jobs(folder)) and bool(home_url())
 
 
 def show(url, folder):
@@ -4258,32 +4108,9 @@ def show(url, folder):
         OPEN(url)
 
 
-def asker(folder, started):
-    """Questions on this page come from the session that last ran a review.py command on this edit
-    (review/.session), else the one that started the server, and from the session holding this edit's video job
-    on the home page. A session holding any job on the home page asks only on that job's edit page, never on
-    another (a server the home window started knows no session of its own). They name the edit."""
-    def session_of(f):
-        try:
-            return (f / "review" / ".session").read_text(encoding="utf-8").strip()
-        except OSError:
-            return ""
-
-    def owner(sid):
-        held = [j for j in taken_jobs() if sid and j.get("owner") == sid]
-        if held:   # the job decides: its own edit's page, no other
-            return folder.name if any(job_edit(j) == folder.resolve() for j in held) else None
-        own = session_of(folder) or started
-        if own:
-            return folder.name if sid == own else None
-        # no session known here: only a question with no session. A Claude on this video names it (askhook's
-        # asking_edit), so a session that never touched it is another project's
-        return None if sid else folder.name
-    return owner
-
-
 def serve(folder, port=0, open_browser=True):
     """(server, url). An already running server for this folder is reused: (None, its url)."""
+    legacy.edit(folder)
     url = running(folder)
     if url:
         if open_browser:
@@ -4306,7 +4133,6 @@ def serve(folder, port=0, open_browser=True):
         f.write(url)   # private: the token in it lets a page in
     if os.name != "nt":
         os.chmod(last, 0o600)
-    askhook.register(srv, url, "review", asker(folder, askhook.session()), lambda sid: folder / "review", folder)
     if open_browser:
         show(url, folder)
     return srv, url
@@ -4342,8 +4168,8 @@ def cmd_start(a, folder):
              stills=bool(getattr(a, "stills", False)))
     d.pop("stopped", None)
     d.pop("raw", None)
-    again = raw and d.get("raw")   # round 0 again (the page opened it; Claude swaps in joined.mp4): one send event
-    if raw:   # with Claude from the start: notes queue for the cut, as after a send
+    again = raw and d.get("raw")   # round 0 again (the page opened it; Kiro swaps in joined.mp4): one send event
+    if raw:   # with Kiro from the start: notes queue for the cut, as after a send
         d.update(raw=True, sent=True)
     if raw and not again:
         d["events"].append({"type": "send", "stage": d["stage"], "round": 0, "at": now(), "handled": True, "raw": True})
@@ -4383,7 +4209,7 @@ def open_round(folder, video, stage=None, transcript=None, plan=None, note="", s
         else:
             d["round"] += 1
         d["video"] = keep(folder, video, d["stage"], d["round"])
-        d.pop("base_video", None)   # Claude's new video: the next layers go on it (bake_layers)
+        d.pop("base_video", None)   # Kiro's new video: the next layers go on it (bake_layers)
         d["vertical"] = probe(video)
         if transcript:
             d["transcript"] = str(Path(transcript).resolve())
@@ -4400,7 +4226,7 @@ def open_round(folder, video, stage=None, transcript=None, plan=None, note="", s
         d["data"] = round_data(folder, d["video"], d["stage"], d["round"], d.get("plan"),
                                prev=prev if prev and prev.get("round") and not raw else None)
         new = data_of(folder, d["data"])
-        for c in d["comments"]:   # notes queued while Claude worked open on this round, where their words are said
+        for c in d["comments"]:   # notes queued while Kiro worked open on this round, where their words are said
             if c.pop("queued", None):
                 nt = raw_to_cut(folder, c["t"]) if raw else remap(c["t"], old.get("transcript"), new.get("transcript"))
                 if nt is None:
@@ -4457,7 +4283,7 @@ def cmd_round(a, folder):
                      "with the page open makes it, or scene.py from-plan); or render and use --video")
         if a.stage == "edit" and d0["stage"] != "edit":   # the first edit: style-edit's plan as a scene, the cut as its video
             a.video, frm = a.video or str(folder / "cut.mp4"), None
-        elif scene_mode(folder, d0):   # Claude answered the notes in the scene (scene.py ops): the same video, its scene
+        elif scene_mode(folder, d0):   # Kiro answered the notes in the scene (scene.py ops): the same video, its scene
             a.video, a.plan, a.stage, frm = d0["video"], a.plan or d0.get("plan"), None, [d0["stage"], d0["round"]]
             alts = d0.get("alts") or []   # the same videos: the versions and their scenes stay on the next round
         else:
@@ -4465,7 +4291,7 @@ def cmd_round(a, folder):
 
         def check(d):
             if frm:
-                d["scene_from"] = frm   # the next round: Claude's changes made on this one stay listed and undoable there
+                d["scene_from"] = frm   # the next round: Kiro's changes made on this one stay listed and undoable there
     elif not a.video:
         sys.exit("round takes --video <the new render>, or --scene when the notes were answered in scene.json")
     d = open_round(folder, a.video, a.stage, a.transcript, a.plan, a.note, getattr(a, "stills", False), a.name, changed, check=check,
@@ -4483,8 +4309,6 @@ def cmd_round(a, folder):
     noted(folder)
     if not running(folder):
         print("the page is not running: start it with `serve`")
-    if listen_hint(folder):
-        print(listen_hint(folder))
 
 
 def go_back(folder, n):
@@ -4498,9 +4322,9 @@ def go_back(folder, n):
     if not r.get("snap") or not snap.is_dir() or not Path(r["video"]).is_file():
         raise ValueError("this round was made before rounds could be restored")
 
-    def check(d):   # under the lock: Claude may have taken the round meanwhile
+    def check(d):   # under the lock: Kiro may have taken the round meanwhile
         if d.get("sent") or d.get("raw") or d.get("stopped"):
-            raise ValueError("Claude has this round" if d.get("sent") else "this round cannot go back now")
+            raise ValueError("Kiro has this round" if d.get("sent") else "this round cannot go back now")
         for c in d["comments"]:   # the open round's notes go with the user onto the restored round
             if c["stage"] == d["stage"] and c["round"] == d["round"] and c["status"] == "open":
                 c["queued"] = True
@@ -4544,7 +4368,7 @@ def cmd_resolve(a, folder):
 
 
 # The style-edit's own steps, in order. The page fills its "Making the edit" bar from them (render by its log's
-# percent); plan.py, retakes.py captions, route.py and edit.py report them with step(), Claude with status --step.
+# percent); plan.py, retakes.py captions, route.py and edit.py report them with step(), Kiro with status --step.
 EDIT_STEPS = {"captions": "Writing the captions", "visuals": "Finding the visuals",
               "plan": "Planning zooms, cards and sound", "render": "Making the video"}
 
@@ -4581,7 +4405,7 @@ def prepared_steps(folder, d):
 
 
 def making_edit(d):
-    """Claude is making the styled edit: the cut was approved and no edit round has landed yet, or a sent edit
+    """Kiro is making the styled edit: the cut was approved and no edit round has landed yet, or a sent edit
     round is being redone."""
     e = d["events"][-1] if d.get("events") else {}
     return bool(d.get("sent") and not d.get("stopped") and not d.get("final") and
@@ -4591,7 +4415,7 @@ def making_edit(d):
 
 
 def step(folder, key, log=None):
-    """A style-edit script's step on the review page while Claude makes the edit. No page, not making the edit,
+    """A style-edit script's step on the review page while Kiro makes the edit. No page, not making the edit,
     or stopped: nothing. Never raises: the page is a nicety."""
     try:
         folder = Path(folder).resolve()
@@ -4627,7 +4451,7 @@ def timings(folder):
     approves, the render step). Never an estimate: a stage shows once it has happened. Writes <folder>/timings.json
     (times kept from an earlier write when the job has since left state.json) and returns it.
     "made" = the machine's time only (the cut, the edit up to the stills, the render), not the user's turns: their
-    reviews, each earlier draft until they sent notes, and a question of Claude's while it was open."""
+    reviews, each earlier draft until they sent notes, and a question of Kiro's while it was open."""
     folder = Path(folder)
     f = folder / "timings.json"
     try:   # the home job's times only: everything else is read again from review.json
@@ -4673,8 +4497,9 @@ def timings(folder):
         except ValueError:
             pass
     gap = lambda a, b: round(t[b] - t[a], 1) if t.get(a) is not None and t.get(b) is not None and t[b] >= t[a] else None
-    # the user's turns inside a machine stage: a question open (askhook asks.jsonl) and each draft until they sent notes
-    # or approved. Merged, then taken out of the cut, the edit and the render, so "Made in" is the machine's time only
+    # the user's turns inside a machine stage: a question open (review/asks.jsonl, written by kirocut_ask and kirocut_answer)
+    # and each draft until they sent notes or approved. Merged, then taken out of the cut, the edit and the render, so
+    # "Made in" is the machine's time only
     waits = []
     try:
         waits = [(float(w["start"]), float(w["end"])) for w in map(json.loads, (folder / "review" / "asks.jsonl").read_text(
@@ -4783,7 +4608,7 @@ def noted(folder):
 
 
 def stop_round(folder):
-    """Stop: the round Claude has goes back to the user, its notes open again, and `status` tells Claude to stop.
+    """Stop: the round Kiro has goes back to the user, its notes open again, and `status` tells Kiro to stop.
     The review page's Stop and the home window's sidebar Stop (home.py /stop with an edit). Returns an error or None."""
     folder = Path(folder)
     rj = folder / "review.json"
@@ -4797,7 +4622,7 @@ def stop_round(folder):
             e = d["events"][-1]
             for ev in d["events"]:   # a send or approve `wait` has not taken yet is taken back
                 ev["handled"] = True
-            # stop undoes the edits, but only over the files /edits wrote: never over Claude's later change
+            # stop undoes the edits, but only over the files /edits wrote: never over Kiro's later change
             if e["type"] == "edits" and e.get("sha") == files_sha(folder) and (folder / "spans.prev.json").exists():
                 save(folder / "spans.json", load(folder / "spans.prev.json"))
                 if (folder / "keep.prev.json").exists():
@@ -4860,7 +4685,7 @@ def cmd_final(folder):
 
 
 def cmd_status(a, folder):
-    """One step of what Claude is doing for the next round. Each new step closes the one before."""
+    """One step of what Kiro is doing for the next round. Each new step closes the one before."""
     stopped = load(folder / "review.json").get("stopped")
     if stopped:
         print(f"STOPPED: the user pressed Stop on the page at {stopped}. Stop this round's work, say so in one "
@@ -4890,7 +4715,7 @@ def cmd_alt(a, folder):
 def cmd_wait(folder, poll=1.0):
     rj = folder / "review.json"
     beat = folder / "review" / ".listening"
-    me = {"pid": os.getpid(), **askhook.claude_env(), "since": time.time()}
+    me = {"pid": os.getpid(), **pagekit.agent_env(), "since": time.time()}
     tmp = beat.with_name(f".listening.{os.getpid()}")
     tmp.write_text(json.dumps(me), encoding="utf-8")
     os.replace(tmp, beat)   # the newest `wait` on an edit takes its notes; an older one sees this and stops
@@ -4906,16 +4731,31 @@ def cmd_wait(folder, poll=1.0):
                 print("STOPPED LISTENING: a newer `wait` on this video takes its notes now. Nothing to do here.")
                 return "superseded"
             beat.touch()
-            # read only: a write here could drop a note the page saves in the same instant
-            d0 = load(rj)
-            if any(not e["handled"] for e in d0["events"]) or (d0.get("learn") or {}).get("handled") is False \
-                    or (d0.get("trials") or {}).get("handled") is False:
+            if pending(folder):
                 break
             time.sleep(poll)
     finally:
         if mine():
             beat.unlink(missing_ok=True)
+    return report(folder)
 
+
+def pending(folder):
+    """The user sent notes, approved, answered the learn panel or picked trial reels, and nothing has taken it yet.
+    Read only: a write here could drop a note the page saves in the same instant."""
+    try:
+        d0 = load(Path(folder) / "review.json")
+    except (OSError, ValueError):
+        return False
+    return any(not e["handled"] for e in d0.get("events", [])) or (d0.get("learn") or {}).get("handled") is False \
+        or (d0.get("trials") or {}).get("handled") is False
+
+
+def report(folder):
+    """Take what `pending` found and print it for the agent: every note of the round with its time, words and frame, the
+    scene hand-over, the learn or trials prompt. What `wait` prints once it wakes, and what kirocut_events returns.
+    Returns the event type (send, approve, ...) or what the learn or trials step returned."""
+    rj = folder / "review.json"
     mark_path(folder, write=True).touch()   # the agent has the send or approve now: working, not gone
 
     def take(d):
@@ -4984,7 +4824,7 @@ def cmd_wait(folder, poll=1.0):
 
 
 def scene_handoff(folder, alts=()):
-    """What `wait` tells Claude when the draft is a scene: answer the notes as items the user can drag, never a render.
+    """What `wait` tells Kiro when the draft is a scene: answer the notes as items the user can drag, never a render.
     alts: the versions (trial reels) notes were left on, each its own scene."""
     sp, q = shlex.quote(str(Path(scene.__file__).resolve())), shlex.quote(str(folder))
     return (f"SCENE: this draft is a scene ({folder / scene.NAME}). Every element on it is an item the user drags, resizes and "
@@ -4998,7 +4838,7 @@ def scene_handoff(folder, alts=()):
             f"  An image or screenshot is an image item. An animated graphic (a motion clip, a HyperFrames or Blender shot) is a "
             f"video with alpha: hyperframes render --format webm on a transparent ground (VP9 with alpha), added as a video item "
             f"the user can move, scale, crop and trim. Text is a text item (anim, keys for motion). A sound is an audio item. A zoom "
-            f"is scale keys on the footage clip under it. Each command is one change on the page, marked Claude, undoable; the open "
+            f"is scale keys on the footage clip under it. Each command is one change on the page, marked Kiro, undoable; the open "
             f"page draws it within a few seconds. Fields and ops: {Path(scene.__file__).with_name('SCENE.md')}.\n"
             f"  Then answer each note (resolve <id> fixed --reply \"<what you changed>\") and hand the draft back with no render:\n"
             f"  python3 {shlex.quote(str(Path(__file__).resolve()))} {q} round --scene"
@@ -5007,7 +4847,7 @@ def scene_handoff(folder, alts=()):
 
 
 def edits_text(folder, e):
-    """What `wait` prints for the transcript editor's Apply: the line Claude acts on, the words, the commands."""
+    """What `wait` prints for the transcript editor's Apply: the line Kiro acts on, the words, the commands."""
     try:
         words = [w for w in load(folder / "words.raw.json") if w.get("type", "word") == "word" and "start" in w]
     except (OSError, ValueError):
@@ -5088,7 +4928,7 @@ def new_style_from(folder, name):
 
 def skill_choices():
     """The learn panel's skills: every skill the user owns (skillrules.skill_dirs) that is not a saved style's own
-    skill, as {"id": "skill:<name>", "name", "skill", "path", "about"} (about: its description, for Claude to pick)."""
+    skill, as {"id": "skill:<name>", "name", "skill", "path", "about"} (about: its description, for Kiro to pick)."""
     try:
         from kirocut import skillrules, styleskill
         styles = {n for _, n in styleskill.saved()}
@@ -5136,7 +4976,7 @@ def guess_section(text):
 
 
 def teach_rule(folder, body):
-    """POST /teach/rule: one rule saved now, no Claude, with a receipt Undo takes out again. (code, reply)."""
+    """POST /teach/rule: one rule saved now, no Kiro, with a receipt Undo takes out again. (code, reply)."""
     text = " ".join(str(body.get("text") or "").split()).rstrip(".")
     if not text or len(text) > 300:
         return 400, {"error": "Write the rule in one line."}
@@ -5180,7 +5020,7 @@ LEARN_STUCK_S, LEARN_JOB_S = 600, 1800   # reading this long with nobody listeni
 
 
 def start_learn_job(folder, stuck=False):
-    """No Claude for the final approve's learn step: KiroCut runs it itself (learn_job) in its own process. stuck: only a
+    """No Kiro for the final approve's learn step: KiroCut runs it itself (learn_job) in its own process. stuck: only a
     draft "reading" for LEARN_STUCK_S with nothing listening. Never twice within LEARN_JOB_S. True when one started."""
     rj = folder / "review.json"
     if listening(folder) or not rj.exists():
@@ -5201,9 +5041,9 @@ def start_learn_job(folder, stuck=False):
 
 
 def learn_job(folder, cli=None):
-    """The learn step on the user's Claude Code CLI, headless (`claude -p`, the plan allowance, never an API key), in the
+    """The learn step on the user's Kiro CLI, headless (`kiro-cli chat --no-interactive`, never an API key), in the
     library: it posts the rules with learn --propose, so the page reaches "proposed" by itself. No CLI, or it stopped
-    before posting: state "failed" with why, and the page offers Try again. cli: $KIROCUT_CLAUDE, else `claude`."""
+    before posting: state "failed" with why, and the page offers Try again. cli: $KIROCUT_KIRO, else `kiro-cli`."""
     import launcher
     rj = folder / "review.json"
     cli = os.environ.get("KIROCUT_KIRO") or shutil.which("kiro-cli") if cli is None else cli
@@ -5227,7 +5067,7 @@ def learn_job(folder, cli=None):
     def f(d):
         lr = d.get("learn") or {}
         if lr.get("state") == "reading" and lr.get("job") == mine:   # it never posted: say so, never an empty list
-            lr.update(state="failed", why=why or "Claude finished without posting any rules.")
+            lr.update(state="failed", why=why or "Kiro finished without posting any rules.")
     update(rj, f)
 
 
@@ -5257,8 +5097,8 @@ def disposition(name):
 
 
 def learn_prompt(folder, d, job=False):
-    """The final approve: Claude turns the whole session's notes into rules the page offers with checkboxes.
-    job: the prompt for learn_job's headless Claude (no chat, no `wait`)."""
+    """The final approve: Kiro turns the whole session's notes into rules the page offers with checkboxes.
+    job: the prompt for learn_job's headless Kiro (no chat, no `wait`)."""
     if d["learn"]["state"] == "none":
         return "LEARN: no notes or edits this session, so nothing to learn. The page says so; say nothing about it."
     if not job and d["learn"].get("job"):
@@ -5330,7 +5170,7 @@ SECTIONS = ("cut", "captions", "visuals", "sound", "layout")
 
 
 def learn_propose(folder, raw):
-    """Claude's candidate rules onto the page's learn panel."""
+    """Kiro's candidate rules onto the page's learn panel."""
     try:
         f = Path(raw)
         rules = json.loads(f.read_text(encoding="utf-8") if raw.endswith(".json") and f.is_file() else raw)
@@ -5435,19 +5275,19 @@ TRIAL_KINDS = {"hooks": "New hooks", "same": "Same order", "rewind": "Rewind", "
 
 
 def trial_kinds(k):
-    """One version's kinds: ["claude"] (Claude decides) or some of TRIAL_KINDS. Same order and rewind both set the order."""
-    if k in ("claude", ["claude"]):
-        return ["claude"]
+    """One version's kinds: ["kiro"] (Kiro decides) or some of TRIAL_KINDS. Same order and rewind both set the order."""
+    if k in ("kiro", ["kiro"]):
+        return ["kiro"]
     if not isinstance(k, list) or not k or any(x not in TRIAL_KINDS for x in k):
-        raise ValueError(f"kinds is \"claude\" or a list of {', '.join(TRIAL_KINDS)}: {k}")
+        raise ValueError(f"kinds is \"kiro\" or a list of {', '.join(TRIAL_KINDS)}: {k}")
     if "same" in k and "rewind" in k:
         raise ValueError("same and rewind both set the order: pick one")
     return [x for x in TRIAL_KINDS if x in k]
 
 
 def trials_propose(folder, raw):
-    """Claude's trial reel plan onto the page's Trial reels tab: its message, the spare hooks it found, one row per
-    version (kinds + the one line saying what Claude picked), and an optional reply to the user's last question."""
+    """Kiro's trial reel plan onto the page's Trial reels tab: its message, the spare hooks it found, one row per
+    version (kinds + the one line saying what Kiro picked), and an optional reply to the user's last question."""
     try:
         f = Path(raw)
         p = json.loads(f.read_text(encoding="utf-8") if raw.endswith(".json") and f.is_file() else raw)
@@ -5476,7 +5316,7 @@ def trials_propose(folder, raw):
 
 
 def trials_reply(folder, text):
-    """Claude's answer to the notes on the made trial reels: on every note not answered yet, shown under them."""
+    """Kiro's answer to the notes on the made trial reels: on every note not answered yet, shown under them."""
     text = str(text or "").strip()
     if not text:
         sys.exit("--reply takes the words to show")
@@ -5493,7 +5333,7 @@ def trials_reply(folder, text):
 
 
 def trials_chosen(folder, d):
-    """What `wait` prints for the Trial reels tab: Make, Skip, or a question for Claude."""
+    """What `wait` prints for the Trial reels tab: Make, Skip, or a question for Kiro."""
     t, me = d["trials"], f"python3 {Path(__file__).resolve()} {folder}"
     if t["state"] == "skipped":
         print("TRIALS: the user pressed Skip trial reels. Make none; say nothing more about it.")
@@ -5506,7 +5346,7 @@ def trials_chosen(folder, d):
               f"  {me} alt t1 --video <t1.mp4> --trial\nThen answer on the tab, one or two lines on what changed:\n"
               f"  {me} trials --reply \"...\"   and `wait` again. A note about how every trial reel should be is taste "
               f"(the taste skill) too.")
-    elif t["state"] == "proposed":   # a question from the Ask Claude box
+    elif t["state"] == "proposed":   # a question from the Ask Kiro box
         print(f"TRIALS ASK: {t['asks'][-1]['text']}\nAnswer on the page: {me} trials --propose '<json>' with the "
               f"updated plan and \"reply\": one or two lines on what you changed. Then `wait` again.")
     else:
@@ -5514,7 +5354,7 @@ def trials_chosen(folder, d):
         print(f"TRIALS: make {len(pk['versions'])} trial reel{'s' if len(pk['versions']) != 1 else ''}. Each must look like "
               "a different video: a new length, new animations or new words.")
         for i, v in enumerate(pk["versions"]):
-            ks = "Claude decides" if v["kinds"] == ["claude"] else " + ".join(TRIAL_KINDS[k] for k in v["kinds"])
+            ks = "Kiro decides" if v["kinds"] == ["kiro"] else " + ".join(TRIAL_KINDS[k] for k in v["kinds"])
             print(f"  t{i + 1}: {ks}" + (f" ({v['line']})" if v.get("line") else ""))
         hs = [t["hooks"][i]["text"] for i in pk["hooks"] if i < len(t["hooks"])]
         if hs:
@@ -5651,7 +5491,7 @@ def demo_timings(tmp):
 
 
 def demo_bake(tmp):
-    """bake: the typed texts go into plan.json and the draft by a patch render (faked here), with no Claude."""
+    """bake: the typed texts go into plan.json and the draft by a patch render (faked here), with no Kiro."""
     f = tmp / "bake"
     (f / "review" / "snap-edit1").mkdir(parents=True)
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "color=c=red:s=64x36:r=30:d=2", "-c:v", "libx264",
@@ -5668,14 +5508,14 @@ def demo_bake(tmp):
     stamp = lambda: (f / "render.stamp.json").write_text(json.dumps({"size": (f / "render.mp4").stat().st_size,
                                                                      "mtime_ns": (f / "render.mp4").stat().st_mtime_ns}), encoding="utf-8")
     assert live_ready(f, d) == "the render was finished by hand" and layer_of(f, d) == Path(d["video"]), "no stamp: never patched over"
-    assert bake_ready(f, d) is None and not tell_claude(f, d, True) and tell_claude(f, d), "its layers bake themselves, a card edit is a note"
+    assert bake_ready(f, d) is None and not needs_agent(f, d, True) and needs_agent(f, d), "its layers bake themselves, a card edit is a note"
     burnt = {**plan, "texts": plan["texts"] + [{"kind": "label", "text": "hi", "start": 0.5, "end": 1.5}]}
     (f / "render.plan.json").write_text(json.dumps(burnt), encoding="utf-8")   # the base is that plan's render: "hi" is in it
     assert texts_burned(f, d) == ["t1"] and layer_plan(f, layer_of(f, d))["texts"] == [], "a burned-in text is never laid on again"
     (f / "render.plan.json").write_text(json.dumps(plan), encoding="utf-8")
     assert texts_burned(f, d) == [] and len(layer_plan(f, layer_of(f, d))["texts"]) == 1
     stamp()
-    assert layer_of(f, d) is None and not tell_claude(f, d), "a plan draft: as before"
+    assert layer_of(f, d) is None and not needs_agent(f, d), "a plan draft: as before"
     assert baked_texts(f, d) == [] and bake_ready(f, d) is None, bake_ready(f, d)
     ran = []
 
@@ -5723,12 +5563,12 @@ def demo_bake(tmp):
     x = export_state(f, load(f / "review.json"))
     assert x["state"] == "done" and x["name"] == download_name(f) and (f / "exports" / x["name"]).is_file(), x
     assert (library.path() / "exports" / x["name"]).is_file() and last_export(f) == f / "exports" / x["name"]
-    update(f / "review.json", lambda d: d.update(sent=True))   # Claude has the round: rendered beside the draft, never into it
+    update(f / "review.json", lambda d: d.update(sent=True))   # Kiro has the round: rendered beside the draft, never into it
     v0 = Path(load(f / "review.json")["video"]).read_bytes()
     t["items"][0]["text"] = "yo"
     save(f / "texts.json", t)
     ex = {}
-    assert export_src(f, ex, run=fake) in (f / "render-export.mp4", f / "render-export.cut.mp4") and "Claude is still" in ex["note"]
+    assert export_src(f, ex, run=fake) in (f / "render-export.mp4", f / "render-export.cut.mp4") and "Kiro is still" in ex["note"]
     assert ran[-1][:3] == ["patch", str(f), "--plan"] and ran[-1][3] == "plan-export.json" and Path(load(f / "review.json")["video"]).read_bytes() == v0
     update(f / "review.json", lambda d: d.update(sent=False))
     # a picture dropped from the Media panel: appended to the plan's cards once, however often it bakes
@@ -5745,7 +5585,7 @@ def demo_bake(tmp):
     assert [c.get("override") for c in cs] == ["media1@0.200", "repo@0.500"] and cs[0]["src"] == "media/p.png" and cs[0]["format"] == "plain", cs
     assert cards_added(f, load(f / "review.json")) == [], "baked: the video shows it"
     update(f / "review.json", lambda d: d.update(sent=True))
-    assert bake(f, run=fake) == "Claude has this draft" and len(ran) == n + 2
+    assert bake(f, run=fake) == "Kiro has this draft" and len(ran) == n + 2
 
 
 def demo_live(tmp):
@@ -5771,7 +5611,7 @@ def demo_live(tmp):
     assert live_plan(f, d)["layer"] is True, "a render finished by hand: its MP4 with the hand edits as layers"
     (f / "render.stamp.json").write_text(json.dumps({"size": (f / "render.mp4").stat().st_size,
                                                      "mtime_ns": (f / "render.mp4").stat().st_mtime_ns}), encoding="utf-8")
-    assert live_ready(f, d) is None and bake_ready(f, d) == "Claude has this draft", "live while Claude has it; only the bake waits"
+    assert live_ready(f, d) is None and bake_ready(f, d) == "Kiro has this draft", "live while Kiro has it; only the bake waits"
     (f / "texts.json").write_text(json.dumps({"items": [{"id": "t1", "text": "hi", "style": "box", "start": 0.5, "end": 1.5,
                                                          "x_pct": 50, "y_pct": 30, "size_pct": 8, "color": "#FF3B30"}]}), encoding="utf-8")
     (f / "overrides.json").write_text(json.dumps({"cards": {"repo@0.500": {"box": [5, 10, 40, 20], "start": 0.8, "end": 1.9}},
@@ -5855,7 +5695,7 @@ def demo_live(tmp):
 def demo_layers(tmp):
     """A layer draft (a finished MP4 with no plan): /live/plan plays its base with the typed texts, placed sounds and cut
     pieces as layers; the bake cuts the base, shifts the layers and renders them (faked here) into <name>.layers.mp4;
-    base_video stays the untouched MP4 until Claude sends a new round."""
+    base_video stays the untouched MP4 until Kiro sends a new round."""
     f = tmp / "layers"
     (f / "review").mkdir(parents=True)
     (f / "audio").mkdir()
@@ -5911,7 +5751,7 @@ def demo_layers(tmp):
     for x in ("texts.json", "sounds.json", "overrides.json"):   # no layers left: the round's video is the base again
         (f / x).unlink()
     assert bake(f, run=fake) is None and len(ran) == 1 and load(f / "review.json")["video"] == str(base)
-    srv = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(f, "tok"))   # the page's routes: no note for Claude, a bake
+    srv = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(f, "tok"))   # the page's routes: no note for Kiro, a bake
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     post = lambda p, b: json.loads(urllib.request.urlopen(urllib.request.Request(
         f"http://127.0.0.1:{srv.server_address[1]}{p}?t=tok", json.dumps(b).encode(), method="POST")).read())
@@ -5925,7 +5765,7 @@ def demo_layers(tmp):
     srv.shutdown()
     srv.server_close()
     update(f / "review.json", lambda d: d.update(sent=True))
-    assert bake_ready(f, load(f / "review.json")) == "Claude has this draft" and tell_claude(f, load(f / "review.json"), True)
+    assert bake_ready(f, load(f / "review.json")) == "Kiro has this draft" and needs_agent(f, load(f / "review.json"), True)
     update(f / "review.json", lambda d: d.update(sent=False, base_video=str(base), video=str(f / "review" / "v-edit3.layers.mp4")))
     vs = ui().get("videos")
     open_round(f, str(base))
@@ -5934,16 +5774,16 @@ def demo_layers(tmp):
     assert "base_video" not in d and d["video"] == str(f / "review" / "v-edit4.mp4") and layer_of(f, d) == Path(d["video"]), d
 
 
-def demo_claude_scene(tmp):
-    """Claude's work on a scene (SCENE.md, Claude edits the scene): wait hands over scene ops, scene.py ops goes through
-    the page's server as by "claude" (marked, listed, undone and redone by its own ops), round --scene makes no MP4."""
-    f, ui0 = (tmp / "claude-scene").resolve(), _ui_json().read_bytes() if _ui_json().exists() else None
+def demo_agent_scene(tmp):
+    """Kiro's work on a scene (SCENE.md, Kiro edits the scene): wait hands over scene ops, scene.py ops goes through
+    the page's server as by "kiro" (marked, listed, undone and redone by its own ops), round --scene makes no MP4."""
+    f, ui0 = (tmp / "agent-scene").resolve(), _ui_json().read_bytes() if _ui_json().exists() else None
     (f / "review").mkdir(parents=True)
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "color=c=red:s=64x36:r=30:d=4", "-c:v", "libx264", "-pix_fmt", "yuv420p",
                     str(f / "render.mp4")], check=True)
     (f / "plan.json").write_text(json.dumps({"fps": 30, "durationInFrames": 120, "width": 64, "height": 36, "texts": [], "cards": []}), encoding="utf-8")
     clone(f / "render.mp4", f / "review" / "v-edit1.mp4")
-    save(f / "review.json", {"folder": str(f), "name": "claude-scene", "stage": "edit", "round": 1, "sent": True, "stills": False,
+    save(f / "review.json", {"folder": str(f), "name": "agent-scene", "stage": "edit", "round": 1, "sent": True, "stills": False,
                              "comments": [{"id": 1, "stage": "edit", "round": 1, "t": 3.0, "t_end": None, "text": "add Link in bio at the end",
                                            "status": "open", "alt": None, "words": "", "frame": "x.jpg"}],
                              "events": [{"type": "send", "stage": "edit", "round": 1, "at": now(), "handled": False}],
@@ -5965,30 +5805,30 @@ def demo_claude_scene(tmp):
     sp = str(Path(scene.__file__).resolve())
     r = subprocess.run([sys.executable, sp, "add", str(f), "text", "--text", "Link in bio", "--start", "3", "--end", "4", "--why", "Link in bio at the end"],
                        capture_output=True, text=True)
-    assert r.returncode == 0 and "Claude change 1: Link in bio at the end" in r.stdout and "next poll" in r.stdout, r.stdout + r.stderr
+    assert r.returncode == 0 and "Kiro change 1: Link in bio at the end" in r.stdout and "next poll" in r.stdout, r.stdout + r.stderr
     st = state()
-    assert st["scene_v"] != v0 and [c["why"] for c in st["claude_changes"]] == ["Link in bio at the end"], st["claude_changes"]
+    assert st["scene_v"] != v0 and [c["why"] for c in st["agent_changes"]] == ["Link in bio at the end"], st["agent_changes"]
     it = next(i for t in scene.load(f)["tracks"] for i in t["items"] if i["type"] == "text")
     assert it["by"] == "kiro" and it["text"] == "Link in bio" and JOURNAL[str(f)], "marked, and in the page's journal"
-    assert post("/scene/claude", {"n": 1, "undo": True})["ok"] and not any(i["type"] == "text" for t in scene.load(f)["tracks"] for i in t["items"])
-    assert state()["claude_changes"][0]["undone"] and post("/scene/claude", {"n": 1, "undo": False})["ok"]
+    assert post("/scene/agent", {"n": 1, "undo": True})["ok"] and not any(i["type"] == "text" for t in scene.load(f)["tracks"] for i in t["items"])
+    assert state()["agent_changes"][0]["undone"] and post("/scene/agent", {"n": 1, "undo": False})["ok"]
     assert post("/scene/ops", {"ops": [{"op": "set", "item": it["id"], "props": {"y": 9}}]})["ok"]
     it = next(i for t in scene.load(f)["tracks"] for i in t["items"] if i["id"] == it["id"])
-    assert it["y"] == 9 and "by" not in it, "the user's touch clears Claude's mark"
+    assert it["y"] == 9 and "by" not in it, "the user's touch clears Kiro's mark"
     # a version (a trial reel): its own scene.t1.json, its own change log, its own scene_v; the main draft's stay as they are
     clone(f / "render.mp4", f / "review" / "v-edit1-t1.mp4")
     update(f / "review.json", lambda d: d.update(alts=[{"name": "t1", "video": str(f / "review" / "v-edit1-t1.mp4")}]))
     main0 = (f / scene.NAME).read_bytes()
     r = subprocess.run([sys.executable, sp, "add", str(f), "--alt", "t1", "text", "--text", "Trial hook", "--start", "0", "--end", "1", "--why", "t1 hook"],
                        capture_output=True, text=True)
-    assert r.returncode == 0 and "Claude change 1: t1 hook" in r.stdout, r.stdout + r.stderr
+    assert r.returncode == 0 and "Kiro change 1: t1 hook" in r.stdout, r.stdout + r.stderr
     st = state()
-    assert (f / scene.NAME).read_bytes() == main0 and (f / "scene.t1.json").is_file() and (f / "review" / "claude.t1.json").is_file()
-    assert set(st["scene_v"]) == {"", "t1"} and [(c["alt"], c["why"]) for c in st["claude_changes"]] == [(None, "Link in bio at the end"), ("t1", "t1 hook")]
-    assert "[by claude]" in subprocess.run([sys.executable, sp, "show", str(f), "--alt", "t1"], capture_output=True, text=True).stdout
-    assert post("/scene/claude", {"n": 1, "undo": True, "alt": "t1"})["ok"] and (f / scene.NAME).read_bytes() == main0
+    assert (f / scene.NAME).read_bytes() == main0 and (f / "scene.t1.json").is_file() and (f / "review" / "agent.t1.json").is_file()
+    assert set(st["scene_v"]) == {"", "t1"} and [(c["alt"], c["why"]) for c in st["agent_changes"]] == [(None, "Link in bio at the end"), ("t1", "t1 hook")]
+    assert "[by kiro]" in subprocess.run([sys.executable, sp, "show", str(f), "--alt", "t1"], capture_output=True, text=True).stdout
+    assert post("/scene/agent", {"n": 1, "undo": True, "alt": "t1"})["ok"] and (f / scene.NAME).read_bytes() == main0
     assert not any(i["type"] == "text" for t in scene.load(f, "scene.t1.json")["tracks"] for i in t["items"]), "undone on t1 only"
-    assert post("/scene/claude", {"n": 1, "undo": False, "alt": "t1"})["ok"]
+    assert post("/scene/agent", {"n": 1, "undo": False, "alt": "t1"})["ok"]
     bad = subprocess.run([sys.executable, sp, "ops", str(f), '[{"op": "wat"}]'], capture_output=True, text=True)
     assert bad.returncode and "unknown op" in bad.stderr, bad.stderr
     rp = str(Path(__file__).resolve())
@@ -6000,7 +5840,7 @@ def demo_claude_scene(tmp):
     d = load(f / "review.json")
     assert r.returncode == 0 and d["round"] == 2 and d["scene_from"] == ["edit", 1] and sorted(x.name for x in f.glob("*.mp4")) == mp4s, r.stderr
     assert (f / "review" / "snap-edit2" / "scene.json").is_file(), "the round keeps the scene"
-    assert [(c["alt"], c["n"]) for c in state()["claude_changes"]] == [(None, 1), ("t1", 1)], "Claude's changes stay undoable on the round after"
+    assert [(c["alt"], c["n"]) for c in state()["agent_changes"]] == [(None, 1), ("t1", 1)], "Kiro's changes stay undoable on the round after"
     assert [x["name"] for x in d["alts"]] == [x["name"] for x in d["rounds"][-1]["alts"]] == ["t1"] and (f / "review" / "snap-edit2" / "scene.t1.json").is_file(), "the versions stay on the round"
     r = subprocess.run([sys.executable, rp, str(f), "round", "--scene", "--alt", "t9"], capture_output=True, text=True)
     assert r.returncode and "no version t9" in r.stderr, r.stderr
@@ -6117,7 +5957,7 @@ def demo_learn_edits(tmp):
 
 def demo_teach(folder, tmp, get, post, c3, tsk):
     """Teach anywhere: /state "teach" at any stage, POST /teach/rule (a skill, My style, a new style; a note marked
-    saved; Undo), POST /teach/style, and the learn job that reads the notes when no Claude is on the video."""
+    saved; Undo), POST /teach/style, and the learn job that reads the notes when no Kiro is on the video."""
     from kirocut import taste
     rj = folder / "review.json"
     teach_choices(folder, fresh=True)
@@ -6140,7 +5980,7 @@ def demo_teach(folder, tmp, get, post, c3, tsk):
     assert "- Hooks under 3 s. Why: from a note on " in tsk.read_text(encoding="utf-8"), tsk.read_text(encoding="utf-8")
     d = load(rj)
     c = next(c for c in d["comments"] if c["id"] == c3["id"])
-    assert c["taste"] == "skill" and c["receipt"] == tr["receipt"] and len(d["comments"]) == nc, c   # no note for Claude
+    assert c["taste"] == "skill" and c["receipt"] == tr["receipt"] and len(d["comments"]) == nc, c   # no note for Kiro
     assert f"#{c3['id']} " in learn_prompt(folder, d) and "[saved as rule in a skill]" in learn_prompt(folder, d)
     assert post("/undo", {"id": tr["receipt"]})["msg"] == "Removed from Trial notes skill."
     assert "Hooks under 3 s" not in tsk.read_text(encoding="utf-8").split("## Log")[0]
@@ -6167,28 +6007,40 @@ def demo_teach(folder, tmp, get, post, c3, tsk):
             assert e.code == 409
     finally:
         os.environ.pop("KIROCUT_LIBRARY", None) if old_lib is None else os.environ.update(KIROCUT_LIBRARY=old_lib)
-    # no Claude on the video: KiroCut runs the learn step on the Claude Code CLI (a stub here), headless, in the library
-    fake, argf = tmp / "bin" / "claude", tmp / "bin" / "args.json"
-    fake.parent.mkdir(exist_ok=True)
-    fake.write_text(f"#!{sys.executable}\nimport json, os, subprocess, sys\n"
-                    f"open({str(argf)!r}, 'w').write(json.dumps({{'argv': sys.argv[1:], 'cwd': os.getcwd()}}))\n"
-                    f"subprocess.run([sys.executable, {str(Path(__file__).resolve())!r}, {str(folder)!r}, 'learn', '--propose', "
-                    f"json.dumps([{{'rule': 'Shorter hooks', 'section': 'cut'}}])], check=True, stdout=subprocess.DEVNULL)\n", encoding="utf-8")
-    fake.chmod(0o755)
+    # no Kiro chat on the video: KiroCut runs the learn step on the Kiro CLI (a stub here), headless, in the library
+    argf = tmp / "bin" / "args.json"
+    body = (f"import json, os, subprocess, sys\n"
+            f"open({str(argf)!r}, 'w').write(json.dumps({{'argv': sys.argv[1:], 'cwd': os.getcwd()}}))\n"
+            f"subprocess.run([sys.executable, {str(Path(__file__).resolve())!r}, {str(folder)!r}, 'learn', '--propose', "
+            f"json.dumps([{{'rule': 'Shorter hooks', 'section': 'cut'}}])], check=True, stdout=subprocess.DEVNULL)\n")
+    (tmp / "bin").mkdir(exist_ok=True)
+    if os.name == "nt":   # a .cmd runs the stub through Python, as a shebang does elsewhere
+        (tmp / "bin" / "fake_cli.py").write_text(body, encoding="utf-8")
+        fake = tmp / "bin" / "kiro-cli.cmd"
+        fake.write_text(f'@echo off\r\n"{sys.executable}" "{tmp / "bin" / "fake_cli.py"}" %*\r\n', encoding="utf-8")
+        noop = tmp / "bin" / "noop.cmd"
+        noop.write_text("@exit /b 0\r\n", encoding="utf-8")
+    else:
+        fake = tmp / "bin" / "kiro-cli"
+        fake.write_text(f"#!{sys.executable}\n" + body, encoding="utf-8")
+        fake.chmod(0o755)
+        noop = shutil.which("true") or "true"
     reading = lambda **k: update(rj, lambda d: d["learn"].update(state="reading", rules=[], job=None, why=None, **k))
     reading()
     learn_job(folder, cli=str(fake))
     lr, a = load(rj)["learn"], json.loads(argf.read_text(encoding="utf-8"))
     assert lr["state"] == "proposed" and [x["rule"] for x in lr["rules"]] == ["Shorter hooks"], lr
-    assert a["argv"][-2] == "-p" and "You run on your own with no chat" in a["argv"][-1] and "learn --propose" in a["argv"][-1], a
+    assert a["argv"][:2] == ["chat", "--no-interactive"] and a["argv"][-1].startswith("LEARN:"), a
+    # a .cmd stub (Windows) cuts a multi-line argument at its first line; a real kiro-cli.exe does not
+    assert os.name == "nt" or ("You run on your own with no chat" in a["argv"][-1] and "learn --propose" in a["argv"][-1]), a
     assert "Also use what the user told you in this chat" not in a["argv"][-1] and Path(a["cwd"]).resolve() == folder.parent.parent.resolve(), a
     assert "Also use what the user told you in this chat about the edit" in learn_prompt(folder, load(rj))
     reading()
-    learn_job(folder, cli="")   # no Claude Code: the page says so plainly, never an empty list
+    learn_job(folder, cli="")   # no Kiro CLI: the page says so plainly, never an empty list
     lr = load(rj)["learn"]
     assert lr["state"] == "failed" and "not installed" in lr["why"] and not lr["rules"], lr
     reading()
-    learn_job(folder, cli=shutil.which("true") or "true")   # it ran but posted nothing
+    learn_job(folder, cli=str(noop))   # it ran but posted nothing
     assert load(rj)["learn"]["state"] == "failed" and "without posting" in load(rj)["learn"]["why"]
 
     def proposed():
@@ -6196,8 +6048,8 @@ def demo_teach(folder, tmp, get, post, c3, tsk):
             if load(rj)["learn"]["state"] == "proposed":
                 return True
             time.sleep(0.05)
-    keep = os.environ.get("KIROCUT_CLAUDE")
-    os.environ["KIROCUT_CLAUDE"] = str(fake)
+    keep = os.environ.get("KIROCUT_KIRO")
+    os.environ["KIROCUT_KIRO"] = str(fake)
     try:
         assert post("/learn", {"retry": True}) == {"ok": True} and proposed(), load(rj)["learn"]   # Try again: its own process
         try:
@@ -6206,83 +6058,42 @@ def demo_teach(folder, tmp, get, post, c3, tsk):
         except urllib.error.HTTPError as e:
             assert e.code == 409
         reading(at=time.time())
-        assert not json.loads(get("/state").read())["learn"].get("job"), "reading a moment: Claude may still come"
+        assert not json.loads(get("/state").read())["learn"].get("job"), "reading a moment: Kiro may still come"
         assert "KiroCut is reading" not in learn_prompt(folder, load(rj))
         reading(at=time.time() - LEARN_STUCK_S - 5)   # stuck in reading with nobody listening: picked up
         assert json.loads(get("/state").read())["learn"]["job"] and proposed(), load(rj)["learn"]
         assert learn_prompt(folder, load(rj)).startswith("LEARN: KiroCut is reading")
         assert not start_learn_job(folder) and not start_learn_job(folder, stuck=True)
     finally:
-        os.environ["KIROCUT_CLAUDE"] = keep
+        os.environ["KIROCUT_KIRO"] = keep
 
 
-def demo_sessions(tmp, opened, typed):
-    """Which Claude gets the notes: claude.last, desktop sessions listening in the background, one listener at a time."""
-    keys = ("CLAUDE_CODE_SESSION_ID", "CLAUDE_CODE_ENTRYPOINT", "CLAUDE_CODE_HOST_SESSION_ID")
-    env0 = {k: os.environ.get(k) for k in keys}
-
-    def as_(sid, ep, host=""):
-        os.environ.update(CLAUDE_CODE_SESSION_ID=sid, CLAUDE_CODE_ENTRYPOINT=ep, CLAUDE_CODE_HOST_SESSION_ID=host)
-    E = lambda sid, ep="", host="": {"CLAUDE_CODE_SESSION_ID": sid, "CLAUDE_CODE_ENTRYPOINT": ep, "CLAUDE_CODE_HOST_SESSION_ID": host}
-    assert askhook.claude_env({}) == {} and askhook.claude_env(E("a", "claude-desktop", "local_9f")) == \
-        {"session": "a", "host_session": "local_9f", "kind": "desktop"}
-    assert [askhook.claude_env(E("a", ep))["kind"] for ep in ("cli", "", "sdk-py")] == ["terminal", "terminal", "other"]
+def demo_sessions(tmp):
+    """Which Kiro chat the notes go to (agent.last, the most recent `wait` or `round` wins), and the page's Kiro control:
+    waiting while kirocut_events listens, working after a command, open otherwise."""
+    keep = os.environ.get("KIROCUT_SESSION")
     try:
-        # a Terminal Claude that is not listening: today's reopen (stubbed launcher), never desktop-idle
-        tf = tmp / "lib" / "edits" / "term"
-        (tf / "review").mkdir(parents=True)
-        save(tf / "review.json", {})
-        as_("t-1", "cli")
-        note_session(tf, "wait")
-        assert load(tf / "review.json")["claude"]["last"]["kind"] == "terminal" and not listen_hint(tf)
-        n = len(opened)
-        r = reopen(tf, tf / "review.json")
-        assert r["how"] == "new" and len(opened) == n + 1 and load(tf / "review.json")["claude"]["last"]["session"] == "t-1", r
-        assert claude_state(tf)["where"] == "terminal" and claude_state(tf)["name"] == "t-1"
-        # the most recent `wait` or `round` wins; another session's status does not take it
         df = tmp / "lib" / "edits" / "desk"
         (df / "review").mkdir(parents=True)
         rj = df / "review.json"
         save(rj, {"name": "desk", "stage": "cut", "round": 1, "video": "v.mp4", "comments": [], "events": []})
+        os.environ.pop("KIROCUT_SESSION", None)
         note_session(df, "wait")
-        as_("d-1", "claude-desktop", "local_abcdef123456")
+        assert "agent" not in load(rj), "no chat: nothing recorded"
+        os.environ["KIROCUT_SESSION"] = "kiro-1"
+        note_session(df, "wait")
+        os.environ["KIROCUT_SESSION"] = "kiro-2"
         note_session(df, "status")
-        assert load(rj)["claude"]["last"]["session"] == "t-1", "a status elsewhere does not take the notes"
+        assert load(rj)["agent"]["last"]["session"] == "kiro-1", "a status elsewhere does not take the notes"
         note_session(df, "round")
-        assert load(rj)["claude"]["last"] == {**load(rj)["claude"]["last"], "session": "d-1", "kind": "desktop", "by": "round",
-                                              "host_session": "local_abcdef123456"}
-        assert "run_in_background" in listen_hint(df) and str(df) in listen_hint(df)
-        # desktop, not listening: no Terminal Claude, the page says so
-        n, nt = len(opened), len(typed)
-        r = reopen(df, rj)
-        st = claude_state(df)
-        assert r["how"] == "desktop-idle" and not r["opened"] and (len(opened), len(typed)) == (n, nt), r
-        assert (st["state"], st["where"], st["name"], st["how"]) == ("idle", "desktop", "abcdef12", "desktop-idle"), st
-        assert load(rj)["claude"]["last"]["session"] == "d-1", "reopen keeps claude.last"
-        r = reopen(df, rj, force=True)   # Start a new Claude: today's reopen
-        assert r["how"] == "new" and len(opened) == n + 1 and load(rj)["claude"]["last"]["session"] == "d-1", r
-        # a desktop session's background `wait`: listening, then a newer one takes over and the older stops
-        me = [sys.executable, str(Path(__file__).resolve()), str(df), "wait"]
-        envd = lambda sid, host: {**os.environ, **E(sid, "claude-desktop", host)}
-        pa = subprocess.Popen(me, env=envd("d-1", "local_aaaaaaaa11"), stdout=subprocess.PIPE, text=True)
-        for _ in range(100):
-            if listener(df).get("pid") == pa.pid:
-                break
-            time.sleep(0.05)
-        st = claude_state(df)
-        assert (st["state"], st["where"], st["name"]) == ("waiting", "desktop", "aaaaaaaa"), st
-        assert reopen(df, rj) is None and len(opened) == n + 1, "a listener takes the notes"
-        pb = subprocess.Popen(me, env=envd("d-2", "local_bbbbbbbb22"), stdout=subprocess.PIPE, text=True)
-        out_a = pa.communicate(timeout=10)[0]
-        assert "STOPPED LISTENING" in out_a and "DESKTOP" not in out_a, out_a
-        assert listener(df).get("pid") == pb.pid and claude_state(df)["name"] == "bbbbbbbb"
-        update(rj, lambda d: d["events"].append({"type": "send", "stage": "cut", "round": 1, "handled": False}))
-        out_b = pb.communicate(timeout=10)[0]
-        assert out_b.startswith("SEND: desk") and "DESKTOP:" in out_b and "run_in_background" in out_b, out_b
-        assert not listening(df) and load(rj)["claude"]["last"]["session"] == "d-2", "the newest wait got the notes"
+        assert load(rj)["agent"]["last"]["session"] == "kiro-2" and load(rj)["agent"]["last"]["kind"] == "kiro"
+        assert agent_state(df) == {"state": "open", "last": None}, agent_state(df)
+        mark_path(df, write=True).write_text("{}", encoding="utf-8")
+        assert agent_state(df)["state"] == "working" and agent_state(df)["last"]
+        (df / "review" / ".listening").write_text(json.dumps({"session": "kiro-2"}), encoding="utf-8")
+        assert agent_state(df)["state"] == "waiting" and listener(df)["session"] == "kiro-2"
     finally:
-        for k, v in env0.items():
-            os.environ.pop(k, None) if v is None else os.environ.__setitem__(k, v)
+        os.environ.pop("KIROCUT_SESSION", None) if keep is None else os.environ.__setitem__("KIROCUT_SESSION", keep)
 
 
 def demo():
@@ -6291,58 +6102,15 @@ def demo():
     import tempfile
     tmp = Path(tempfile.mkdtemp(prefix="review_demo_"))
     os.environ["KIROCUT_HOME"] = str(tmp / "home")   # start records the folder in the library index there
-    os.environ.setdefault("KIROCUT_CLAUDE", shutil.which("true") or "true")   # a learn job never runs the real Claude Code here
+    os.environ.setdefault("KIROCUT_KIRO", "kiro-cli-not-here")   # a learn job never runs the real Kiro here
     demo_timings(tmp)
     demo_learn_edits(tmp)
     demo_bake(tmp)
     demo_live(tmp)
     demo_layers(tmp)
     demo_ripple(tmp)
-    demo_claude_scene(tmp)
-    # notes sent with no Claude on the edit: a new one opens in the library to carry on; never twice, never over a listener
-    import launcher
-    opened = []
-    launcher.open_claude = lambda folder, prompt, session=None, resume=False: (
-        opened.append((folder, prompt, resume)) or True, "claude '" + prompt + "'")
-    typed, keep_type = [], launcher.type_into
-    launcher.type_into = lambda tty, text: typed.append((tty, text)) or tty == "/dev/ttys-open"
-    os.environ.pop("KIROCUT_NO_REOPEN", None)   # the launcher is faked above: reopen() itself is what is checked
-    rf = tmp / "lib" / "edits" / "solo"
-    (rf / "review").mkdir(parents=True)
-    save(rf / "review.json", {})
-    r0 = reopen(rf, rf / "review.json")
-    assert r0["opened"] and r0["how"] == "new" and opened == [(tmp / "lib", "/kirocut:start carry on edits/solo", False)]
-    assert re.fullmatch(r"cd \S+ && claude --resume [0-9a-f-]{36}", r0["resume"]) and r0["session"] in r0["resume"], r0
-    assert reopen(rf, rf / "review.json") is None and len(opened) == 1, "one per 15 min"
-    (rf / "review" / ".listening").touch()
-    assert reopen(rf, rf / "review.json", force=True) is None, "a listening Claude takes the notes"
-    (rf / "review" / ".listening").unlink()
-    (rf / "review" / ".claude").touch()
-    update(rf / "review.json", lambda d: d.pop("claude"))
-    assert reopen(rf, rf / "review.json") is None and reopen(rf, rf / "review.json", force=True) and len(opened) == 2, "busy: only the button"
-    # the Claude that worked here goes first: open in a Terminal tab, the prompt is typed there; closed, it resumes
-    me = {"pid": os.getpid(), "tty": "/dev/ttys-open", "app": "Terminal", "cwd": str(tmp), "session": "s-1"}
-    keep_alive = globals()["claude_alive"]
-    globals()["claude_alive"] = lambda w: w.get("pid") == os.getpid()
-    (rf / "review" / ".claude").write_text(json.dumps(me), encoding="utf-8")
-    r1 = reopen(rf, rf / "review.json", force=True)
-    assert r1["how"] == "typed" and typed[-1] == ("/dev/ttys-open", "/kirocut:start carry on edits/solo") and len(opened) == 2, r1
-    assert r1["resume"] == f"cd {shlex.quote(str(tmp))} && claude --resume s-1", r1
-    (rf / "review" / ".claude").write_text(json.dumps({**me, "pid": 999999999}), encoding="utf-8")
-    r2 = reopen(rf, rf / "review.json", force=True)
-    assert r2["how"] == "resumed" and opened[-1] == (tmp, "/kirocut:start carry on edits/solo", True), (r2, opened[-1])
-    (rf / "review" / ".claude").write_text(json.dumps({**me, "app": "Cursor"}), encoding="utf-8")
-    assert reopen(rf, rf / "review.json", force=True)["how"] == "new", "open in an app that cannot be typed into: a new one"
-    n_open = len(opened)
-    globals()["claude_alive"], launcher.type_into = keep_alive, keep_type
-    os.environ["KIROCUT_NO_REOPEN"] = "1"
-    assert reopen(rf, rf / "review.json", force=True) is None and len(opened) == n_open, "KIROCUT_NO_REOPEN: nothing opens"
-    os.environ.pop("KIROCUT_NO_REOPEN")   # off for the rest: launcher.open_claude stays the recorder above
-    demo_sessions(tmp, opened, typed)
-    w = who_claude()   # this demo's own process tree: a `claude` above it only when Claude Code runs it
-    assert not w or (w["pid"] and "session" in w), w
-    # a page no session owns takes only questions with no session: another project's Claude never asks there
-    assert asker(rf, "")("sess-other") is None and asker(rf, "")("") == "solo"
+    demo_agent_scene(tmp)
+    demo_sessions(tmp)
     # the skills on a video: ran (the last one now while it is made), then the style's and chained ones still to run
     ve = tmp / "edits" / "sk"
     (ve / "review").mkdir(parents=True)
@@ -6375,7 +6143,7 @@ def demo():
     assert end.exists() and end.stat().st_size > 1000, "no still at the last frame"
     assert "Move to playhead" not in HTML.read_text(encoding="utf-8") and 'id="homebtn"' in HTML.read_text(encoding="utf-8")
     assert load(folder / "review.json")["vertical"] is False
-    os.environ["CLAUDE_CODE_SESSION_ID"] = "sess-review"
+    os.environ["KIROCUT_SESSION"] = "sess-review"
     srv, url = serve(folder, 0, open_browser=False)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     base, tok = url.split("/?t=")
@@ -6411,8 +6179,8 @@ def demo():
     opened, OPEN = [], (lambda u: opened.append(u))
     serve(folder, 0)
     assert opened == [url], opened
-    hp = askhook.pages() / "1"
-    hp.write_text(json.dumps({"url": "http://127.0.0.1:1/?t=x", "kind": "home", "session": ""}), encoding="utf-8")
+    real_home = globals()["home_url"]
+    globals()["home_url"] = lambda: "http://127.0.0.1:1/?t=x"   # the home window is up
     serve(folder, 0)
     assert opened == [url] * 2, "a home window busy with something else: this page still gets its tab"
     sf = tmp / "home" / "home" / "state.json"
@@ -6420,7 +6188,7 @@ def demo():
     sf.write_text(json.dumps({"jobs": [{"type": "video", "state": "taken", "args": {"edit": str(folder)}}]}), encoding="utf-8")
     serve(folder, 0)
     assert opened == [url] * 2, "the home window holds this edit's job: it goes there itself, no second tab"
-    hp.unlink()
+    globals()["home_url"] = real_home
     sf.unlink()
     OPEN = webbrowser.open
     r = get("/")
@@ -6439,47 +6207,18 @@ def demo():
     assert post("/keys", {"action": "fit", "combo": []})["keys"] == {"split": ["Mod+K"], "fit": []}
     assert post("/keys", {"reset": "split"})["keys"] == {"fit": []} and post("/keys", {"reset_all": True})["keys"] == {}
     assert post("/keys", {"replace": {"split": ["Mod+K", "Mod+B"]}})["keys"] == {"split": ["Mod+K", "Mod+B"]} and post("/keys", {"reset_all": True})
-    # Claude's question (askhook.py): posted, polled by the showing page, answered in its own words, cleared
-    assert '<script src="/ask.js">' in HTML.read_text(encoding="utf-8") and b"askq" in get("/ask.js").read()
-    qs = [{"question": "Keep the intro?", "header": "Intro", "options": [{"label": "Keep", "description": ""}], "multiSelect": False}]
-    try:
-        post("/ask", {"id": "q0", "questions": qs, "session": "sess-other"})
-        raise AssertionError("took another session's question")
-    except urllib.error.HTTPError as e:
-        assert e.code == 409
+    assert '<script src="/alerts.js">' in HTML.read_text(encoding="utf-8") and b"aveAlert" in get("/alerts.js").read()
+    for gone in ("/ask", "/ask.js"):   # questions are asked in the chat
+        try:
+            get(gone)
+            raise AssertionError(f"{gone} still answers")
+        except urllib.error.HTTPError as e:
+            assert e.code == 404, (gone, e.code)
     try:   # a POST from another site's page
         urllib.request.urlopen(urllib.request.Request(base + "/theme?t=" + tok, b'{"theme":"dark"}', {"Origin": "http://evil.example"}, method="POST"))
         raise AssertionError("took a cross-site POST")
     except urllib.error.HTTPError as e:
         assert e.code == 403
-    os.environ.pop("CLAUDE_CODE_SESSION_ID")
-    (folder / "review" / ".session").unlink(missing_ok=True)
-    assert asker(folder, "")("") == "demo", "no session known (older Claude Code): a question with no session"
-    assert asker(folder, "")("sess-anyone") is None, "a session that never touched this video: another project's"
-    assert asker(folder, "sess-review")("sess-anyone") is None
-    hs = Path(os.environ["KIROCUT_HOME"]) / "home" / "state.json"   # the home page's job for this video: its Claude asks here
-    hs.parent.mkdir(parents=True, exist_ok=True)
-    had = hs.read_bytes() if hs.exists() else None
-    hs.write_text(json.dumps({"jobs": [{"type": "video", "state": "taken", "owner": "sess-job", "args": {"edit": str(folder)}}]}), encoding="utf-8")
-    assert asker(folder, "sess-review")("sess-job") == "demo" and asker(folder, "sess-review")("sess-anyone") is None
-    # a server the home window started (no session of its own): another video's Claude never asks here
-    other = folder.parent / "demo-other"
-    hs.write_text(json.dumps({"jobs": [{"type": "video", "state": "taken", "owner": "sess-job", "args": {"edit": str(folder)}},
-                                       {"type": "video", "state": "taken", "owner": "sess-two", "args": {"edit": str(other)}}]}), encoding="utf-8")
-    assert asker(folder, "")("sess-job") == "demo" and asker(folder, "")("sess-two") is None, "the job's own edit page only"
-    (other / "review").mkdir(parents=True, exist_ok=True)
-    (other / "review" / ".session").write_text("sess-three", encoding="utf-8")
-    assert asker(folder, "")("sess-three") is None and asker(folder, "")("sess-old") is None, "working on another edit, or on none: not here"
-    shutil.rmtree(other)
-    hs.write_bytes(had) if had is not None else hs.unlink()
-    os.environ["CLAUDE_CODE_SESSION_ID"] = "sess-review"
-    post("/ask", {"id": "q1", "questions": qs, "session": "sess-review"})
-    assert json.loads(get("/ask?v=1").read())["ask"] == {"id": "q1", "questions": qs, "about": "demo"} and askhook.live() == [url]
-    post("/ask/answer", {"id": "q1", "answers": ["Cut it to 3 seconds"]})
-    assert json.loads(get("/ask?id=q1").read())["result"] == {"answers": ["Cut it to 3 seconds"]}
-    assert json.loads(get("/ask").read())["ask"] is None
-    post("/ask/clear", {"id": "q1"})
-    assert not srv.asks
     r = get("/download")   # the finished video, saved under its own name
     assert r.headers["Content-Disposition"] == "attachment; filename=\"demo.mp4\"; filename*=UTF-8''demo.mp4" and r.read()
     assert disposition("My take - Café edit.mp4").endswith("filename*=UTF-8''My%20take%20-%20Caf%C3%A9%20edit.mp4")
@@ -6531,7 +6270,7 @@ def demo():
         assert err.code == 400 and "Add a video" in json.loads(err.read())["error"]
     post("/assets", {"remove": len(ad) - 1})
     st = json.loads(get("/state").read())
-    assert not st["listening"] and f'"{folder.resolve()}" wait' in st["resume"], "Copy for Claude names this edit"
+    assert not st["listening"] and f'edit "{folder.resolve()}"' in st["resume"] and "kirocut_events" in st["resume"], "Copy for Kiro names this edit"
     # the first-edit notice: round 1 of the user's first videos, until dismissed; the theme keeps the count
     assert json.loads(get("/state").read())["intro"], "round 1 of the first video: the notice shows"
     set_theme("dark")
@@ -6572,10 +6311,10 @@ def demo():
     cs = cut_steps(folder, {"rounds": []})
     assert [x["state"] for x in cs["steps"]] == ["done", "now", "todo", "todo", "todo", "todo"] and cs["steps"][0]["text"] == "Writing down every word", cs
     assert all(x["state"] == "done" for x in cut_steps(folder, {"rounds": [{"stage": "cut", "round": 1}]})["steps"])
-    j.update(steps=[], state="queued", claude={"opened": True})
+    j.update(steps=[], state="queued")
     hsf.write_text(json.dumps({"jobs": [j]}), encoding="utf-8")
     cs = cut_steps(folder, {})
-    assert {x["state"] for x in cs["steps"]} == {"todo"} and cs["claude"]["opened"] and cut_steps(tmp, {}) is None, cs
+    assert {x["state"] for x in cs["steps"]} == {"todo"} and cs["state"] == "queued" and cut_steps(tmp, {}) is None, cs
     hsf.write_text(keep_hs, encoding="utf-8") if keep_hs is not None else hsf.unlink()
     hs.shutdown()
     hs.server_close()
@@ -6595,12 +6334,11 @@ def demo():
     round_data(folder, vid, "cut", 1, None)
     assert json.loads(get("/data?k=cut-1").read())["transcript"]["cuts"] == 2
     assert json.loads(get("/data?k=nope").read()) == {}
-    # stop does nothing until a send; after a send it opens the notes again and `status` tells Claude to stop
+    # stop does nothing until a send; after a send it opens the notes again and `status` tells Kiro to stop
     post("/event", {"type": "stop"})
     assert not load(folder / "review.json")["sent"]
     post("/event", {"type": "send"})
-    assert post("/claude", {})["opened"] and load(folder / "review.json")["claude"]["command"] == f"claude '/kirocut:start carry on edits/{folder.name}'"
-    cq = post("/comment", {"t": 2.0, "text": "queued then stopped"})   # with Claude: queued for the next round
+    cq = post("/comment", {"t": 2.0, "text": "queued then stopped"})   # with Kiro: queued for the next round
     assert cq["queued"] and cq["round"] == 2, cq
     post("/event", {"type": "stop"})
     d = load(folder / "review.json")
@@ -6615,7 +6353,7 @@ def demo():
         raise AssertionError("status after stop")
     except SystemExit as e:
         assert e.code == 3 and "STOPPED" in o.getvalue()
-    # Undo approve: an approve, even one Claude already took, is taken back and the draft opens for notes again
+    # Undo approve: an approve, even one Kiro already took, is taken back and the draft opens for notes again
     d["events"] = [{"type": "approve", "stage": d["stage"], "round": d["round"], "at": now(), "handled": True}]
     d["sent"] = False
     save(folder / "review.json", d)
@@ -6624,18 +6362,18 @@ def demo():
     assert d["events"][-1]["type"] == "stop" and not d["sent"], d["events"]
     d["events"] = []
     save(folder / "review.json", d)
-    # send: wait prints the note and its still; the page says the round is with Claude
+    # send: wait prints the note and its still; the page says the round is with Kiro
     post("/event", {"type": "send"})
     out = waited()
     assert out.startswith("SEND: demo the cut, round 1, 1 note.") and "#1 0:01.2" in out and 'said: "hello world"' in out, out
     assert str(folder / "review" / c["frame"]) in out and not (folder / "review" / ".listening").exists()
     assert "): cut the hello, please" in out, out   # wait hands over the final text
-    try:   # Claude has this round: its notes are read-only
+    try:   # Kiro has this round: its notes are read-only
         post("/edit", {"id": c["id"], "text": "too late"})
         raise AssertionError("edit after pick-up")
     except urllib.error.HTTPError as err:
         assert err.code == 409
-    # a note while Claude works: queued for the next round, deletable, never in what `wait` hands over
+    # a note while Kiro works: queued for the next round, deletable, never in what `wait` hands over
     cx = post("/comment", {"t": 5.2, "text": "delete me"})
     post("/delete", {"id": cx["id"]})
     cn = post("/comment", {"t": 1.2, "text": "and the pause"})
@@ -6645,7 +6383,7 @@ def demo():
     assert [x["id"] for x in load(folder / "review.json")["comments"]] == [c["id"], cn["id"]]
     assert all(e["handled"] for e in load(folder / "review.json")["events"])   # nothing for `wait` to return on
     assert "LEARN:" in out.splitlines()[-2] and f"{folder} learn --none" in out, out
-    # round 2 on the styled edit: the card under a note comes with it, Claude's answer shows.
+    # round 2 on the styled edit: the card under a note comes with it, Kiro's answer shows.
     # The cut's note was never learned: round says so, then learn --none marks it one-off
     o = io.StringIO()
     with contextlib.redirect_stdout(o):
@@ -6682,7 +6420,7 @@ def demo():
     # the Text tab: a text not sent yet changes in place (words, look, place, time)
     c6 = post("/edit", {"id": c6["id"], "text": "wait for it!", "add_text": {"style": "outline", "x_pct": 40, "y_pct": 30}, "t": 2.5, "t_end": 6})
     assert (c6["text"], c6["add_text"]["style"], c6["add_text"]["x_pct"], c6["t"], c6["t_end"]) == ("wait for it!", "outline", 40.0, 2.5, 6.0), c6
-    # a typed one (texts.json): Add, Edit and Delete change it on the spot, with no note (Claude does not have the round)
+    # a typed one (texts.json): Add, Edit and Delete change it on the spot, with no note (Kiro does not have the round)
     (folder / "texts.json").write_text(json.dumps({"items": [{"id": "edit1-99", "text": "hi there", "style": "plain", "start": 1.0,
                                                               "end": 4.0, "x_pct": 50, "y_pct": 40, "size_pct": 6}]}), encoding="utf-8")
     assert [x["id"] for x in json.loads(get("/state").read())["texts"]] == ["edit1-99"]
@@ -6909,7 +6647,7 @@ def demo():
     except urllib.error.HTTPError as e:
         assert e.code == 400
     (folder / "overrides.json").unlink()
-    # a card on the video: moved or resized, then deleted, into overrides.json with no note (Claude does not have the
+    # a card on the video: moved or resized, then deleted, into overrides.json with no note (Kiro does not have the
     # round): the page draws it moved until the bake; its picture is served
     trk_items = json.loads(get("/data?k=edit-1").read())["items"]["cards"]
     assert trk_items[0]["key"].startswith("later@"), trk_items
@@ -6950,7 +6688,7 @@ def demo():
             assert e.code == 400, bad
     (folder / "overrides.json").unlink()
     # the timeline's lanes: each field given replaced whole, in /state, bad input refused; locking alone bakes nothing,
-    # and no lane change is ever a note for Claude
+    # and no lane change is ever a note for Kiro
     notes = len(load(folder / "review.json")["comments"])
 
     def unbake():   # no bake waiting, so the next change shows whether it starts one
@@ -6975,7 +6713,7 @@ def demo():
             raise AssertionError(bad)
         except urllib.error.HTTPError as e:
             assert e.code == 400, bad
-    assert len(load(folder / "review.json")["comments"]) == notes, "lanes: never a note for Claude"
+    assert len(load(folder / "review.json")["comments"]) == notes, "lanes: never a note for Kiro"
     unbake()
     (folder / "overrides.json").unlink()
     # the Media panel: a file streamed into media/ (not assets.json), dropped on the video as a card the page draws at
@@ -7063,7 +6801,7 @@ def demo():
     assert load(folder / "texts.json")["items"] == [{"id": f"edit1-{c6['id']}", "text": "wait for it!", "style": "outline", "x_pct": 40.0,
                                                        "y_pct": 30.0, "size_pct": TEXT_SIZE, "start": 2.5, "end": 6.0}]
     assert f"#{c3['id']} 0:05.1 (5.1s) [wide] [card 0 image 'later']: louder here" in out, out
-    # the final approve: LEARN asks Claude for rules from every note of the session, the page waits for them
+    # the final approve: LEARN asks Kiro for rules from every note of the session, the page waits for them
     assert "LEARN: the video is approved" in out and "#1 the cut r1: cut the hello, please -> reply: cut it" in out, out
     lr0 = json.loads(get("/state").read())["learn"]
     assert {k: lr0[k] for k in ("state", "style")} == {"state": "reading", "style": "My style"}, lr0
@@ -7219,7 +6957,7 @@ def demo():
         raise AssertionError("a second pick")
     except urllib.error.HTTPError as e:
         assert e.code == 409
-    # the Trial reels tab: Claude's plan -> a question -> Claude's reply -> Make -> `wait` -> a render lands as a trial
+    # the Trial reels tab: Kiro's plan -> a question -> Kiro's reply -> Make -> `wait` -> a render lands as a trial
     def trials(j):
         with contextlib.redirect_stdout(io.StringIO()):
             trials_propose(folder, json.dumps(j))
@@ -7230,7 +6968,7 @@ def demo():
         except SystemExit as e:
             assert e.code, bad
     plan = {"message": "Make trial reels of this?", "hooks": [{"text": "I'm so hyped", "from": "your first take"}],
-            "versions": [{"kinds": ["hooks"], "line": "Opens on the first take"}, {"kinds": "claude"}],
+            "versions": [{"kinds": ["hooks"], "line": "Opens on the first take"}, {"kinds": "kiro"}],
             "idea": {"kinds": ["animations"], "line": "New overlays"}}
     try:
         post("/trials", {"action": "skip"})
@@ -7239,7 +6977,7 @@ def demo():
         assert e.code == 409
     trials(plan)
     t = json.loads(get("/state").read())["trials"]
-    assert t["state"] == "proposed" and t["versions"][1]["kinds"] == ["claude"] and t["idea"]["kinds"] == ["animations"], t
+    assert t["state"] == "proposed" and t["versions"][1]["kinds"] == ["kiro"] and t["idea"]["kinds"] == ["animations"], t
     for bad in ({"action": "make", "versions": []}, {"action": "ask"}, {"action": "make", "versions": [{"kinds": ["same", "rewind"]}]}):
         try:
             post("/trials", bad)
@@ -7249,7 +6987,7 @@ def demo():
     post("/trials", {"action": "ask", "text": "make t2 the motion graphics bit"})
     try:
         post("/trials", {"action": "skip"})
-        raise AssertionError("a pick while Claude reads the question")
+        raise AssertionError("a pick while Kiro reads the question")
     except urllib.error.HTTPError as e:
         assert e.code == 409
     out = waited()
@@ -7262,15 +7000,15 @@ def demo():
     trials({**plan, "versions": [plan["versions"][0], {"kinds": ["section"], "line": "0:06 to 0:15"}], "reply": "Done. t2 is 0:06 to 0:15."})
     t = load(folder / "review.json")["trials"]
     assert t["asks"][0]["reply"] == "Done. t2 is 0:06 to 0:15." and t["v"] == 2 and t["handled"] is None, t
-    post("/trials", {"action": "make", "hooks": [0, 0], "versions": [{"kinds": ["rewind", "animations"]}, {"kinds": "claude"}, {"kinds": ["section"], "line": "0:06 to 0:15"}]})
+    post("/trials", {"action": "make", "hooks": [0, 0], "versions": [{"kinds": ["rewind", "animations"]}, {"kinds": "kiro"}, {"kinds": ["section"], "line": "0:06 to 0:15"}]})
     out = waited()
-    assert out.startswith("TRIALS: make 3 trial reels.") and "t1: Rewind + New animations" in out and "t2: Claude decides" in out, out
+    assert out.startswith("TRIALS: make 3 trial reels.") and "t1: Rewind + New animations" in out and "t2: Kiro decides" in out, out
     assert "t3: One section (0:06 to 0:15)" in out and 'spare hooks to use: "I\'m so hyped"' in out and "--trial" in out, out
     with contextlib.redirect_stdout(io.StringIO()):
         cmd_alt(ns(name="t1", video=str(vid), transcript=None, trial=True), folder)
     d = load(folder / "review.json")
     assert d["trials"]["state"] == "chosen" and next(a for a in d["alts"] if a["name"] == "t1")["trial"] is True, d["alts"]
-    # feedback once they are made: notes for one version (with its time) or all, Claude's reply under them
+    # feedback once they are made: notes for one version (with its time) or all, Kiro's reply under them
     post("/trials", {"action": "note", "text": "the hook is too long", "for": "t1", "t": 2.34})
     post("/trials", {"action": "note", "text": "titles bigger", "for": "t9"})   # not a version: all of them
     out = waited()
@@ -7337,7 +7075,7 @@ def demo():
     size = vid.stat().st_size
     vid.write_bytes(b"the next render")
     assert len(get("/video?k=cut-1").read()) == size and len(get("/video?k=edit-1&alt=wide").read()) == size
-    # the footer after a pick-up: an approve says approved, a send says Claude is working (node runs the page's own function)
+    # the footer after a pick-up: an approve says approved, a send says Kiro is working (node runs the page's own function)
     page = HTML.read_text(encoding="utf-8")
     js = re.search(r"^function listenText\(S\)\{.*?\n\}", page, re.M | re.S)
     alive = re.search(r"^function alive\(S\)\{.*?\}$", page, re.M)
@@ -7346,13 +7084,12 @@ def demo():
         ev = lambda t, n: {"listening": False, "sent": True, "round": n, "comments": [],
                            "events": [{"type": t, "stage": "edit", "handled": True}]}
         mid = {"listening": False, "busy": True, "sent": False, "round": 1, "stage": "edit", "comments": [], "events": []}
-        nc = re.search(r"^const newClaude=.*$", page, re.M).group(0)   # notes sent, a new Claude opened
-        fresh = dict(ev("send", 1), events=[{"type": "send", "stage": "edit", "handled": False}], claude={"opened": True, "at": time.time()})
-        o = subprocess.run(["node", "-e", nc + alive.group(0) + js.group(0) + "for(const s of " + json.dumps(
-                            [ev("approve", 0), {**ev("send", 1), "busy": True}, mid, fresh, ev("send", 1)])
+        sent = dict(ev("send", 1), events=[{"type": "send", "stage": "edit", "handled": False}])
+        o = subprocess.run(["node", "-e", alive.group(0) + js.group(0) + "for(const s of " + json.dumps(
+                            [ev("approve", 0), {**ev("send", 1), "busy": True}, mid, sent, ev("send", 1)])
                             + ")console.log(listenText(s))"], capture_output=True, text=True, check=True).stdout
-        assert o.splitlines() == ["Approved", "Claude is working on the next draft", "",   # mid-round: the Claude control says it
-                                  "A new Claude is starting in its own Terminal window", "Claude stopped. Your notes are saved."], o
+        assert o.splitlines() == ["Approved", "Kiro is working on the next draft", "",   # mid-round: the Kiro control says it
+                                  "Notes sent", "Notes saved. Kiro picks them up in the chat."], o
     # approve on the cut: the style-edit's scripts fill the page's "Making the edit" steps, in place, never twice
     sf = tmp / "edits" / "steps"
     sf.mkdir(parents=True)
@@ -7533,9 +7270,9 @@ def demo():
                    {"kind": "manual", "note": "cut on the review page", "text": "ship"},
                    {"kind": "filler", "text": "okay"}], sp1
     assert load(ef / "spans.prev.json") == sp0
-    try:   # Claude has the round now
+    try:   # Kiro has the round now
         p3({"cut": [[0.0, 0.4]]})
-        raise AssertionError("edits while Claude has the round")
+        raise AssertionError("edits while Kiro has the round")
     except urllib.error.HTTPError as err:
         assert err.code == 409
     o = io.StringIO()
@@ -7544,7 +7281,7 @@ def demo():
     o = o.getvalue()
     assert o.startswith("EDITS 2 transcript edits applied to spans.json: rebuild, render, verify, round"), o
     assert 'restore 1.50-2.40s: "is the"' in o and 'cut 4.05-4.10s: "ship"' in o and "build_timeline.py" in o and "\nSEND: tx the cut, round 1" in o, o
-    # Stop while Claude applies them: spans.json goes back
+    # Stop while Kiro applies them: spans.json goes back
     urllib.request.urlopen(urllib.request.Request(b3 + "/event?t=" + t3, b'{"type": "stop"}', method="POST"))
     assert load(ef / "spans.json") == sp0 and not load(ef / "review.json")["sent"]
     # a whole span restored: it goes; the next span keeps its fields
@@ -7575,9 +7312,9 @@ def demo():
     [x.start() for x in th]
     [x.join() for x in th]
     assert sorted(outs) == [200, 409] and load(ef / "spans.prev.json") == before, outs
-    # while Claude applies them: send and approve are refused (Stop first)
+    # while Kiro applies them: send and approve are refused (Stop first)
     assert _post_code(b3 + "/event?t=" + t3, {"type": "send"}) == 409 and _post_code(b3 + "/event?t=" + t3, {"type": "approve"}) == 409
-    # Stop after Claude changed spans.json itself: nothing is put back over Claude's change; round refuses while stopped
+    # Stop after Kiro changed spans.json itself: nothing is put back over Kiro's change; round refuses while stopped
     mine = load(ef / "spans.json") + [{"text": "so", "kind": "filler", "occurrence": 1}]
     save(ef / "spans.json", mine)
     stop3()
@@ -7691,7 +7428,7 @@ def demo():
     update(gb / "review.json", lambda d: d.update(sent=True))
     try:
         go_back(gb, 2)
-        raise AssertionError("went back while Claude has the round")
+        raise AssertionError("went back while Kiro has the round")
     except ValueError:
         pass
     # a round whose sent notes nobody answered is refused, with the resolve lines; answered, it opens
@@ -7712,23 +7449,6 @@ def demo():
     srv2.server_close()
     srv.shutdown()
     srv.server_close()
-    if os.name != "nt":   # the Claude control: a running `claude` here is working, Stop ends it, then it is off
-        cf = tmp / "clc"
-        (cf / "review").mkdir(parents=True)
-        fake = tmp / "claude"
-        fake.symlink_to(shutil.which("sleep") or "/bin/sleep")   # a copy of a system binary is killed on macOS: a link
-        proc = subprocess.Popen([str(fake), "30"])
-        try:
-            assert claude_state(cf)["state"] == "off" and not stop_claude(cf), "no Claude ever ran here"
-            (cf / "review" / ".claude").write_text(json.dumps({"pid": proc.pid, "tty": "/dev/ttys-x", "app": "Terminal", "session": "s1", "cwd": "/a b"}), encoding="utf-8")
-            st = claude_state(cf)
-            assert st["state"] == "working" and st["show"] and st["last"] and st["resume"] == "cd '/a b' && claude --resume s1", st
-            (cf / "review" / ".listening").touch()
-            assert claude_state(cf)["state"] == "waiting"
-            assert stop_claude(cf) and proc.wait(5) is not None and not (cf / "review" / ".listening").exists()
-            assert claude_state(cf) == {**st, "state": "off", "show": False}, claude_state(cf)
-        finally:
-            proc.kill()
     shutil.rmtree(tmp, ignore_errors=True)
     print("review demo ok")
 
@@ -7789,8 +7509,8 @@ def main():
     s.add_argument("--none", action="store_true", help="no note in this round is a preference")
     s.add_argument("--propose", metavar="JSON", help="after the final approve: candidate rules for the page's learn panel")
     s.add_argument("--done", nargs="?", const="", metavar="SUMMARY", help="save the rules the user ticked into the style")
-    s.add_argument("--job", action="store_true", help="KiroCut's own learn step on the Claude Code CLI (no Claude on the video)")
-    s = sp.add_parser("trials", help="the Trial reels tab: Claude's plan for re-cuts of an approved reel")
+    s.add_argument("--job", action="store_true", help="KiroCut's own learn step on the Kiro CLI (no Kiro on the video)")
+    s = sp.add_parser("trials", help="the Trial reels tab: Kiro's plan for re-cuts of an approved reel")
     g = s.add_mutually_exclusive_group(required=True)
     g.add_argument("--propose", metavar="JSON",
                    help='{"message", "hooks": [{"text", "from"}], "versions": [{"kinds", "line"}], "idea"?, "reply"?}')
@@ -7801,22 +7521,17 @@ def main():
         for k, f in (("transcript", "words.json"), ("plan", "plan.json")):
             if getattr(a, k, 0) is None and (folder / f).exists():
                 setattr(a, k, str(folder / f))
+    legacy.edit(folder)   # an older edit's files under today's names
     if a.cmd != "start" and not (folder / "review.json").exists():
         sys.exit(f"no review in {folder}: run `start` first")
     if a.cmd != "serve":   # every agent command marks the agent as working on this edit
         (folder / "review").mkdir(parents=True, exist_ok=True)
-        w = who_claude()   # which agent, and where: Send types into it, or resumes it, before opening a new one
-        mark, legacy = mark_path(folder, write=True), folder / "review" / ".claude"
-        if w or not (mark.exists() or legacy.exists()):
-            mark.write_text(json.dumps(w), encoding="utf-8")
-        elif mark.exists():
-            mark.touch()
-        else:
-            mark.write_text(legacy.read_text(encoding="utf-8") or "{}", encoding="utf-8")
-        if askhook.session():   # this session's questions now go to this edit's page
-            (folder / "review" / ".session").write_text(askhook.session(), encoding="utf-8")
+        mark = mark_path(folder, write=True)   # the Kiro chat is on this edit now
+        mark.write_text(json.dumps({"pid": os.getpid(), **pagekit.agent_env()}), encoding="utf-8")
+        if pagekit.session():
+            (folder / "review" / ".session").write_text(pagekit.session(), encoding="utf-8")
         if a.cmd != "start":
-            note_session(folder, a.cmd)   # where the page's notes go next (claude.last)
+            note_session(folder, a.cmd)   # where the page's notes go next (agent.last)
     if a.cmd == "start":
         if not Path(a.video).exists():
             sys.exit(f"no such file: {a.video}")
@@ -7833,8 +7548,7 @@ def main():
         else:
             print("already serving this edit" + ("" if a.no_open else "; opened it"))
     elif a.cmd == "wait":
-        if cmd_wait(folder) != "superseded" and listen_hint(folder):
-            print(listen_hint(folder))
+        cmd_wait(folder)
     elif a.cmd == "round":
         cmd_round(a, folder)
     elif a.cmd == "resolve":

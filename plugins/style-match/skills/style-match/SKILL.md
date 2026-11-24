@@ -7,30 +7,30 @@ compatibility: Python 3.9+, ffmpeg, yt-dlp and internet access. Optional ElevenL
 
 # style-match
 
-Paths: `${CLAUDE_SKILL_DIR}` means the folder containing this SKILL.md. On Windows, use `py` wherever
+Paths: `${KIROCUT_SKILL}` means the folder containing this SKILL.md. On Windows, use `py` wherever
 these commands say `python3`.
 
-Every question to the user goes in the question box: call the AskUserQuestion tool (2-4 options, the recommended one first). Only in an agent without that tool, ask numbered questions in text.
+Every question to the user goes in the question box: call the kirocut_ask tool (2-4 options, the recommended one first). No form in the IDE: say the numbered text it returns, then pass the reply to `kirocut_answer`.
 
 ## Output
 
 `style-matches/<handle>/`: `teardown.md` (the analysis), `teardown.html` (the page the user looks
 at), `look.md` (what Kiro reads), `style.json` (every measured number, for editing in this style),
-plus the per-video files listed in `${CLAUDE_SKILL_DIR}/references/outputs.md`. An edit plan goes to
+plus the per-video files listed in `${KIROCUT_SKILL}/references/outputs.md`. An edit plan goes to
 `edit-plans/<name>/`. Whether an edit in this style matches: `scripts/match.py` (`references/outputs.md` "Match check").
 
 ## First: doctor
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/fetch.py" doctor
+python3 "${KIROCUT_SKILL}/scripts/fetch.py" doctor
 ```
 
 Run it before the first teardown in a session. `Ready.` means go. If it prints `Not ready`, or the user asks to install or set up
-the skill, follow `${CLAUDE_SKILL_DIR}/references/setup.md`. The ElevenLabs and
+the skill, follow `${KIROCUT_SKILL}/references/setup.md`. The ElevenLabs and
 Gemini keys are optional. Never ask for either in the chat: the user saves them with
 `setkey` (`setkey --gemini`) in their own terminal.
 
-`VPY="${CLAUDE_SKILL_DIR}/scripts/run.py"`; `python3 "$VPY"` below (`py` on Windows) runs a script with
+`VPY="${KIROCUT_SKILL}/scripts/run.py"`; `python3 "$VPY"` below (`py` on Windows) runs a script with
 the tool venv's Python wherever `KIROCUT_HOME` puts it.
 
 ## Pipeline
@@ -56,8 +56,8 @@ Skip what the message already answers. One question box call:
 ### Step 1: Get the videos
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/fetch.py" list <handle> --platform tiktok --limit 40   # or youtube
-python3 "${CLAUDE_SKILL_DIR}/scripts/fetch.py" list <name> --urls picks.txt   # pasted links, one a line
+python3 "${KIROCUT_SKILL}/scripts/fetch.py" list <handle> --platform tiktok --limit 40   # or youtube
+python3 "${KIROCUT_SKILL}/scripts/fetch.py" list <name> --urls picks.txt   # pasted links, one a line
 ```
 Prints a ranked table (views, x median) and writes `videos.json`; `*` marks 3x the median.
 
@@ -68,8 +68,8 @@ one sentence; say it, or put 6+ reel links in `picks.txt` for `--urls` (ranked b
 ### Step 2: Download and transcribe the winners and a control group
 
 ```bash
-python3 "$VPY" "${CLAUDE_SKILL_DIR}/scripts/visual.py" download <handle>
-python3 "${CLAUDE_SKILL_DIR}/scripts/fetch.py" transcribe <handle>
+python3 "$VPY" "${KIROCUT_SKILL}/scripts/visual.py" download <handle>
+python3 "${KIROCUT_SKILL}/scripts/fetch.py" transcribe <handle>
 ```
 
 `--top N` downloads and transcribes N plus 2 control videos (the 2 closest to the median;
@@ -79,8 +79,8 @@ fast run, is 9; pass it to both commands. Both print the count first. `--ids <id
 videos. The median ones are the control: a move that appears in the 500K video *and* the 3K video is
 that creator's habit, not the reason the 500K one worked. Keep at least 2.
 
-Run `transcribe` and `python3 "$VPY" "${CLAUDE_SKILL_DIR}/scripts/gemini.py" look <handle> --no-merge` at the same
-time (two Bash calls in one message): the model watches while Whisper listens. Every measuring script
+Run `transcribe` and `python3 "$VPY" "${KIROCUT_SKILL}/scripts/gemini.py" look <handle> --no-merge` at the same
+time (two shell calls in one message): the model watches while Whisper listens. Every measuring script
 works on several videos at once (`CT_JOBS=1` turns that off on a small laptop).
 
 Say the time first (download plus transcription, about 10 s a video on a 14-core Mac). Whisper
@@ -91,14 +91,14 @@ If filler counts lean on Whisper transcripts, say so in the teardown.
 ### Step 3: Measure, then analyse
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/metrics.py" <handle>
+python3 "${KIROCUT_SKILL}/scripts/metrics.py" <handle>
 ```
 
 Writes `metrics.json` (WPM per third, pauses, fillers, sentence length, you/I/we,
 repeated phrases), all off the word timestamps.
 
 Run Step 3b first, so the passes skip the videos `format.json` left out. Then load
-`${CLAUDE_SKILL_DIR}/references/analysis-framework.md` and run its passes. For pass 1, launch
+`${KIROCUT_SKILL}/references/analysis-framework.md` and run its passes. For pass 1, launch
 one `video-analyst` agent per video, all in one message (they run at once): give each the absolute
 `style-matches/<handle>/` path and one id. Each returns a JSON beat map; merge them into the
 tables. Without an Agent tool, read `transcripts/<id>.timed.txt` yourself, one video at a time. Never
@@ -109,7 +109,7 @@ read `transcripts/<id>.json` or `metrics.json` whole:
    user would not say.
 3. **Visual pass.** Always: Step 3b. It is what lets the user edit their own video in this style.
 4. **Card events**, only when the ask covers the creator's cards and graphics, or an edit plan is
-   coming. Writes `events.json` in the shape in `${CLAUDE_SKILL_DIR}/references/edit-plan.md`.
+   coming. Writes `events.json` in the shape in `${KIROCUT_SKILL}/references/edit-plan.md`.
    `scripts/strip.py` needs ffmpeg, `numpy` and `pillow`.
 
 Do not skip the timings: "hook lands by 0:03 and runs 14 words, items are 8-11 s each"
@@ -118,10 +118,10 @@ is a format someone can film; "hook, then list, then close" is not.
 ### Step 3b: The visual pass (measured, no images for you to read)
 
 ```bash
-python3 "$VPY" "${CLAUDE_SKILL_DIR}/scripts/visual.py" measure <handle>
-python3 "$VPY" "${CLAUDE_SKILL_DIR}/scripts/look.py" measure <handle>
-python3 "$VPY" "${CLAUDE_SKILL_DIR}/scripts/format_check.py" check <handle>
-python3 "$VPY" "${CLAUDE_SKILL_DIR}/scripts/gemini.py" look <handle>
+python3 "$VPY" "${KIROCUT_SKILL}/scripts/visual.py" measure <handle>
+python3 "$VPY" "${KIROCUT_SKILL}/scripts/look.py" measure <handle>
+python3 "$VPY" "${KIROCUT_SKILL}/scripts/format_check.py" check <handle>
+python3 "$VPY" "${KIROCUT_SKILL}/scripts/gemini.py" look <handle>
 ```
 
 Run them after `transcribe` (`look.py` matches OCR text to the spoken words).
@@ -138,15 +138,15 @@ Run them after `transcribe` (`look.py` matches OCR text to the spoken words).
    about the 5 most-viewed: font, graphics style, transitions, what is not generic. Never a number.
 
 **Then read `look.md` (under 48 lines). Do not open frames or sheets.** Every field is in
-`${CLAUDE_SKILL_DIR}/references/look-pass.md`. Numbers in `style.json` come from code; never edit them
+`${KIROCUT_SKILL}/references/look-pass.md`. Numbers in `style.json` come from code; never edit them
 by hand. Where `look.md` and the model's words disagree (say `motion: punchy` measured, `smooth`
 named), the measured one wins and the teardown says both.
 
 **No Gemini key** (`gemini.py look` exits 2): offer the free key once (`references/setup.md` step 4).
-If the user skips it, run the fallback: one Agent call with `model: "haiku"` that reads
+If the user skips it, run the fallback: one sub-agent call on a small, fast model that reads
 `sheets/<id>.jpg` for each kept video (one 3 x 3 sheet each, made by `visual.py`) and writes
 `video/<id>.look-ai.json` per `gemini.py prompt`. Exact brief in `references/look-pass.md`. Then
-`python3 "$VPY" "${CLAUDE_SKILL_DIR}/scripts/gemini.py" merge <handle>`.
+`python3 "$VPY" "${KIROCUT_SKILL}/scripts/gemini.py" merge <handle>`.
 
 **No OCR engine** (doctor says optional): `captions` stays unmeasured and look.md
 says so. Install it (`doctor` prints the line) rather than reading sheets yourself.
@@ -154,10 +154,10 @@ says so. Install it (`doctor` prints the line) rather than reading sheets yourse
 ### Step 3c: The deep pass and the page
 
 ```bash
-python3 "$VPY" "${CLAUDE_SKILL_DIR}/scripts/graphics.py" measure <handle>
-python3 "$VPY" "${CLAUDE_SKILL_DIR}/scripts/gemini.py" kinds <handle>
-python3 "$VPY" "${CLAUDE_SKILL_DIR}/scripts/sound.py" measure <handle>
-python3 "$VPY" "${CLAUDE_SKILL_DIR}/scripts/report.py" build <handle>
+python3 "$VPY" "${KIROCUT_SKILL}/scripts/graphics.py" measure <handle>
+python3 "$VPY" "${KIROCUT_SKILL}/scripts/gemini.py" kinds <handle>
+python3 "$VPY" "${KIROCUT_SKILL}/scripts/sound.py" measure <handle>
+python3 "$VPY" "${KIROCUT_SKILL}/scripts/report.py" build <handle>
 ```
 
 Each measure prints one summary line and the file it wrote (`--json` prints the full block; not
@@ -165,8 +165,8 @@ needed: look.md has the numbers). Run them after Step 3b (graphics.py masks the 
 graphic (cropped, its kind, where it sits, how it enters and exits as a fitted GSAP ease),
 cut kinds and camera moves (visual.py), sound effects and music, the first 3 seconds of each
 video, winners against the control group, and an AI-tell scan of the creator's own look.
-Fields, methods, ceilings and cost: `${CLAUDE_SKILL_DIR}/references/teardown-page.md`.
-No Gemini key: `gemini.py kinds` exits 2; the kinds stay the code's guess, or run the haiku
+Fields, methods, ceilings and cost: `${KIROCUT_SKILL}/references/teardown-page.md`.
+No Gemini key: `gemini.py kinds` exits 2; the kinds stay the code's guess, or run the small-model
 fallback in that reference.
 
 Then open `style-matches/<handle>/teardown.html` for the user (`open` on a Mac, `start` on
@@ -183,7 +183,7 @@ questions if needed), each option's description one measured line from look.md (
 in a part they pick, say which before they confirm. Save the answer:
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/editplan.py" blend <handle>-mine --from <handle> \
+python3 "${KIROCUT_SKILL}/scripts/editplan.py" blend <handle>-mine --from <handle> \
     --take captions,pace,graphics,entrances,layout,sound    # only the parts picked
 ```
 
@@ -193,24 +193,24 @@ with kirocut installed): tell the user its name. Feedback on that style edits th
 
 ### Step 3d: Several creators (when the user named more than one)
 
-Follow `${CLAUDE_SKILL_DIR}/references/blend.md`: Steps 1 to 3b per creator, `look.md` side by side,
+Follow `${KIROCUT_SKILL}/references/blend.md`: Steps 1 to 3b per creator, `look.md` side by side,
 then `editplan.py blend`.
 
 ### Step 4: Write the teardown
 
-Fill `${CLAUDE_SKILL_DIR}/references/teardown-template.md` into
+Fill `${KIROCUT_SKILL}/references/teardown-template.md` into
 `style-matches/<handle>/teardown.md`. Every video gets a stats line, verbatim
 transcript, beat table with timings, patterns to keep and patterns to reject.
 
 ### Step 5 (optional): Turn it into a skill
 
 Ask whether the format is worth keeping. If yes, follow
-`${CLAUDE_SKILL_DIR}/references/skill-handoff.md` (the format skill, beside the style's own skill).
+`${KIROCUT_SKILL}/references/skill-handoff.md` (the format skill, beside the style's own skill).
 
 ### Step 6 (optional): Plan the user's video in the creator's style
 
 When the user hands over their own video, follow
-`${CLAUDE_SKILL_DIR}/references/edit-plan.md`. It needs the creator's `events.json`
+`${KIROCUT_SKILL}/references/edit-plan.md`. It needs the creator's `events.json`
 from the visual pass; it does not render.
 
 ## If a script stops
@@ -222,7 +222,7 @@ from the visual pass; it does not render.
 | Instagram profile fails | say its sentence: log in to instagram.com in Chrome, or 6+ reel links (Step 1 "Instagram") |
 | `... Fix the key, then rerun` (transcribe) | the ElevenLabs key is wrong: the user re-saves it with `setkey` in their own terminal, or drop it and use Whisper |
 | `gemini.py` exits 2 (no key) | Step 3b "No Gemini key" |
-| `Gemini rejected the key` / `none of ... is available to this key` | the user makes a new key at the link it prints; meanwhile the haiku fallback |
+| `Gemini rejected the key` / `none of ... is available to this key` | the user makes a new key at the link it prints; meanwhile the small-model fallback |
 | `no videos in ... Run download first` | run `visual.py download <handle>` |
 | download `failed: <ids>` (exit 1) | rerun with the `--ids` it prints; if they fail again, say the sample is smaller and go on |
 | `Gemini is rate-limiting this key` | wait a minute and rerun the same command (done videos are cached) |

@@ -7,12 +7,12 @@ compatibility: Python 3.9+, ffmpeg, Node 20+ and the Remotion renderer the setup
 
 # Overlays
 
-Paths: `${CLAUDE_SKILL_DIR}` means the folder containing this SKILL.md, and `${CLAUDE_PLUGIN_ROOT}` the plugin folder two levels above it.
+Paths: `${KIROCUT_SKILL}` means the folder containing this SKILL.md, and `${KIROCUT_PLUGIN}` the plugin folder two levels above it (`plugins/kirocut` here).
 
-Read `${CLAUDE_PLUGIN_ROOT}/PRINCIPLES.md` first: real things carry each beat, no AI looks, smooth
+Read `${KIROCUT_PLUGIN}/PRINCIPLES.md` first: real things carry each beat, no AI looks, smooth
 before varied, every element lands on its spoken word, never cover the face, the safe zone.
 
-Every question to the user goes in the question box: call the AskUserQuestion tool (2-4 options, the recommended one first). Only in an agent without that tool, ask numbered questions in text.
+Every question to the user goes in the question box: call the kirocut_ask tool (2-4 options, the recommended one first). No form in the IDE: say the numbered text it returns, then pass the reply to `kirocut_answer`.
 
 An edit folder that style-edit already rendered in. The same edit out, with only the named beats
 changed: re-planned, checked, and re-rendered where they changed. Everything else stays exactly as
@@ -22,8 +22,8 @@ first (`edits/<name>/assets.json`: an image or a video from `assets/`, or a link
 style-edit's step 1 does), before searching for anything.
 
 Run the scripts with `python3` on Mac and Linux, `py` on Windows. Paths are relative to the library
-(PRINCIPLES.md "Where"). `S="${CLAUDE_PLUGIN_ROOT}/skills/style-edit/scripts"`,
-`VPY="${CLAUDE_PLUGIN_ROOT}/lib/kirocut/run.py"`; `python3 "$VPY"` is the venv Python.
+(PRINCIPLES.md "Where"). `S="${KIROCUT_PLUGIN}/skills/style-edit/scripts"`,
+`VPY="${KIROCUT_PLUGIN}/lib/kirocut/run.py"`; `python3 "$VPY"` is the venv Python.
 
 ```
 edits/<name>/plan.json + render.mp4 (+ render.plan.json, the plan it was made from)
@@ -36,7 +36,7 @@ what to do when a check fails. Read the section a step names.
 ## 0. Read the taste and the edit
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/skills/taste/scripts/taste.py" show --edit edits/<name>
+python3 "${KIROCUT_PLUGIN}/skills/taste/scripts/taste.py" show --edit edits/<name>
 python3 "$S/plan.py" cards edits/<name>
 ```
 
@@ -78,9 +78,9 @@ becomes (move, bigger, off the face, off the caption, real page, animate a scree
 lands late): `references/changes.md` "Requests".
 
 **New visuals** (an animation, a diagram, a real page): read style-edit's
-`${CLAUDE_PLUGIN_ROOT}/skills/style-edit/references/motion-design.md` (the default look and motion: built
+`${KIROCUT_PLUGIN}/skills/style-edit/references/motion-design.md` (the default look and motion: built
 animations over static captures, big in the band, one capture per page), then pick the format from what is
-said, in style-edit's order (`${CLAUDE_PLUGIN_ROOT}/skills/style-edit/references/shapes.md`): the user's own
+said, in style-edit's order (`${KIROCUT_PLUGIN}/skills/style-edit/references/shapes.md`): the user's own
 asset, the real thing captured, UI rebuilt from real parts, real logos. A diagram is a `flow` of the
 real logos or captures the words name, lighting each part on its spoken word, as an overlay beside or
 above the head: the speaker stays on screen (`references/changes.md` "A diagram"). Never a text
@@ -153,11 +153,11 @@ FAIL means: style-edit `references/plan.md` "What the checks FAIL and WARN".
 
 ## On a scene draft
 
-When `wait` printed `SCENE:`, steps 3 to 6 change: no patch render. After step 2's json and the plan (step 3), put the
+When `kirocut_events` returned `SCENE:`, steps 3 to 6 change: no patch render. After step 2's json and the plan (step 3), put the
 new or changed card on the scene and hand it back:
 
 ```bash
-L="${CLAUDE_PLUGIN_ROOT}/lib/kirocut"
+L="${KIROCUT_PLUGIN}/lib/kirocut"
 python3 "$L/scene.py" cards edits/<name> --at <beat time> --why "<one line>"   # plan.json's card there, as an item
 python3 "$L/scene.py" ops edits/<name> '[{"op": "remove", "item": "<old card id>"}]' --why "..."   # a swap: the old one off
 python3 "$L/review.py" edits/<name> round --scene
@@ -169,12 +169,12 @@ plain picture is `scene.py add edits/<name> image --src <file> --start <t> --end
 ## 7. Hand over on the review page
 
 ```bash
-R="${CLAUDE_PLUGIN_ROOT}/lib/kirocut/review.py"
+R="${KIROCUT_PLUGIN}/lib/kirocut/review.py"
 python3 "$R" edits/<name> resolve <note> fixed --reply "moved the Duolingo logo above the caption" --new-t 15.4
 python3 "$R" edits/<name> round --stage edit --video edits/<name>/render.mp4 --plan edits/<name>/plan.json
 ```
 
-No page yet: `start` with the same flags. Then `serve` and `wait` in the background
+No page yet: `start` with the same flags. Then `kirocut_open_editor` with the edit, then `kirocut_events`
 (style-edit `references/review.md`). Tell the user in one line what changed and where. New notes
 about cards come back here; notes about the cut go to the cut skill.
 
@@ -196,5 +196,5 @@ about cards come back here; notes about the cut go to the cut skill.
 - `references/changes.md`: each request as a beat change, the diagram recipe, failing checks.
 - style-edit's `scripts/`: `plan.py cards|beat` (find and change one beat), `edit.py stills --at`
   (stills of moments), `edit.py patch` (re-render what changed), `capture.mjs`, `matte.py`, `check.py`.
-- `${CLAUDE_PLUGIN_ROOT}/agents/template-filler.md` (haiku, one per new beat), `stills-critic.md` (sonnet),
+- `${KIROCUT_PLUGIN}/agents/template-filler.md` (one per new beat), `stills-critic.md`,
   `render-watcher.md` (a full render that runs long).

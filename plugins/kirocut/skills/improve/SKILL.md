@@ -7,12 +7,12 @@ compatibility: Python 3.9+, standard library only. Runs in a git checkout of thi
 
 # Improve
 
-Paths: `${CLAUDE_SKILL_DIR}` means the folder containing this SKILL.md, and `${CLAUDE_PLUGIN_ROOT}` the plugin folder two levels above it.
+Paths: `${KIROCUT_SKILL}` means the folder containing this SKILL.md, and `${KIROCUT_PLUGIN}` the plugin folder two levels above it (`plugins/kirocut` here).
 
-Every question to the user goes in the question box: call the AskUserQuestion tool (2-4 options, the recommended one first). Only in an agent without that tool, ask numbered questions in text.
+Every question to the user goes in the question box: call the kirocut_ask tool (2-4 options, the recommended one first). No form in the IDE: say the numbered text it returns, then pass the reply to `kirocut_answer`.
 
 This runs in a checkout of the repo, for the person who maintains it. A fix here reaches every user on
-their next plugin update. `S="${CLAUDE_SKILL_DIR}/scripts"`. Run the scripts with `python3` on Mac
+their next plugin update. `S="${KIROCUT_SKILL}/scripts"`. Run the scripts with `python3` on Mac
 and Linux, `py` on Windows.
 
 ## 0. Who is running this
@@ -27,7 +27,7 @@ python3 "$S/improve.py" mode
 reference, script or PRINCIPLES.md). Collect and pick as below, then save each accepted item in the
 user's own layer, which updates never touch (`docs/customise.md` in the repo):
 a setting with `taste.py add ... --set`; a word rule with
-`python3 "${CLAUDE_PLUGIN_ROOT}/lib/kirocut/custom.py" rule "<rule>"`; a caption look as
+`python3 "${KIROCUT_PLUGIN}/lib/kirocut/custom.py" rule "<rule>"`; a caption look as
 `custom/captions/<name>.json` plus `taste.py set captions.preset <name>`; template defaults as
 `custom/templates/<type>.json`. Then offer `taste.py suggest` so the maintainers can fix it for
 everyone. Stop there.
@@ -50,7 +50,7 @@ some creators' styles** (it belongs in a style.json field, not a rule) / **Not a
 
 ## 3. Fix each one, in this order
 
-1. **The rule.** One line in `${CLAUDE_PLUGIN_ROOT}/PRINCIPLES.md` under the right heading, naming
+1. **The rule.** One line in `${KIROCUT_PLUGIN}/PRINCIPLES.md` under the right heading, naming
    where it is enforced, and the same rule in the owning SKILL.md or reference. General, never about
    one video: "Zooms ease over at least 0.5 s", not "the zoom at 0:12 snapped".
 2. **The enforcement.** The smallest code that makes the rule hold without anyone remembering it:
@@ -60,7 +60,7 @@ some creators' styles** (it belongs in a style.json field, not a rule) / **Not a
 3. **The test.** An assert in that script's `demo()` (or `tests/`), built from a small synthetic
    example of the failure. Run it before the fix and see it fail, then after and see it pass. A rule
    only an agent can follow (asking, explaining) gets an eval case in `evals/` instead: `prompt.md`
-   plus a `tool_used` or `llm` grader.
+   plus a `skill_used`, `regex` or `llm` grader (`tests/run_evals.py`).
 4. **The record.** `docs/feedback-matrix.md`: the rule, where it is written, what enforces it, what
    tests it. Then the changelog line:
 
@@ -93,5 +93,5 @@ On a GitHub issue that is now fixed, offer to comment the changelog line and clo
 ## Files
 
 - `scripts/improve.py`: `mode`, `collect`, `log` (maintainer mode only), `demo`. Reads only, except CHANGELOG.md.
-- `${CLAUDE_PLUGIN_ROOT}/lib/kirocut/custom.py`: the user's `<library>/custom/` folder (user mode writes there).
-- `${CLAUDE_PLUGIN_ROOT}/skills/taste/scripts/taste.py`: where `suggest` and `issue` write the user side.
+- `${KIROCUT_PLUGIN}/lib/kirocut/custom.py`: the user's `<library>/custom/` folder (user mode writes there).
+- `${KIROCUT_PLUGIN}/skills/taste/scripts/taste.py`: where `suggest` and `issue` write the user side.

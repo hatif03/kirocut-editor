@@ -19,7 +19,7 @@ Then one step. The best place is the editor's window: **Settings, Modal, Connect
 first-run keys page). It needs no Kiro. From the chat, run the same thing in the background:
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/setup.py" modal-connect
+python3 "${KIROCUT_SKILL}/scripts/setup.py" modal-connect
 ```
 
 It prints `STEP` lines as it goes:

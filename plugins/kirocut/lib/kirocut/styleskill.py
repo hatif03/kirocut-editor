@@ -387,7 +387,7 @@ def describe(style_path, what, extra, default_use):
     text = (f"Edits the user's video in {what}. Use when the user says " + ", ".join(f'"{x}"' for x in phrases)
             + f". Use for: {use_for(style_path) or default_use}. Not for: "
             + (", ".join(others) + ", " if others else "") + "studying a new creator (style-match), a correction meant for every video (taste).")
-    while len(text) > 1024 and others:   # Claude Code's description limit: drop the longest tail of other names
+    while len(text) > 1024 and others:   # Kiro's description limit: drop the longest tail of other names
         others.pop()
         text = text[:text.index("Not for: ") + 9] + ", ".join(others) + (", " if others else "") + "studying a new creator (style-match)."
     return text[:1024]

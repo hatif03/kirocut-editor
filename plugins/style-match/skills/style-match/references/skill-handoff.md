@@ -47,7 +47,7 @@ source opens with 'here's the thing'; we open with the numbered promise."
 ## What the new skill folder gets
 
 ```
-~/.claude/skills/<format-name>/
+~/.kiro/skills/<format-name>/
   SKILL.md
   references/
     teardown.md          <- the teardown, copied here unchanged

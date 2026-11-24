@@ -27,7 +27,7 @@
 
 Files in ~/.kirocut/ (KIROCUT_HOME overrides; outside the plugin, so updates never wipe them):
   taste.md    rules in plain words, one bullet each, under ## Cut / Captions / Visuals / Sound / Layout.
-              Claude reads it before every edit. Every-video rules only.
+              Kiro reads it before every edit. Every-video rules only.
   taste.json  settings the scripts read. They win over the creator's measured style.json:
               {"cut": {"max_pause": 0.2}, "captions": {"size_pct": 7}, "zoom": {"per_min": 4},
                "sfx": false, "layout": {"mode": "split"}}
@@ -404,7 +404,7 @@ def load_json(edit_dir=None, count=True, style=None):
 
 def show(edit=None):
     """taste.md, taste.json and the rule files in <library>/custom/rules/; with an edit, also that video's own
-    rules, and the word rules count as applied to it (Claude follows them in that edit)."""
+    rules, and the word rules count as applied to it (Kiro follows them in that edit)."""
     from kirocut import custom
     out = [md_path().read_text(encoding="utf-8") if md_path().exists() else "(no taste.md yet)", json.dumps(read_json(), indent=1)]
     out += [custom.rules_text()] if custom.rules() else []   # the user's own rule files (custom.py), kept through updates
@@ -578,7 +578,7 @@ def demo():
         assert st == "regression" and r["regressions"][-1]["edit"] == "vid-b" and r["since_fix"] == 0
         assert len(r["corrections"]) == 3 and read_json()["captions"]["size_pct"] == 7
         assert load_md()["Captions"] == ["Captions bigger again"]
-        # word rules count when Claude reads them for an edit; the user's custom rule files show with them
+        # word rules count when Kiro reads them for an edit; the user's custom rule files show with them
         from kirocut import custom
         assert "Your rules" not in show(ed)
         custom.add_rule("Keep the first breath")

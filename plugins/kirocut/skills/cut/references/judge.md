@@ -4,7 +4,7 @@ The read-through in step 3 is scored, not eyeballed. A cheap agent grades the pa
 `judge-rubric.md` and returns findings as JSON; `judge_cut.py` applies them to `spans.json`. It is
 free next to a render, so it loops until nothing is left to apply.
 
-`J="${CLAUDE_SKILL_DIR}/scripts/judge_cut.py"`, `R="${CLAUDE_SKILL_DIR}/scripts/read_cut.py"`. On
+`J="${KIROCUT_SKILL}/scripts/judge_cut.py"`, `R="${KIROCUT_SKILL}/scripts/read_cut.py"`. On
 Windows, `py` for `python3`.
 
 ## 1. Long take only (over 5 minutes): parallel readers
@@ -22,7 +22,7 @@ exactly as printed. A chunk that is all cut gets no prompt: `chunks` says which 
 prompt numbers have gaps. When every reader is back, one Bash call:
 
 ```bash
-python3 "$R" merge edits/<name> && python3 "${CLAUDE_SKILL_DIR}/scripts/build_timeline.py" <source> edits/<name>
+python3 "$R" merge edits/<name> && python3 "${KIROCUT_SKILL}/scripts/build_timeline.py" <source> edits/<name>
 ```
 
 `merge` adds each proposed cut to `spans.json` as confidence low (highlighted on the cut page) and

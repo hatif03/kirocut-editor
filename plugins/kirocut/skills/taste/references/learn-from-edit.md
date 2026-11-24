@@ -16,7 +16,7 @@ they have the right to edit).
 ## Run it
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/lib/kirocut/run.py" "${CLAUDE_SKILL_DIR}/scripts/learn.py" <raw take> <posted cut>
+python3 "${KIROCUT_PLUGIN}/lib/kirocut/run.py" "${KIROCUT_SKILL}/scripts/learn.py" <raw take> <posted cut>
 ```
 
 - Both files are transcribed with the cut skill's `transcribe.py` (its default engine: local Whisper

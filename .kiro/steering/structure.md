@@ -5,11 +5,14 @@ inclusion: always
 # Structure
 
 ```
-.kiro/                         steering, specs, hooks (this IDE)
+.kiro/                         steering, specs, hooks, agents, skills (this IDE; skills and agents are generated)
 AGENTS.md                      same instructions for every agent (GEMINI.md is a copy)
 plugins/kirocut/             editor skills, the window, the renderer
-  lib/kirocut/               home.py, review.py, library.py, links.py
+  lib/kirocut/               home.py, review.py, library.py, links.py, scene.py, kirohook.py
+  mcp/                         the kirocut MCP server (server.py, tools_*.py), launch.mjs, compat.json
+  agents/<name>.md             sub-agents (copied to .kiro/agents/ by tests/sync_kiro.py)
   skills/<name>/SKILL.md       one skill per folder
+extensions/kirocut-view/       optional IDE panel for the editor (installed by hand)
   remotion/                    renderer
   presets/styles/              sample styles shipped with the editor
 plugins/style-match/      measures a set of reference videos into a style

@@ -30,7 +30,7 @@ def run(text):
 
 
 def cut_all(toks, kinds):
-    """spans.json cutting every candidate of `kinds`, as Claude would write it."""
+    """spans.json cutting every candidate of `kinds`, as Kiro would write it."""
     return [{"text": c["text"], "kind": c["kind"], "after": max(0.0, round(c["at"] - 0.001, 3))}
             for c in R.find(toks) if c["kind"] in kinds]
 

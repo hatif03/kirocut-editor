@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Prepare the visuals cheaply: the video's sentences with the names in each, so Claude only fills small template JSON.
+"""Prepare the visuals cheaply: the video's sentences with the names in each, so Kiro only fills small template JSON.
 
     python3 route.py beats edits/NAME            captions.json -> edits/NAME/beats.json
     python3 route.py highlight edits/NAME images/capture-2-x.text.json "what the speaker says there"
@@ -7,18 +7,18 @@
 
 beats: code splits captions.json into sentences (times kept in code), marks the profile's named
 products, tools and people found in each, plus any word written with a capital inside a sentence (a
-product or person the profile does not list: "Claude", "Haiku"). Every "pick" is null: Claude (or the
+product or person the profile does not list: "Notion", "Haiku"). Every "pick" is null: Kiro (or the
 template-filler agent) routes each sentence and writes visuals.json. When edits/NAME/style.json carries the
-creator's graphics.kinds, her mix is printed for Claude to lean towards. With her card rate (graphics.per_min,
+creator's graphics.kinds, her mix is printed for Kiro to lean towards. With her card rate (graphics.per_min,
 under the user's own cards cap), her count for this length is printed and that many sentences get "want": true
-(want()): named ones first, then the longest, spread out. Claude gives each a real card at her place in the frame.
+(want()): named ones first, then the longest, spread out. Kiro gives each a real card at her place in the frame.
 
 logo-pack: when edits/NAME/logos.json exists, its names count as named things and each sentence gets "logos"
 (the brands whose files logo-pack checked, for a `logo` beat's "brand"); two or more in one sentence print a
 `logo_cluster` hint.
 
 highlight: the capture's text blocks (capture.mjs "page_text": true) and the spoken line in; its sentences
-out, the ones sharing the most words with the spoken line first, for Claude to pick the evidence from.
+out, the ones sharing the most words with the spoken line first, for Kiro to pick the evidence from.
 Stdlib only.
 """
 import json
@@ -286,7 +286,7 @@ def main():
         for line in style_hints(style):
             print(line)
         for b in beats:
-            b["pick"] = None   # Claude routes each sentence
+            b["pick"] = None   # Kiro routes each sentence
             b["motion"] = motion_kind(b["text"])   # a hint: the motion skill builds a clip where the pick is a moving format
         (edit / "beats.json").write_text(json.dumps(beats, indent=1), encoding="utf-8")
         for b in beats:

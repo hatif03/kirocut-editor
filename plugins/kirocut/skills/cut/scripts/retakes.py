@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Code finds the places a cut might go; Claude decides the cut from them.
+"""Code finds the places a cut might go; Kiro decides the cut from them.
 
     python3 retakes.py text    <edit_dir>              transcript.txt, one line per phrase
     python3 retakes.py propose <edit_dir>              transcript.txt + candidates.md
@@ -14,7 +14,7 @@ propose  1. Code finds every candidate: a restart (words said again within 40 s:
             or a false start), an unfinished phrase followed by a pause, talking-to-self
             ("wait", "let me start again"), and soft fillers ("like", "you know").
          2. Writes transcript.txt and candidates.md (each candidate is a place to look, not a
-            decision; "um"/"uh" and audio events are always cut). Claude decides the cut from
+            decision; "um"/"uh" and audio events are always cut). Kiro decides the cut from
             those and writes spans.json (references/retake-detection.md).
          Alternate hooks: takes of the opening line recorded after the body
          (after the call to action) are cut from the main cut as `alt_hook` and listed in
@@ -354,7 +354,7 @@ def candidates_md(cands):
 
 
 def propose(d):
-    """transcript.txt, candidates.md and hooks.json. Claude writes spans.json from them."""
+    """transcript.txt, candidates.md and hooks.json. Kiro writes spans.json from them."""
     d = Path(d)
     toks = load(d)
     (d / "transcript.txt").write_text(text_view(toks, d.name), encoding="utf-8")

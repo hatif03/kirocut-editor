@@ -16,7 +16,7 @@ Writes  <edit_dir>/decisions.json   kept spans in source seconds (docs/CONTRACTS
         <edit_dir>/paper-edit.md    the cut as text, for a read-through
         <edit_dir>/cut-check.html   the whole transcript, removed words struck through
 
-spans.json is a list of removals. Claude writes it; nothing here decides what to cut:
+spans.json is a list of removals. Kiro writes it; nothing here decides what to cut:
 
     [{"text": "so the thing about, um", "kind": "false_start", "note": "restarts at 5.8s"},
      {"text": "wait, sorry", "kind": "meta"},
@@ -610,7 +610,7 @@ BEAT_MAX_S = 1.2   # a held beat: the pause after a setup or a punchline, kept a
 
 
 def beat_ranges(d, toks):
-    """beats.json (Claude's, quoted like spans.json) as keep ranges: the pause after each quoted line, from its last
+    """beats.json (Kiro's, quoted like spans.json) as keep ranges: the pause after each quoted line, from its last
     word's end to the next word (at most BEAT_MAX_S). Exits listing every beat that does not resolve."""
     f = Path(d) / "beats.json"
     if not f.exists():

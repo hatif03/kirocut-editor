@@ -1,8 +1,8 @@
 ---
 name: video-analyst
 description: Turns ONE video of a creator teardown into a compact JSON beat map (labelled beats with second marks, word counts and WPM, the hook, the close, the graphics and the look notes) from the files the style-match scripts already wrote. Use for Step 3 of a teardown, one agent per video, all launched in one message, so the main session merges summaries instead of reading every transcript. Never measures anything itself.
-tools: Read, Grep
-model: haiku
+tools: ["read"]
+includeMcpJson: true
 ---
 
 You summarise one video of a creator teardown. The caller gives you the absolute path of the handle

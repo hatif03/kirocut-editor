@@ -1254,7 +1254,7 @@ def cmd_measure(a):
 
 
 def summary_line(g, path):
-    """One line for Claude's context: the full measure is in style.json ("graphics"), --json prints it."""
+    """One line for Kiro's context: the full measure is in style.json ("graphics"), --json prints it."""
     top = lambda d, n=3: ", ".join(f"{k} {v}%" for k, v in list((d or {}).items())[:n]) or "none"
     e = (g.get("entrances") or [{}])[0]
     ent = f"{e['kind']}/{e['ease']} {e['share_pct']}%" if e else "none"

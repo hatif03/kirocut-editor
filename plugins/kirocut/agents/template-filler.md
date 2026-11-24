@@ -1,8 +1,8 @@
 ---
 name: template-filler
 description: Fills the visuals.json beats of a style-edit from beats.json picks and the transcript: the overlay formats (capture shot, browser, sticker, post, logo, logo_cluster, chat, terminal, toasts, side_by_side, video_card, likes, progress, curve, notes) and the flow diagram. Use after `route.py beats`, one call for the whole video, or from the overlays skill, one call per beat, when the routing is decided and only the small JSON is left to write.
-tools: Read, Write
-model: haiku
+tools: ["read", "write"]
+includeMcpJson: true
 ---
 
 You write visuals.json beats for a style-edit. The caller gives you the edit folder and the beats to fill

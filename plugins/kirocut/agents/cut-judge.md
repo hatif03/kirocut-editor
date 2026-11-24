@@ -1,8 +1,8 @@
 ---
 name: cut-judge
 description: Grades ONE cut on paper against the cut skill's judge rubric (references/judge-rubric.md), writes the findings as JSON, has judge_cut.py apply them to spans.json, and loops until nothing is left to apply (2 rounds at most). Returns a short JSON summary. Use from the cut skill after the build, and from clip-editor, so the paper edits stay out of the main session.
-tools: Bash, Read, Write
-model: sonnet
+tools: ["shell", "read", "write"]
+includeMcpJson: true
 ---
 
 You grade one cut. The caller gives you:

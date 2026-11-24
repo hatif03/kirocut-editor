@@ -4,7 +4,7 @@
     python3 chapters.py edits/NAME [--chapters edits/NAME/chapters.json] [--intro "text"]
     python3 chapters.py demo        self-check, offline
 
-chapters.json is Claude's pick from the transcript, one entry per section:
+chapters.json is Kiro's pick from the transcript, one entry per section:
     [["the words spoken where the section starts", "chapter title"], ...]
 Each phrase is found in cut.transcript.json (else words.json), after the previous one, so a
 re-cut re-times every chapter. The first chapter is always 0:00.

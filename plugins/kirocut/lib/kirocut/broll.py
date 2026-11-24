@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""B-roll libraries: a named folder of the user's own clips per type of video, for Claude to pick from.
+"""B-roll libraries: a named folder of the user's own clips per type of video, for Kiro to pick from.
 
     python3 broll.py list                    every library in the profile: name, folder, clip count
     python3 broll.py sheet <name>            index the library's clips and draw numbered contact sheets
@@ -24,9 +24,9 @@ the sheets while the folder's files are unchanged. Needs ffmpeg and ffprobe. Std
 
 The editor's New video page (home.py) lists the libraries (listing), browses Drive (drives, browse), adds one
 (add) and sends the ones the user ticked with the job: brief() writes EDIT/broll.json
-({"auto", "libraries": [{"name", "folder"}], "clips": [{"path", "name"}]}: the ticked ones, or with "Claude
-decides" every library and auto true, so Claude picks the ones that fit) and EDIT/instructions.md ("Additional
-instructions for Claude"). The job line carries both paths (broll=, instructions=).
+({"auto", "libraries": [{"name", "folder"}], "clips": [{"path", "name"}]}: the ticked ones, or with "Kiro
+decides" every library and auto true, so Kiro picks the ones that fit) and EDIT/instructions.md ("Additional
+instructions for Kiro"). The job line carries both paths (broll=, instructions=).
 
 "clips" are the Specific clips: picked one by one from a library (folder_clips, the page's Pick from folders) or
 dropped on the page (uploaded to a staging folder, linked into EDIT/broll/). Every one of them goes in the video,
@@ -45,7 +45,7 @@ from pathlib import Path
 EXTS = {".mp4", ".mov", ".m4v", ".webm", ".mkv"}
 PER_SHEET, COLS, BOX = 12, 4, 320
 MAX_CLIPS = 240   # ponytail: one frame per clip, 240 clips = 20 sheets; split a bigger folder into libraries
-NOTE_MAX = 4000   # characters of "Additional instructions for Claude"
+NOTE_MAX = 4000   # characters of "Additional instructions for Kiro"
 
 
 def _profile_path():
@@ -121,8 +121,8 @@ def add(name, folder):
 
 
 def brief(edit, names, note, auto=False, picks=(), staged=None):
-    """The job's b-roll picks and instructions, in the edit folder. auto ("Claude decides"): every library, and
-    Claude picks which fit. picks: the Specific clips' paths (staged: the upload folder dropped ones are in).
+    """The job's b-roll picks and instructions, in the edit folder. auto ("Kiro decides"): every library, and
+    Kiro picks which fit. picks: the Specific clips' paths (staged: the upload folder dropped ones are in).
     Returns the job-line args written."""
     edit, libs, args = Path(edit), libraries(), {}
     picked = [{"name": n, "folder": f} for n, f in libs.items()] if auto else \

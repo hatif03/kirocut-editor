@@ -532,7 +532,7 @@ def transitions_of(cut_kinds):
 
 
 def summary_line(style, path):
-    """One line for Claude's context: the full blocks are in style.json, --json prints them."""
+    """One line for Kiro's context: the full blocks are in style.json, --json prints them."""
     p, z, c = style["pace"], style["zoom"], style["camera"]
     return (f"visual: {p['wpm']} wpm, {p['cuts_per_10s']} cuts/10s, shot {p['median_shot_s']} s, "
             f"zoom {z.get('kind')} {z.get('per_min')}/min, pans {c['pan_per_min']}/min -> {path} (\"pace\", \"zoom\", \"camera\")")

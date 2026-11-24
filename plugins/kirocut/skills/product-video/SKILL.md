@@ -7,16 +7,16 @@ compatibility: Python 3.9+, ffmpeg, Node 20+ and the Remotion renderer the setup
 
 # Product video
 
-Paths: `${CLAUDE_SKILL_DIR}` means the folder containing this SKILL.md, and `${CLAUDE_PLUGIN_ROOT}` the plugin folder two levels above it.
+Paths: `${KIROCUT_SKILL}` means the folder containing this SKILL.md, and `${KIROCUT_PLUGIN}` the plugin folder two levels above it (`plugins/kirocut` here).
 
-Read `${CLAUDE_PLUGIN_ROOT}/PRINCIPLES.md` first: the rules every video follows (story first, smooth before varied, nothing leaves the frame, privacy, no presses that write).
+Read `${KIROCUT_PLUGIN}/PRINCIPLES.md` first: the rules every video follows (story first, smooth before varied, nothing leaves the frame, privacy, no presses that write).
 
-Every question to the user goes in the question box: call the AskUserQuestion tool (2-4 options, the recommended one first). Only in an agent without that tool, ask numbered questions in text.
+Every question to the user goes in the question box: call the kirocut_ask tool (2-4 options, the recommended one first). No form in the IDE: say the numbered text it returns, then pass the reply to `kirocut_answer`.
 
 A URL in. A product video out, made only of the site's real UI, real recorded click-throughs of it, its own
-colours and type, and its own words, scored and mixed for this cut. `S="${CLAUDE_SKILL_DIR}/scripts"`,
+colours and type, and its own words, scored and mixed for this cut. `S="${KIROCUT_SKILL}/scripts"`,
 Run the scripts with `python3` on Mac and Linux, `py` on Windows.
-`PY="${CLAUDE_PLUGIN_ROOT}/lib/kirocut/run.py"`; `python3 "$PY"` below runs the editor's venv Python (`py "$PY"` on Windows).
+`PY="${KIROCUT_PLUGIN}/lib/kirocut/run.py"`; `python3 "$PY"` below runs the editor's venv Python (`py "$PY"` on Windows).
 Work in `product/<name>/` in the library (PRINCIPLES.md "Where").
 
 ```
@@ -36,13 +36,13 @@ music rights and logging in.
 
 No renderer yet (`~/.kirocut/remotion` missing): run the `setup` skill's Remotion step first.
 It installs the Chrome Headless Shell the crawl and the recordings drive. Read the user's taste:
-`python3 "${CLAUDE_PLUGIN_ROOT}/skills/taste/scripts/taste.py" show`.
+`python3 "${KIROCUT_PLUGIN}/skills/taste/scripts/taste.py" show`.
 
 ## 1. The brief, in the question box, before crawling deeply
 
-Start the crawl (step 2) in the background (Bash `run_in_background`), then `python3 "$S/product.py" copy product/<name>`:
+Start the crawl (step 2) in the background (a shell command that keeps running while you ask), then `python3 "$S/product.py" copy product/<name>`:
 it waits for the home page (about 50 s; the inner pages load while the questions are asked). Its `tagline:`
-and `nav:` lines and the headings under them are the options, in the site's own words. Never read `site.json` (about 20 KB). Then two AskUserQuestion calls, the
+and `nav:` lines and the headings under them are the options, in the site's own words. Never read `site.json` (about 20 KB). Then two kirocut_ask calls, the
 recommended option first and marked "(Recommended)", "Other" always open for their own words.
 
 **Call 1, what gets built** (four questions):

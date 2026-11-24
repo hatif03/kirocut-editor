@@ -2,16 +2,16 @@
 name: update
 description: Updates KiroCut to its newest version. Works out how it was installed and does the right thing for each. The official plugin from the marketplace gets the plugin update commands for kirocut and style-match. A fork the user owns (the power-user route, where they change the editor's own code) gets its new versions pulled from the upstream remote and merged with their changes kept, after a backup branch, then the fast self-checks, with a rollback if they fail. A plain clone gets the fork route in three steps. Use when the user says "update the editor", "get the latest version", "sync my fork", "pull the new version", or asks how to stay up to date after changing the editor's code. Not for changing a style or a setting (that is taste or the home page), and not for maintainers turning feedback into fixes (that is improve).
 license: MIT
-compatibility: Python 3.9+, standard library only, and git. Fork updates run in the user's git checkout of their fork; the self-checks need bash (Git Bash on Windows).
+compatibility: Python 3.9+, standard library only, and git. Fork updates run in the user's git checkout of their fork.
 ---
 
 # Update
 
-Paths: `${CLAUDE_SKILL_DIR}` means the folder containing this SKILL.md, and `${CLAUDE_PLUGIN_ROOT}` the plugin folder two levels above it.
+Paths: `${KIROCUT_SKILL}` means the folder containing this SKILL.md, and `${KIROCUT_PLUGIN}` the plugin folder two levels above it (`plugins/kirocut` here).
 
-Every question goes in the question box: the AskUserQuestion tool (2-4 options, recommended first). Only in an agent without it, ask numbered questions in text.
+Every question goes in the question box: the kirocut_ask tool (2-4 options, recommended first). No form in the IDE: say the numbered text it returns, then pass the reply to `kirocut_answer`.
 
-`U="${CLAUDE_SKILL_DIR}/scripts/update.py"`. Run it with `python3` on Mac and Linux, `py` on Windows.
+`U="${KIROCUT_SKILL}/scripts/update.py"`. Run it with `python3` on Mac and Linux, `py` on Windows.
 Add `--repo <folder>` when the user's clone is not the folder Kiro runs in.
 
 Never push, never force-push, never delete a branch, never stash or reset the user's uncommitted
@@ -63,7 +63,7 @@ The backup branch is `before-update-<date>`; say its name once.
 python3 "$U" verify
 ```
 
-It runs `tests/check_plugins.py` and `tests/demos.sh`. Pass: tell them to start a new Kiro chat
+It runs `tests/check_plugins.py` and `tests/run_demos.py`. Pass: tell them to start a new Kiro chat
 (and, if they installed from their fork, that `kiro-cli powers install` on the new checkout
 loads it, when they want). Fail: show the failing
 checks and ask **Fix them (Recommended)** / **Go back to before the update**. Going back:

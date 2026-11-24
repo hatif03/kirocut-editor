@@ -8,4 +8,4 @@ license: MIT
 
 Kiro loaded this copy so the skill is available in this folder. Read and follow `plugins/kirocut/skills/broll-reel/SKILL.md` in full before doing anything else.
 
-In that file, `${CLAUDE_SKILL_DIR}` means `plugins/kirocut/skills/broll-reel` and `${CLAUDE_PLUGIN_ROOT}` means `plugins/kirocut`. Those paths start at the root of this repo. They are not the folder this file is in.
+In that file, `${KIROCUT_SKILL}` means `plugins/kirocut/skills/broll-reel` and `${KIROCUT_PLUGIN}` means `plugins/kirocut`. Those paths start at the root of this repo. They are not the folder this file is in.

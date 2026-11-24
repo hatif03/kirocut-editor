@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The cut as text: paper-edit.md (for Claude's read-through) and cut-check.html
+"""The cut as text: paper-edit.md (for Kiro's read-through) and cut-check.html
 (for the user to approve). build_timeline.py calls write_all(); run this directly
 to rebuild both from an edit folder:
 

@@ -1,85 +1,48 @@
 # The home page
 
-The editor's window in the browser. A first run gets setup checks, optional keys, pick a creator, watch
+The editor's window. A first run gets setup checks, optional keys, pick a creator, watch
 their style get copied, see the style and the skill it became, drop a video. After that it opens on
 Home (welcome back), New video (pick clips, then pick a style), Your videos, My style and Settings.
 The page only queues jobs. Kiro does every job with the usual skills and reports back, so the page
 never decides anything itself.
 
-Ask the user only through AskUserQuestion: the window shows it as a card on the open page. A question typed in your
-reply never reaches the page; the Stop hook (toolhook.py) can only put "Kiro needs you in the Terminal" on it.
+## How this chat and the window talk
 
-The `kirocut` command (`setup.py install-launcher`) starts Kiro in the library with the
-prompt "/kirocut:start open the home page". When the page is already served it reopens it, and when no
-Kiro is listening it also opens a new Terminal window with a listening Kiro (`--window-only` skips
-that). Inside Kiro, `/kirocut:start` and "open the home page" do the same.
+The window and this chat are two ends of one queue. The window queues what the user starts and shows what you
+report. You never open a terminal, run a `wait` loop, or ask the user to connect anything. Use the tools:
 
-**Connect Kiro.** When nobody listens, the page shows one button, Connect Kiro. It opens a new
-Terminal window in the library running Kiro with the prompt `/kirocut:start listen for jobs` and
-only the editor's own commands allowed (`launcher.connect`, one at a time: a second press within a minute
-opens nothing). On that prompt run `python3 "$H" serve --no-open` and `python3 "$H" wait` (both in the
-background) and carry on as below. Do not say the page is open: it already is.
+| To | Call |
+|---|---|
+| open the window, or one video's review page | `kirocut_open_editor` (pass `edit` for a review page). Put its markdown link in your reply exactly as returned. |
+| hear what the user did there (a job, notes sent, Approve) | `kirocut_events` (`wait_s` up to 55) |
+| report a job's steps, result, done or failed | `kirocut_report` |
+| ask the user | `kirocut_ask`, and `kirocut_answer` for a reply typed in chat |
+| answer notes and hand a draft back | `kirocut_scene_*`, `kirocut_review_resolve`, `kirocut_review_round`, `kirocut_review_status` |
+| render and follow it | `kirocut_render`, then `kirocut_job` with `wait_s` |
 
-`H="${CLAUDE_PLUGIN_ROOT}/lib/kirocut/home.py"`. `python3` on Mac and Linux, `py` on Windows.
+The commands written below as `home.py serve|wait|status` and `review.py serve|wait|round|resolve|status` mean these calls: the same
+words, the same arguments. Other scripts (`edit.py`, `plan.py`, the cut's scripts) you still run in the shell.
 
-## Open it
+**The loop.** "Open the home page" (or "edit my video" with no clip): call `kirocut_open_editor`, say in one line that the page
+is open, call `kirocut_events` with `wait_s` 55. When it returns a `JOB` line, do that job (below), then call `kirocut_events`
+again. An empty result means nothing yet: call it again while the user is expected to act. After about three empty calls in
+a row, stop and say: "I'm here. Press what you need in the window, then tell me to continue." The window shows Kiro as
+listening only while `kirocut_events` runs; otherwise its **Tell Kiro** button copies a line for the user to paste here. When the
+user writes in this chat, a hook adds a line if something is waiting in the window: call `kirocut_events` with `wait_s` 0 first.
 
-Run both in the background (two Bash calls with `run_in_background`). The page always works in the
-library (`library.py path`, `~/Movies/KiroCut` on a Mac), wherever Kiro started, and every job
-line names it as `root=`:
+**One chat, one video at a time.** A job you take is yours until you report it done or failed. "Separate videos" arrives as one
+JOB per clip: do them one by one (for several short clips from one long video, the clips skill runs `clip-editor` agents in
+parallel). A taken job with no report for 15 minutes belonged to a chat that stopped: the next `kirocut_report` or
+`kirocut_events` adopts it and says `adopted <id>`.
 
-```bash
-python3 "$H" serve          # same address every time (port 47821, one token per install); reuses a running server
-python3 "$H" wait           # exits with the next job as one line
-```
-
-Say in one line: "The home page is open in your browser. Pick a creator there, or drop a video."
-Then wait for `wait` to finish. Each time it prints a job, start a new `wait` in the background
-straight away (so Cancel and the next job reach you), then do the job. `ALREADY` means a `wait` is
-running: leave it.
-
-### One page, several Kiro sessions
-
-Every job remembers the session that took it (`CLAUDE_CODE_SESSION_ID`). `status` from another session
-never writes to it, `status` never takes a queued job (only `wait` does), and each session makes one
-video at a time. A taken job with no report for 15 minutes belonged to a session that stopped: the next
-`status` or `wait --job` from another session adopts it and prints `adopted <id>`. Every video gets a Kiro of its
-own: when the user presses Make my video, each new video job (one per clip for "Separate videos") opens a new
-Terminal window running Kiro in the library with the prompt `/kirocut:start take job <id>`, unless an idle
-listening Kiro can take it right now (then that one does, and the rest still get their own). The same goes for a chat box: a
-`style-change` (a style page), `skill-change` or `skill-new` (Make a new skill) opens a Kiro for that job unless
-an idle listening Kiro takes it. A listening Kiro is
-idle only with no active job: none it holds (a creator, a skill, a video's cut) and no video whose edit it is still on
-(that editor's `wait` listening, or a review command there in the last 15 minutes). Setup and the sample stay with
-the listening Kiro; a creator's analysis is queued for it like any job. Where no terminal can
-open (Linux without x-terminal-emulator), the editor shows that command to run instead. On that prompt run
-`python3 "$H" serve --no-open` and `python3 "$H" wait --job <id>` (both in the background): it prints that
-job's line (or `GONE` when it is done or another session has it), then do the job as below. Do not start a
-plain `wait` afterwards unless the user asks for more.
-
-"carry on edits/<name>" (`/kirocut:start carry on edits/<name>`): the video's review page opened this Kiro (the user sent notes or approved with no Kiro on
-that video, or pressed Open a new Kiro). With `R="${CLAUDE_PLUGIN_ROOT}/lib/kirocut/review.py"`, run
-`python3 "$R" edits/<name> serve --no-open` and `python3 "$R" edits/<name> wait` (both in the background), then do what
-`wait` hands back, the same as after any round, with no intake.
+"carry on edits/<name>": the user pressed Send or Approve on a video's review page and Kiro was not listening. Call
+`kirocut_open_editor` with that edit, then `kirocut_events` (`wait_s` 0): it returns what the page has, as after any round, with no intake.
 
 ## Questions
 
-Ask with AskUserQuestion as usual. When the home page or a review page is open and showing, a hook
-(`lib/kirocut/askhook.py`) puts the question on that page. A question about a video goes to that video's editor
-only: the hook takes the video your latest command named (its edit folder), so run a command on that edit (any
-`review.py <edit> ...` or script on it) before asking about it. On the page: the options, an Other box with a paperclip (an image
-can also be pasted or dropped on the card), and "Answer in Kiro instead". Images are saved on this
-computer (the review page: `<edit>/review/`; the home page: `<edit>/asks/`, or `$KIROCUT_HOME/asks` with no
-edit folder yet) and the answer ends with `Attached images: /abs/a.png (Read each one to see it)`: Read every
-listed image before acting on the answer. The answer comes back as the tool's result, the same as a terminal answer. No page
-showing, "Answer in Kiro instead", or every page that had it closed: the terminal box shows (an open page
-waits for the answer however long it takes). Never ask
-a question in plain chat text when AskUserQuestion fits: only the tool reaches the page. A question only
-reaches pages this session works on (the home page while it holds a job there or listens, the review page
-of an edit it ran `review.py` on), with the job's name on the card. Another session's questions stay in its
-own terminal. A Kiro without `CLAUDE_CODE_SESSION_ID` records no session, and then every question
-reaches the page, as before. Permission
-prompts (Allow or Deny for a command) stay in the terminal; a hook cannot answer them.
+Ask with `kirocut_ask`. The IDE shows its own form, or the tool returns numbered text to say in your reply; answers come
+back to you either way (`kirocut_answer` for a reply typed in chat). The window shows no question cards. A picture the user wants
+you to look at arrives as a normal chat attachment. Permission prompts (Allow or Deny for a command) stay in the IDE.
 
 ## Keys
 
@@ -89,7 +52,7 @@ ask for a key in the chat, and never read the key file. "Skip, add later" runs `
 
 ## The jobs
 
-Progress is automatic: once your `wait` has taken a job (inside Kiro only `wait` takes a queued
+Progress is automatic: once `kirocut_events` has handed you a job (it is the only thing that takes a queued
 one), the long scripts (style-match's, the cut's transcribe, join, build and render,
 setup's install-all) post their own steps with a count ("video 3 of 7") onto the job their edit folder
 or handle names, and the page shows a live strip with a clock, so it never looks stopped. You still
@@ -98,8 +61,8 @@ same words as the newest step update that row, never a second one. A new `--step
 `--failed "<plain sentence>"` ends the job:
 
 ```bash
-python3 "$H" status <teardown|skill|video|setup|update> --step "..." [--detail "video 3 of 7"] [--progress 0.4]
-python3 "$H" status <job> --result '<json>' --done
+kirocut_report job=<teardown|skill|video|setup|update> step="..." [detail="video 3 of 7"] [progress=0.4]
+kirocut_report job=<job> result={...} done=true
 ```
 
 ### `JOB teardown @handle platform=<p> take=<parts> [notes=<file>] root=<dir>`
@@ -148,7 +111,7 @@ The user ticked what to copy and pressed "Build my skill".
 2. `--step "Checking whether it is a format of its own"`: style-match's
    `references/skill-handoff.md` gate, from the numbers in `look.md` and `videos.json`.
 3. Pass: `--step "Writing the skill"`, build it as that file says, link it with
-   `python3 "${CLAUDE_PLUGIN_ROOT}/lib/kirocut/styleskill.py" write style-matches/<h>-mine/style.json --format <name>`,
+   `python3 "${KIROCUT_PLUGIN}/lib/kirocut/styleskill.py" write style-matches/<h>-mine/style.json --format <name>`,
    then `--step "Testing it with one script"` (its "Finally"). Fail: no format skill; the style and its skill are saved.
 4. `--result` then `--done`, the JSON the page shows:
 
@@ -215,10 +178,10 @@ scripts report them (review.py `CUT_STEPS`). Serve it and report its URL before 
 swap in the joined clip after the join:
 
 ```bash
-R="${CLAUDE_PLUGIN_ROOT}/lib/kirocut/review.py"
+R="${KIROCUT_PLUGIN}/lib/kirocut/review.py"
 python3 "$R" <edit> start --raw --video <edit>/joined.mp4 --stage cut   # takes= only, after join.py; no review.json: the clip
-python3 "$R" <edit> serve --no-open                                     # background; prints the URL
-python3 "$H" status video --result '{"review_url": "<that URL>"}'
+kirocut_open_editor edit=<edit>      # starts the review page; returns its URL
+kirocut_report job=video result={"review_url": "<that URL>"}
 ```
 
 `serve` opens no browser tab while the home window is showing this job: the home window goes to the
@@ -242,7 +205,7 @@ downloaded the repo's public sample take and put its decisions in `edit=`: `word
 the start skill's steps 2-4, fast and exact:
 ask nothing, never change the profile or the taste, and skip transcribe, `retakes.py propose`, the judge,
 verify, visual-prep, logo-pack, the motion skill, music, the render and loudness questions. Notes the user
-sends are handled as usual. `C="${CLAUDE_PLUGIN_ROOT}/skills/cut/scripts"`, `SE="${CLAUDE_PLUGIN_ROOT}/skills/style-edit/scripts"`.
+sends are handled as usual. `C="${KIROCUT_PLUGIN}/skills/cut/scripts"`, `SE="${KIROCUT_PLUGIN}/skills/style-edit/scripts"`.
 
 1. Serve the review page and report its URL, as above.
 2. The cut, then `status video --done` and review.py `wait` in the background:
@@ -257,7 +220,7 @@ python3 "$R" <edit> start --video <edit>/cut.mp4 --stage cut --transcript <edit>
 
 ```bash
 python3 "$C/retakes.py" captions <edit> && node "$SE/capture.mjs" <edit> && \
-python3 "${CLAUDE_PLUGIN_ROOT}/lib/kirocut/run.py" "$SE/face.py" <edit> && \
+python3 "${KIROCUT_PLUGIN}/lib/kirocut/run.py" "$SE/face.py" <edit> && \
 python3 "$SE/plan.py" <edit>/style.json <edit>/captions.json --aspect 9:16 && python3 "$SE/edit.py" stills <edit>
 ```
 
@@ -344,20 +307,19 @@ The user pressed Start setup on the first-run Home. Run `setup.py install-all --
 The window runs Update itself, as job `update` owned by `home`: `update.py market` reinstalls the
 `plugins/kirocut` and `plugins/style-match` powers, and the window server restarts from the new
 version's folder on the same port with the same token, so the open tab reloads itself. `wait` never hands it out.
-An open Kiro session keeps the version it loaded until the user types `/reload-plugins`; the page says so and
-shows the command until a command from that session runs on the new version.
+An open chat keeps the version it loaded until the user starts a new chat; the page says so.
 
 ### `JOB cancel teardown @handle`
 
-The user pressed Stop on that creator's analysing card. Stop that teardown's running commands (TaskStop),
+The user pressed Stop on that creator's analysing card. Stop that teardown's running commands (`kirocut_job` with `cancel`, or end the shell command),
 leave any other analysis running, and say so in one line.
 
 ### `JOB cancel <type>` (any other job)
 
-The user pressed the sidebar's Stop on that job. Stop its running commands (TaskStop), take no next
+The user pressed the sidebar's Stop on that job. Stop its running commands (`kirocut_job` with `cancel`, or end the shell command), take no next
 step, and say so in one line. A Stop also makes every tool call of the session that held the job fail for two
-minutes with "The user pressed Stop in the KiroCut window" (toolhook.py): when a tool call fails with that, stop at
-once, say in one line what was left unfinished, and wait for the user to type in the Terminal.
+minutes with "The user pressed Stop in the KiroCut window" (the kirocut-window-stop hook): when a tool call fails with that, stop at
+once, say in one line what was left unfinished, and wait for the user to write in this chat.
 
 ## Setup from the page
 

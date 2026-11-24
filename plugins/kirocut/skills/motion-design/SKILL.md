@@ -15,7 +15,7 @@ metadata:
 
 # Motion Design Skill
 
-Paths: `${CLAUDE_SKILL_DIR}` means the folder containing this SKILL.md
+Paths: `${KIROCUT_SKILL}` means the folder containing this SKILL.md
 
 In KiroCut, the templates and overlay formats in `../style-edit/references/motion.md` already follow this skill. Use it when adding or changing a template, when choosing a card's motion personality, and as the review checklist for stills and clips (`reference/quality-checklist.md`).
 

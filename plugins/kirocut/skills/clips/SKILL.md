@@ -7,11 +7,11 @@ compatibility: Python 3.9+, ffmpeg, and the venv (its yt-dlp fetches links), Nod
 
 # Clips
 
-Paths: `${CLAUDE_SKILL_DIR}` means the folder containing this SKILL.md, and `${CLAUDE_PLUGIN_ROOT}` the plugin folder two levels above it.
+Paths: `${KIROCUT_SKILL}` means the folder containing this SKILL.md, and `${KIROCUT_PLUGIN}` the plugin folder two levels above it (`plugins/kirocut` here).
 
-Read `${CLAUDE_PLUGIN_ROOT}/PRINCIPLES.md` first: the rules every video in this plugin follows (asking, looking real, motion, story and framing, privacy, cost).
+Read `${KIROCUT_PLUGIN}/PRINCIPLES.md` first: the rules every video in this plugin follows (asking, looking real, motion, story and framing, privacy, cost).
 
-Every question to the user goes in the question box: call the AskUserQuestion tool (2-4 options, the recommended one first). Only in an agent without that tool, ask numbered questions in text.
+Every question to the user goes in the question box: call the kirocut_ask tool (2-4 options, the recommended one first). No form in the IDE: say the numbered text it returns, then pass the reply to `kirocut_answer`.
 
 One long video in. The best few short clips out, each a finished vertical edit in the user's style.
 
@@ -28,14 +28,14 @@ edits/<name>-clip<N>/ one edit per chosen clip: source.mp4, words.raw.json (re-t
 ```
 
 Run the scripts with `python3` on Mac and Linux, `py` on Windows.
-`PY="${CLAUDE_PLUGIN_ROOT}/lib/kirocut/run.py"`; `python3 "$PY"` below runs the editor's venv Python (`py "$PY"` on Windows).
-If it is missing, run the `setup` skill first. `K="${CLAUDE_SKILL_DIR}/scripts/clips.py"`,
-`C="${CLAUDE_PLUGIN_ROOT}/skills/cut/scripts"`, `S="${CLAUDE_PLUGIN_ROOT}/skills/style-edit/scripts"`.
+`PY="${KIROCUT_PLUGIN}/lib/kirocut/run.py"`; `python3 "$PY"` below runs the editor's venv Python (`py "$PY"` on Windows).
+If it is missing, run the `setup` skill first. `K="${KIROCUT_SKILL}/scripts/clips.py"`,
+`C="${KIROCUT_PLUGIN}/skills/cut/scripts"`, `S="${KIROCUT_PLUGIN}/skills/style-edit/scripts"`.
 
 ## 0. Ask, once
 
-Read the profile and taste first (`python3 "${CLAUDE_PLUGIN_ROOT}/lib/kirocut/profile.py" show`,
-`python3 "${CLAUDE_PLUGIN_ROOT}/skills/taste/scripts/taste.py" show`). No profile yet: run the
+Read the profile and taste first (`python3 "${KIROCUT_PLUGIN}/lib/kirocut/profile.py" show`,
+`python3 "${KIROCUT_PLUGIN}/skills/taste/scripts/taste.py" show`). No profile yet: run the
 `start` skill's style intake first, so the clips come out in the user's look.
 
 Then one question box call, the recommended option first:
@@ -54,13 +54,13 @@ once" question: clips run straight through, and the user approves the picks and 
 A local file (a hard link on the same drive, else a symlink, a copy only as the last resort):
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/skills/clips/scripts/clips.py" link "<absolute path>" clips/<name>
+python3 "${KIROCUT_PLUGIN}/skills/clips/scripts/clips.py" link "<absolute path>" clips/<name>
 ```
 
 A link:
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/lib/kirocut/links.py" fetch "<url>" clips/<name> --max-height 1080
+python3 "${KIROCUT_PLUGIN}/lib/kirocut/links.py" fetch "<url>" clips/<name> --max-height 1080
 ```
 
 It uses the venv's yt-dlp (setup installs it there, not on the PATH), caps the download at 1080p (a
@@ -133,8 +133,8 @@ that each clip is the audio over the show's cover with the speaker's words as ca
 (style-edit `references/plan.md` "Music"; the style decides unless the user set `sound.music`).
 
 **All clips at once** (Kiro, or any agent with subagents): launch one `clip-editor` agent
-(`kirocut:clip-editor`) per clip, **all in one message** so they run at the same time. Give each
-`EDIT` (the clip's folder, absolute), `ROOT` (`${CLAUDE_PLUGIN_ROOT}`), the `PY` line, and the answers:
+(`.kiro/agents/clip-editor.md`) per clip, **all in one message** so they run at the same time. Give each
+`EDIT` (the clip's folder, absolute), `ROOT` (`${KIROCUT_PLUGIN}`), the `PY` line, and the answers:
 aspect, layout, music, the transcription engine, and reframe yes (a wide source, unless the platform is
 YouTube) or no, and whether the source has captions burned in. Each takes its clip through the cut and style-edit to the stills sheet and returns a
 short JSON: `status`, `cut_s`, `verify`, `cut_page`, `sheet`, `error`. Merge those; never open a clip's
@@ -150,16 +150,16 @@ hand as below.
 2. **Cut:** the cut skill from its step 2 (`retakes.py propose`): the transcript is already there.
    Then build, render, verify and the cut page, as that skill says. Music under the voice is
    measured per file: `build_timeline.py` trims only between words there.
-3. **Style:** `python3 "${CLAUDE_PLUGIN_ROOT}/lib/kirocut/profile.py" style edits/<name>-clip<N>`,
+3. **Style:** `python3 "${KIROCUT_PLUGIN}/lib/kirocut/profile.py" style edits/<name>-clip<N>`,
    then the style-edit skill from its step 2. If the source already has captions burned in, set
    `"captions": {"present": false}` in that edit's `style.json`, or the captions stack.
 
 Either way, open every clip's `cut-check.html` and show all the stills sheets together for one
 approval, ask the render question once for all of them, and render. After approval, run
-`python3 "${CLAUDE_PLUGIN_ROOT}/skills/cut/scripts/judge_cut.py" score` on each clip's folder (cut
+`python3 "${KIROCUT_PLUGIN}/skills/cut/scripts/judge_cut.py" score` on each clip's folder (cut
 `references/judge.md`). Hand the renders over on one
 review page, each clip a tab (`start` with clip 1, `alt` for the rest, folder `clips/<name>`; see
-`${CLAUDE_PLUGIN_ROOT}/skills/style-edit/references/review.md`), then `serve` and `wait` in the background.
+`${KIROCUT_PLUGIN}/skills/style-edit/references/review.md`), then `kirocut_open_editor` with the edit, then `kirocut_events`.
 
 ## If a script stops
 
@@ -174,7 +174,7 @@ review page, each clip a tab (`start` with clip 1, `alt` for the rest, folder `c
 
 1. Every word, number and name on screen comes from that clip's own words. Nothing from the rest of
    the video, and nothing the speaker did not say.
-2. No AI-tell looks: `${CLAUDE_PLUGIN_ROOT}/skills/style-edit/references/ai-tells.md` applies to every clip.
+2. No AI-tell looks: `${KIROCUT_PLUGIN}/skills/style-edit/references/ai-tells.md` applies to every clip.
 3. A close-up podcast frame has no free space: no card or logo goes over the head. Fewer visuals is
    right; captions and zooms carry it.
 4. Never cut a clip mid-sentence. Shorter or longer than asked beats a broken thought.
@@ -198,4 +198,4 @@ python3 "$K" demo
 
 - `scripts/clips.py`: candidates, page, trim, reframe and the offline demo (synthetic transcript).
   Stdlib only, except `reframe` (OpenCV, through the venv).
-- `${CLAUDE_PLUGIN_ROOT}/agents/clip-editor.md`: one clip through the cut and style-edit to its stills sheet.
+- `${KIROCUT_PLUGIN}/agents/clip-editor.md`: one clip through the cut and style-edit to its stills sheet.

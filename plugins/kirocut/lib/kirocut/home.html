@@ -341,8 +341,6 @@ body.dz #dropov{display:none!important}
 .cnx{display:inline-flex;align-items:center;flex-wrap:wrap;gap:8px 12px;white-space:normal}.cnx .codebox{flex:1 1 100%;gap:12px}.cnx .codebox span{min-width:0;overflow-wrap:anywhere}
 .ini{width:36px;height:36px;border-radius:18px;background:var(--soft);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--t2);flex-shrink:0}
 .kv{display:flex;flex-direction:column;gap:4px}.kv span{font-size:13px;line-height:16px;color:var(--t3)}.kv b{font-weight:500;font-size:15px}
-.nclaude{display:flex;flex-direction:column;align-items:flex-start;gap:10px;font-size:14px;line-height:20px;color:var(--t2)}
-.nclaude .codebox{align-self:stretch;gap:12px}.nclaude .codebox span{min-width:0;overflow-wrap:anywhere}
 .codebox{display:flex;justify-content:space-between;align-items:center;background:var(--soft);border-radius:10px;padding:10px 14px;font:14px var(--mono)}
 .brand{cursor:pointer;border:0;background:none;padding:0;text-align:left;font:inherit}
 .homelink{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 16px 0 13px;border:1px solid var(--ring);border-radius:10px;background:var(--panel);color:var(--ink);font-size:14px;font-weight:600;flex-shrink:0}
@@ -659,7 +657,6 @@ main.pg>*{max-height:none}main.pg>:not(.pgc){padding-bottom:56px}main.pg>.pgc::a
 .sb-job:hover{border-color:var(--ring)!important}
 .addsk{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.addsk select{height:34px;border:1px solid var(--ring);border-radius:8px;background:var(--inbg);color:var(--ink);font:inherit;padding:0 8px;max-width:100%}
 .sb-stop{white-space:nowrap;flex-shrink:0;font-size:12px;line-height:16px;font-weight:500;color:var(--ink)!important;border:1px solid var(--ring);border-radius:6px;padding:1px 8px;cursor:pointer}.sb-stop:hover{background:var(--soft)}
-.askrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;border:1px solid var(--line);border-radius:12px;font-size:15px;line-height:20px;color:var(--t2)}.askrow b{color:var(--ink);font-weight:600}
 .sb-job .tx u{color:var(--ink);text-underline-offset:3px}
 .sb-job .tp{display:flex;align-items:center;justify-content:space-between;gap:8px}.sb-job .tp b{overflow-wrap:normal;min-width:0;font-size:13px;line-height:16px;font-weight:600;display:flex;align-items:center;gap:8px}
 .sb-job .tp span{font-size:12px;line-height:16px;color:var(--t3);font-variant-numeric:tabular-nums}
@@ -730,7 +727,7 @@ body.rail .sb-theme{margin-top:2px}
 .vi .st{display:flex;flex-direction:column;align-items:stretch;gap:12px;min-width:0;margin-top:auto}
 .vi .stt{font-size:13px;line-height:16px;font-weight:600;color:var(--ink)}.vi .stt.ok{color:var(--oktext)}.vi .stt span{font-variant-numeric:tabular-nums}
 .vi .st>button{width:100%;overflow:hidden;text-overflow:ellipsis}
-.vi .nclaude{font-size:13px;line-height:18px;min-width:0}.vi .nclaude .btn{max-width:100%;white-space:normal;height:auto;min-height:38px;padding:6px 14px}
+
 .vi .bar{position:absolute;left:0;right:0;bottom:0;height:4px;border-radius:0 0 12px 12px;background:var(--track);overflow:hidden}.vi .bar.ok{background:var(--ok)}
 .vi .bar>i{display:block;height:4px;background:var(--ink)}.vi .bar.indet>i{width:40%;animation:slide 1.3s ease-in-out infinite}
 @media (min-width:761px) and (max-height:780px){main.pg .pgc{gap:24px}.pgc .hdrop{height:68px}}
@@ -779,7 +776,7 @@ body.rail .sb-theme{margin-top:2px}
 .cbox textarea{flex:1;min-width:0;border:0;background:none;resize:none;font-family:inherit;font-size:15px;line-height:22px;color:var(--ink);outline:none;max-height:200px;padding:5px 0}
 .csend{width:34px;height:34px;flex:none;border:0;border-radius:50%;background:var(--ink);color:var(--onink);display:grid;place-items:center;cursor:pointer}
 .cmine{align-self:flex-end;max-width:80%;background:var(--soft);border-radius:14px 14px 4px 14px;padding:8px 12px;font-size:14px;line-height:20px;color:var(--ink);white-space:pre-wrap}
-.cclaude{align-self:flex-start;max-width:90%;font-size:14px;line-height:20px;color:var(--t2);white-space:normal}
+.cagent{align-self:flex-start;max-width:90%;font-size:14px;line-height:20px;color:var(--t2);white-space:normal}
 .calls{white-space:normal;line-height:22px}.calls span{font-family:var(--mono);font-size:12px;color:var(--t2)}
 .in2{flex:1;min-width:0;display:flex;align-items:center;height:40px;border:1px solid var(--ring);border-radius:10px;background:var(--inbg);padding:0 0 0 12px}
 .in2 input{flex:1;min-width:0;border:0;outline:0;background:none;font:13px/16px system-ui,sans-serif;color:var(--ink)}
@@ -1193,14 +1190,14 @@ function copyText(t,el){try{navigator.clipboard.writeText(t)}catch(e){}el.innerH
 // ---------------------------------------------------------------- H6
 // Make my video goes straight to the editor: round 0 plays the clip and lists every step of the cut (home.py videos)
 // "Try it with a sample video": the repo's public sample take, downloaded once, then the real flow with its decisions shipped
-async function trySample(){if((ui.sample||{}).busy)return;ui.sample={busy:1};render();if(!GS().setup&&!latest('setup')){await post('/job',{type:'setup'});if(!S.listening)await connectClaude()}const r=await post('/sample',{});ui.sample=r._ok?null:{msg:r.msg||'That did not work. Try again.'};await load();if(r._ok)toEditor(r);else render()}
+async function trySample(){if((ui.sample||{}).busy)return;ui.sample={busy:1};render();if(!GS().setup&&!latest('setup'))await post('/job',{type:'setup'})const r=await post('/sample',{});ui.sample=r._ok?null:{msg:r.msg||'That did not work. Try again.'};await load();if(r._ok)toEditor(r);else render()}
 const sampleRow=()=>{const b=(ui.sample||{}).busy;return `<div class="row smprow" style="gap:12px;flex-wrap:wrap"><span class="t2" style="color:var(--t2);font-size:14px">No footage handy?</span><button class="b2" ${b?'disabled':''} onclick="trySample()">${b?'Getting the sample video...':'Try it with a sample video'}</button></div>${(ui.sample||{}).msg?`<div class="msg bad">${CROSS}<span>${esc(ui.sample.msg)}</span></div>`:''}`};
 function toEditor(r){const e=(r.edits||[])[0];if(e){location.href='/review?dir='+encodeURIComponent(e);return}loadLib().then(()=>rgo('videos'))}
 
 // ---------------------------------------------------------------- returning user (Paper "J launcher + pick")
 // New video (pick clips) -> Pick a style -> Making your video; Home (welcome back), Your videos, My style, Settings.
 // the view lives in the address (#videos, #style/@sample-50-50), so a reload stays on it; the review page's rail opens one
-const HASHV=['home','videos','mystyle','skills','claude','settings','new','brand'];
+const HASHV=['home','videos','mystyle','skills','settings','new','brand'];
 let L=null, R=null, rv=null;
 {const h=decodeURIComponent(location.hash.slice(1));if(h.startsWith('style/')){rv='stylepage';ui.sp=h.slice(6)}else if(HASHV.includes(h))rv=h}
 function setHash(){const h=rv==='stylepage'&&ui.sp?'#style/'+encodeURIComponent(ui.sp):HASHV.includes(rv)&&rv!=='home'?'#'+rv:'';if(location.hash!==h)history.replaceState(null,'',location.pathname+location.search+h)}
@@ -1217,7 +1214,7 @@ const clipOf=p=>nv.clips[p]||(R&&R.videos.find(v=>v.path===p))||{path:p,name:p.s
 const aspectOf=()=>{if(nv.aspectSet||!nv.sel.length)return nv.aspect;const c=clipOf(nv.sel[0]);return c.vertical===false?'16:9':c.vertical?'9:16':nv.aspect};
 const total=()=>nv.sel.reduce((a,p)=>a+(clipOf(p).duration||0),0);
 const styleName=id=>((L&&L.styles||[]).find(c=>c.id===id)||{}).name||(id==='mine'?'My style':id==='defaults'?'the default style':/^@links-/.test(id)?'New format':id);
-function rgo(v){rv=v;setHash();ui.forceR=true;ui.cmenu=null;if(v==='new'||v==='home')loadRecent();if(v==='new')loadBroll();if(v==='skills')loadSkills();if(v==='claude')loadClaudes(true);if(v==='brand')loadBrand();render();window.scrollTo(0,0)}
+function rgo(v){rv=v;setHash();ui.forceR=true;ui.cmenu=null;if(v==='new'||v==='home')loadRecent();if(v==='new')loadBroll();if(v==='skills')loadSkills();if(v==='brand')loadBrand();render();window.scrollTo(0,0)}
 const SMP=/^@sample-/;   // a sample keeps its id after the user changes it, so it stays a sample on every page
 let PH=null;   // each video's phase at the last read: a video that leaves Kiro's work chimes once (none on the first read)
 function watchDone(){const A=window.aveAlert;if(!A)return;const now=Object.fromEntries(L.videos.map(v=>[v.dir,vPh(v)]));if(!PH){PH=now;return}
@@ -1716,41 +1713,21 @@ async function loadSkills(){try{const r=await fetch('/skills');if(r.ok){const j=
 // a job's line, in plain words, from its real state (the same as a style's "Tell it what to change")
 function jobText(job){
   const jr=job.result||{};
-  const c=job.claude;
-  return job.state==='queued'?(c&&c.opened?`<span class="cnx">${SPIN}Kiro is opening in a new Terminal window.</span>`:c&&c.command?`<span class="cnx">Run this in a new Terminal window:<span class="codebox"><span>${esc(c.command)}</span><button class="hlink" onclick="copyText(${esc(JSON.stringify(c.command))},this)">Copy</button></span></span>`:S.listening?'Kiro is picking this up.':connectHTML('Waiting for Kiro.')):job.state==='taken'?`Kiro: ${esc((job.steps.at(-1)||{}).text||'working on it')}`
+  return job.state==='queued'?(S.listening?'Kiro is picking this up.':connectHTML('Waiting for Kiro.')):job.state==='taken'?`Kiro: ${esc((job.steps.at(-1)||{}).text||'working on it')}`
     :job.state==='done'?esc(jr.changed&&jr.changed.length?'Saved: '+jr.changed.join('; '):jr.summary||'Done.'):job.state==='failed'?esc(job.error||'That stopped.'):'';
 }
-// a chat box: what the user types goes to a Kiro of its own (a new Terminal window, unless one is listening).
+// a chat box: what the user types is queued for Kiro, which picks it up in the IDE chat.
 // Enter sends, Shift+Enter is a new line. j: the last job it sent, shown as the user's words and Kiro's reply.
 function chatBox(id,ph,send,j,btn){
   const said=j&&j.args&&j.args.text?String(j.args.text).replace(/^Combined from .*?\)\. /,''):'',live=j&&(j.state!=='done'||Date.now()/1000-(j.finished||0)<600);
-  return `<div class="chat">${said&&live?`<div class="cmine">${esc(said)}</div><div class="cclaude">${jobText(j)}</div>`:''}
+  return `<div class="chat">${said&&live?`<div class="cmine">${esc(said)}</div><div class="cagent">${jobText(j)}</div>`:''}
     <div class="cbox"><textarea id="${id}" rows="2" placeholder="${esc(ph)}" aria-label="${esc(ph)}" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,200)+'px'" onkeydown="if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();${send}}"></textarea>
       <button class="csend" onclick="${send}" aria-label="${esc(btn||'Send')}">${ic('up',16,2.2)}</button></div></div>`;
 }
-// The Kiro page: each video's Kiro (home.py claudes, review.claude_state) with Show, Start and Stop. Read every
-// 5 s at most (a ps per video), sooner after a press.
-let CL=null,clAt=0;
-async function loadClaudes(now){if(!now&&Date.now()-clAt<5000)return;clAt=Date.now();try{const r=await fetch('/claudes');if(r.ok)CL=(await r.json()).claudes}catch(e){}if(now)render()}
-const clRunning=()=>(CL||[]).filter(c=>c.state!=='off').length;
-const CLS={working:'Working on your notes',waiting:'Waiting for your notes',open:'Open',off:'Not running'};
-function clWhen(t){if(!t)return '';const d=(Date.now()/1000-t)/86400;return d<1?'today':d<2?'yesterday':new Date(t*1000).toLocaleDateString(undefined,{month:'short',day:'numeric'})}
-async function clAct(dir,act){ui.clBusy=dir;render();const r=await post('/claudes/act',{edit:dir,act});ui.clBusy=null;if(r.msg)toast(r.msg);await loadClaudes(true)}
-function vClaude(){
-  if(CL==null)loadClaudes(true);
-  const row=c=>{const on=c.state!=='off',b=ui.clBusy===c.dir?'disabled':'',d=J(c.dir);
-    return `<div class="clr"><span class="th" style="${c.video?`background-image:url('/thumb?p=${encodeURIComponent(c.video)}')`:''}"></span>
-      <div class="nm"><b title="${esc(c.name)}">${esc(c.name)}</b><div class="st ${c.state}"><i></i>${CLS[c.state]||''}${!on&&c.last?' · last used '+clWhen(c.last):''}</div></div>
-      <div class="acts">${c.resume?`<button title="${esc(c.resume)}" onclick="copyText(${esc(JSON.stringify(c.resume))},this)">Copy command</button>`:''}${on?`${c.show?`<button ${b} onclick="clAct(${d},'show')">Show Kiro</button>`:''}<button ${b} onclick="clAct(${d},'stop')">Stop</button>`:`<button class="go" ${b} onclick="clAct(${d},'start')">Start Kiro</button>`}</div></div>`};
-  return `<div class="clp"><div><h1>Kiro</h1><p class="lede">Each video has its own Kiro in a Terminal window. Show brings it to the front. Start opens it again, carrying on where it left off. Copy command gives you the line to open it yourself in any terminal.</p></div>
-    ${CL==null?'<p class="muted">Loading...</p>':CL.length?`<div class="cll">${CL.map(row).join('')}</div>`:'<p class="muted">No video has had a Kiro yet. One starts with each new video.</p>'}
-    ${CL&&CL.length?'<p class="clh">Stopping closes that Kiro. Your video, notes and drafts stay. Start carries on from them.</p>':''}</div>`;
-}
-
 // ---- Brand: the user's brand kit, one BRAND.md (brandkit.py through /brand*): what was read, Import, Edit, the switch,
 // and Make one with Kiro (a headless Kiro job that writes a draft to review)
 let BK=null;const bk={};
-async function loadBrand(){try{const r=await fetch('/brand');if(r.ok){BK=await r.json();brandFonts();if(BK.job&&BK.job.state==='running'){clearTimeout(bk.t);bk.t=setTimeout(()=>{if(rv==='brand')loadBrand()},3000)}if(BK.draft&&!bk.edit){bk.edit=true;bk.text=BK.draft;bk.claude=false}render()}}catch(e){}}
+async function loadBrand(){try{const r=await fetch('/brand');if(r.ok){BK=await r.json();brandFonts();if(BK.job&&BK.job.state==='running'){clearTimeout(bk.t);bk.t=setTimeout(()=>{if(rv==='brand')loadBrand()},3000)}if(BK.draft&&!bk.edit){bk.edit=true;bk.text=BK.draft;bk.kiro=false}render()}}catch(e){}}
 const FONTS={};
 function brandFonts(){for(const n of Object.values((BK&&BK.kit&&BK.kit.fonts)||{})){if(FONTS[n])continue;FONTS[n]='loading';
   const l=document.createElement('link');l.rel='stylesheet';l.href='https://fonts.googleapis.com/css2?family='+encodeURIComponent(n).replace(/%20/g,'+')+':wght@400;600&display=swap';
@@ -1761,15 +1738,15 @@ async function bkSave(md){if(!md||!md.trim()){toast('The file is empty.');return
 function bkFile(f){if(!f)return;if(!/\.(md|markdown|txt)$/i.test(f.name)){toast('Pick a .md file.');return}const r=new FileReader();r.onload=()=>bkSave(String(r.result));r.readAsText(f)}
 function bkDrop(e){e.preventDefault();e.stopPropagation();if(typeof dragOff==='function')dragOff();bkFile(e.dataTransfer.files[0])}
 async function bkUse(on){const r=await post('/brand/use',{on});if(!r._ok){toast(r.error||'That did not save.');return}BK=r;render()}
-function bkEdit(){bk.edit=true;bk.claude=false;bk.text=BK&&BK.md||'';render();setTimeout(()=>{const e=$('#bk-ed');if(e)e.focus()},0)}
+function bkEdit(){bk.edit=true;bk.kiro=false;bk.text=BK&&BK.md||'';render();setTimeout(()=>{const e=$('#bk-ed');if(e)e.focus()},0)}
 async function bkPics(fs){bk.pics=[];for(const f of [...fs].slice(0,6)){const d=await new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result);r.readAsDataURL(f)});bk.pics.push({name:f.name,data:d})}render()}
-async function bkClaude(){const url=($('#bk-url')||{}).value||'',about=($('#bk-about')||{}).value||'';bk.url=url;bk.about=about;
-  const r=await post('/brand/claude',{url,about,images:bk.pics||[]});if(!r._ok){toast(r.error||'That did not start.');return}BK=r;bk.claude=false;bk.pics=[];loadBrand()}
-async function bkClear(){const r=await post('/brand/claude',{clear:true});if(r._ok)BK=r;bk.edit=false;render()}
+async function bkKiro(){const url=($('#bk-url')||{}).value||'',about=($('#bk-about')||{}).value||'';bk.url=url;bk.about=about;
+  const r=await post('/brand/kiro',{url,about,images:bk.pics||[]});if(!r._ok){toast(r.error||'That did not start.');return}BK=r;bk.kiro=false;bk.pics=[];loadBrand()}
+async function bkClear(){const r=await post('/brand/kiro',{clear:true});if(r._ok)BK=r;bk.edit=false;render()}
 function vBrand(){
   if(BK==null){loadBrand();return '<div class="pgc"><div class="ph"><h1>Brand</h1></div><p class="none">Loading...</p></div>'}
   const k=BK.kit,j=BK.job,run=j&&j.state==='running';
-  const acts=`<div class="row hact">${k?`<button class="b2" onclick="bkEdit()">${ic('pencil',16)}Edit</button>`:''}<button class="b2" ${run?'disabled':''} onclick="bk.claude=!bk.claude;bk.edit=false;render()">Make one with Kiro</button><button class="b1" onclick="$('#bk-pick').click()">${ic('up',16,2.2)}Import a file</button></div>`;
+  const acts=`<div class="row hact">${k?`<button class="b2" onclick="bkEdit()">${ic('pencil',16)}Edit</button>`:''}<button class="b2" ${run?'disabled':''} onclick="bk.kiro=!bk.kiro;bk.edit=false;render()">Make one with Kiro</button><button class="b1" onclick="$('#bk-pick').click()">${ic('up',16,2.2)}Import a file</button></div>`;
   const head=`<div class="row" style="justify-content:space-between;align-items:flex-start;gap:16px"><div class="ph"><h1>Brand</h1><p>Your colours, fonts, logo and voice. Kiro uses them on every video.</p></div>${acts}</div>
     <input type="file" id="bk-pick" accept=".md,.markdown,.txt,text/markdown,text/plain" hidden onchange="bkFile(this.files[0]);this.value=''">`;
   const sec=(t,body,aside='')=>`<div class="ssec"><div class="shd"><b>${t}</b>${aside?`<span class="t2">${aside}</span>`:''}</div>${body}</div>`;
@@ -1777,17 +1754,17 @@ function vBrand(){
   const ROLE={ground:'Background',ink:'Text',accent:'Accent',primary:'Primary'};
   let job='';
   if(run)job=`<div class="ssec"><div class="msg">${SPIN}<span>Kiro is making your brand kit${j.url?' from '+esc(j.url):''}. This takes a minute or two.</span></div></div>`;
-  else if(j&&j.state==='failed')job=`<div class="ssec"><div class="msg bad">${CROSS}<span>${esc(j.why||'That stopped.')}</span></div><div class="row" style="gap:8px"><button class="b2 s" onclick="bk.claude=true;render()">Try again</button><button class="b2 s" onclick="bkClear()">Dismiss</button></div></div>`;
-  const form=bk.claude&&!run?sec('Make one with Kiro',`<div class="t2" style="white-space:normal">Give a website, a few lines about the brand or some pictures. Kiro reads them and writes a BRAND.md for you to check.${BK.claude?'':' Kiro is not installed on this computer, so this will not run.'}</div>
+  else if(j&&j.state==='failed')job=`<div class="ssec"><div class="msg bad">${CROSS}<span>${esc(j.why||'That stopped.')}</span></div><div class="row" style="gap:8px"><button class="b2 s" onclick="bk.kiro=true;render()">Try again</button><button class="b2 s" onclick="bkClear()">Dismiss</button></div></div>`;
+  const form=bk.kiro&&!run?sec('Make one with Kiro',`<div class="t2" style="white-space:normal">Give a website, a few lines about the brand or some pictures. Kiro reads them and writes a BRAND.md for you to check.${BK.kiro?'':' Kiro is not installed on this computer, so this will not run.'}</div>
       <input id="bk-url" class="bk-in" placeholder="Website, like example.com" value="${esc(bk.url||'')}" aria-label="Website">
       <textarea id="bk-about" class="bk-in" rows="3" placeholder="A few lines about the brand" aria-label="About the brand">${esc(bk.about||'')}</textarea>
       <div class="row" style="gap:12px"><button class="b2 s" onclick="$('#bk-img').click()">${ic('image',16)}Add pictures</button><span class="t2">${(bk.pics||[]).length?esc(bk.pics.map(x=>x.name).join(', ')):'Logos, screenshots or posts'}</span>
         <input type="file" id="bk-img" accept="image/*" multiple hidden onchange="bkPics(this.files)"></div>
-      <div class="row" style="gap:8px"><button class="b1" onclick="bkClaude()">Start</button><button class="b2" onclick="bk.claude=false;render()">Cancel</button></div>`):'';
+      <div class="row" style="gap:8px"><button class="b1" onclick="bkKiro()">Start</button><button class="b2" onclick="bk.kiro=false;render()">Cancel</button></div>`):'';
   const ed=bk.edit?sec(BK.draft?'Kiro\'s draft':'Edit BRAND.md',`${BK.draft?'<div class="t2" style="white-space:normal">Check what Kiro found, change anything, then Save.</div>':''}
       <textarea id="bk-ed" class="bk-ed" spellcheck="false" aria-label="BRAND.md" oninput="bk.text=this.value">${esc(bk.text||'')}</textarea>
       <div class="row" style="gap:8px"><button class="b1" onclick="bkSave(bk.text)">Save</button><button class="b2" onclick="${BK.draft?'bkClear()':'bk.edit=false;render()'}">${BK.draft?'Discard':'Cancel'}</button></div>`,BK.draft?'':esc(BK.path)):'';
-  if(!k)return `<div class="pgc">${head}${job}${form}${ed}${bk.edit||bk.claude?'':`<div class="ssec"><button class="drop bk-drop" ondragover="event.preventDefault();event.stopPropagation()" ondrop="bkDrop(event)" onclick="$('#bk-pick').click()">${UP}<b>Drop your BRAND.md here</b><span class="t2">or click to pick a file</span></button>
+  if(!k)return `<div class="pgc">${head}${job}${form}${ed}${bk.edit||bk.kiro?'':`<div class="ssec"><button class="drop bk-drop" ondragover="event.preventDefault();event.stopPropagation()" ondrop="bkDrop(event)" onclick="$('#bk-pick').click()">${UP}<b>Drop your BRAND.md here</b><span class="t2">or click to pick a file</span></button>
       <div class="row" style="gap:16px;flex-wrap:wrap"><a href="/brand/template" download="BRAND.md">Download the template</a><a href="#" onclick="bk.edit=true;bk.text='';render();return false">Paste markdown</a></div></div>`}</div>`;
   const cols=k.colors.length?`<div class="bk-sw">${k.colors.map(c=>`<div class="bk-c"><i style="background:${esc(c.hex)}"></i><b>${esc(c.hex)}</b><span class="t2">${esc([c.name,ROLE[c.role]].filter(Boolean).join(' · ')||'No name')}</span></div>`).join('')}</div>`:'<p class="none">No colours found.</p>';
   const FR={display:'Display',body:'Body',mono:'Code'},fs=Object.entries(k.fonts||{});
@@ -2013,7 +1990,7 @@ function vStyle(){
       <div class="ph"><button class="back" style="text-decoration:none" onclick="rgo('new')">${ic('back',14,2)}New video · step 2 of 2</button><h1>Pick a style</h1></div>
       <div class="clipsum"><span class="th" style="background-image:url('${esc(c0.thumb||'')}')"></span><div style="min-width:0"><div class="t1" style="font-weight:600">${n>1?`${n} clips, ${nv.join?'joined':'separate'}`:esc(c0.name)}</div><div class="t2">${n} clip${n>1?'s':''}${total()?' · '+fmtT(Math.round(total())):''} · ${aspectOf()==='9:16'?'Tall':'Wide'} ${aspectOf()}</div></div><button class="ul" onclick="rgo('new')">Change</button></div></div>
     <div class="sec2"><div class="sh"><b>Styles</b><button class="b2 s" onclick="openCreate()">${ic('plus',14,2.2)}New style</button></div>${gridRows([...cards].sort((a,b)=>(isDefault(b)-isDefault(a))||(!!b.studying-!!a.studying)||(!!b.own-!!a.own)||((b.made||0)-(a.made||0))).map(c=>pickCard(c,idx(c))),per)}</div>
-    <div class="pfoot"><div style="min-width:0"><div class="t1" style="font-weight:600">${esc(cur?cur.name:styleName(nv.style))}</div>${cur&&cur.runs?`<div class="t2 calls" style="margin:4px 0 6px">Runs ${cur.runs.map(r=>`<span>${esc(r)}</span>`).join(' → ')} · <a href="#" onclick="openStyle(${J(cur.id)});return false">Change</a></div>`:''}<div class="t2" style="white-space:normal">First the cut. Captions, zooms and sound start after you approve it.${S.new_claude?` ${n>1&&!nv.join?'Each video gets':'It gets'} its own Kiro in a new Terminal window.`:''}</div>${S.listening||S.new_claude?'':`<div class="t2" style="white-space:normal;margin-top:10px">${connectHTML('Kiro is not listening.')}</div>`}</div>
+    <div class="pfoot"><div style="min-width:0"><div class="t1" style="font-weight:600">${esc(cur?cur.name:styleName(nv.style))}</div>${cur&&cur.runs?`<div class="t2 calls" style="margin:4px 0 6px">Runs ${cur.runs.map(r=>`<span>${esc(r)}</span>`).join(' → ')} · <a href="#" onclick="openStyle(${J(cur.id)});return false">Change</a></div>`:''}<div class="t2" style="white-space:normal">First the cut. Captions, zooms and sound start after you approve it.</div>${S.listening?'':`<div class="t2" style="white-space:normal;margin-top:10px">${connectHTML('Kiro is not listening.')}</div>`}</div>
       <button class="b1" id="make" onclick="makeVideo()">Make my video</button></div></div>`;
 }
 async function makeVideo(){
@@ -2152,18 +2129,13 @@ function planFor(j){
     ['You check the cut','The editor opens on your clip. Each new draft shows up there. Leave notes, or approve it.'],
     ['Captions, zooms and sound in '+st,studying?`Starts after you approve the cut, once ${a.as}'s style is analysed.`:'Starts after you approve the cut.']];
 }
-// nobody listening: "Connect Kiro" opens a new Terminal with a listening Kiro (launcher.connect, one at a time);
-// where no terminal can open (S.new_claude false), the old instruction
-function connectHTML(lead,old){
-  const c=ui.connect||{},t=S.connect?Date.now()/1000-S.connect:null,l=lead?esc(lead)+' ':'',stop='event.stopPropagation();';
-  if(c.command)return `<span class="cnx">${l}Run this in a new Terminal window:<span class="codebox"><span>${esc(c.command)}</span><button class="hlink" onclick="${stop}copyText(${esc(JSON.stringify(c.command))},this)">Copy</button></span></span>`;
-  if(t!=null&&t<60)return `<span class="cnx">${SPIN}Opening Kiro in a new Terminal window...</span>`;
-  if(!S.new_claude)return `<span class="cnx">${l}${old||`Type ${CMD} in Terminal.`}</span>`;
-  if(t!=null)return `<span class="cnx">Kiro didn't connect. Check the Terminal window it opened.<button class="btn sm" onclick="${stop}connectClaude()">Try again</button></span>`;
-  return `<span class="cnx">${l}<button class="btn dark sm" onclick="${stop}connectClaude()">Connect Kiro</button></span>`;
+// nobody listening: Kiro is the chat in the IDE. It hears this window while it waits (kirocut_events), and the next time
+// the user writes in the chat (a hook). The button copies a line to paste there.
+function connectHTML(lead){
+  const l=lead?esc(lead)+' ':'',stop='event.stopPropagation();',line='Check the KiroCut editor: I started something there. Please carry on.';
+  return `<span class="cnx">${l}Kiro picks this up in the IDE chat.<button class="btn dark sm" onclick="${stop}copyText(${esc(JSON.stringify(line))},this)">Copy a message for the chat</button></span>`;
 }
 async function stopJob(id,edit){const r=await post('/stop',edit?{edit}:{id});if(edit&&!r.stopped){toast(r.msg||'That did not stop.');return load()}toast(r.stopped?'Stopped. Kiro stops at its next step.':'Stopped.');await load()}
-async function connectClaude(){if(ui.connecting)return;ui.connecting=1;try{const r=await post('/connect',{});ui.connect=r.status==='manual'?r:null}finally{ui.connecting=0}await load()}
 
 // ---- home (welcome back), your videos, my style, settings
 // where a video is (home.py phase): the user's turn, done, or what Kiro is doing now
@@ -2189,7 +2161,7 @@ function vStat(v){
   if(ph==='done')return {ok:1,txt:v.duration?`Done. ${fmtT(Math.round(v.duration))} long`:'Done',btn:open};
   if(TURN[ph])return {txt:TURN[ph],title:TURN[ph],frac:1,btn:open};
   const j=vJob(v);
-  if(j){const s=j.steps.filter(x=>!x.done).at(-1),t=s?s.t:jobStart(j),w=s?s.text:j.state==='queued'?((j.claude||{}).opened?'Kiro is working on this video in its own Terminal window':S.listening?(S.busy&&S.busy.id!==j.id?'Waiting for Kiro':'Starting'):'Waiting for Kiro'):'Starting';
+  if(j){const s=j.steps.filter(x=>!x.done).at(-1),t=s?s.t:jobStart(j),w=s?s.text:j.state==='queued'?(S.listening?(S.busy&&S.busy.id!==j.id?'Waiting for Kiro':'Starting'):'Waiting for Kiro'):'Starting';
     return {title:w,txt:`${esc(w)} · <span data-since="${t}" data-f="t">${fmtT(Math.max(0,Math.round(Date.now()/1000-t)))}</span>`,frac:j.state==='queued'?0:jobFrac(j),btn:see}}
   return {txt:DOING[ph]||'Being made',frac:null,btn:see};
 }
@@ -2312,7 +2284,7 @@ function obAnalysing(td){
   return `<div class="pgc obw"><div class="row" style="gap:20px">${faces.length?`<span class="obav">${faces.slice(0,3).map(f=>avaHTML(f,48)).join('')}</span>`:''}<div class="ph"><h1>Analysing your format</h1><p>${n?`${n} video${n>1?'s':''}${hs.length>1?` from ${hs.length} creators`:''}. `:''}You can leave this page.</p></div></div>
     <div class="obc"><div class="obnow"><div class="row" style="justify-content:space-between"><span class="cap">Now</span><b data-since="${t}" data-f="t">${fmtT(Math.max(0,Math.round(Date.now()/1000-t)))}</b></div><div class="big">${esc(s?tdStep(td,s.text):td.state==='queued'?(S.listening?'Kiro is picking this up':'Waiting for Kiro'):'Starting')}</div><div class="trk" style="height:6px;border-radius:3px"><i style="width:${Math.round((jobFrac(td)||0)*100)}%;height:6px"></i></div>
       ${vs.length?`<div class="obth">${vs.map((v,i)=>`<span style="${v.thumbnail?`background-image:url('${esc(v.thumbnail)}')`:''}" class="${i<k?'got':i===k?'now':''}">${i<k?OKDOT:''}</span>`).join('')}</div>`:''}
-      ${td.state==='queued'&&!S.listening?`<div class="t2" style="white-space:normal">${connectHTML('',`Type ${CMD} in Terminal, or say "edit my video" in Kiro.`)}</div>`:''}</div>
+      ${td.state==='queued'&&!S.listening?`<div class="t2" style="white-space:normal">${connectHTML('')}</div>`:''}</div>
       <div class="obrs">${obRows(tdPlan(td),tdSteps(td))}</div></div>
     <div class="obnext"><div><span class="cap">Next</span><b>Make your first video</b><p>Drop a clip now if you like. It starts when the style is ready.</p></div><button class="b1" onclick="ui.ob='drop';render()">Drop a clip now</button></div>
     <button class="b2" style="align-self:flex-start" onclick="stopStudy(${J(td.args.handle)})">Stop analysing</button></div>`;
@@ -2460,11 +2432,11 @@ function jobInfo(){
   const nv2=Math.max(mk.length,act.filter(x=>x.type==='video').length);
   if(!j){if(!mk.length)return null;return {edit:mk[0].status==='making'?mk[0].dir:null,label:`Making ${mk.length}`,short:'Making',n:mk.length,text:`${{notes:'Kiro is fixing your notes in',stills:'Kiro is making the preview for',rendering:'Kiro is finishing'}[vPh(mk[0])]||'Kiro is making'} ${mk[0].name}`,frac:null,since:null,go:"ui.fold.videos=null;rgo('videos')"}}
   const n=j.type==='video'?nv2:act.filter(x=>x.type===j.type).length,s=farStep(j);
-  const last=Math.max(j.u||0,s?s.t||0:0,S.claude_seen||0)||jobStart(j),age=Math.max(0,Math.round(Date.now()/1000-last));
+  const last=Math.max(j.u||0,s?s.t||0:0,S.agent_seen||0)||jobStart(j),age=Math.max(0,Math.round(Date.now()/1000-last));
   const vn=j.type==='video'&&j.args.edit&&(((L?L.videos:[]).find(v=>v.dir===j.args.edit)||{}).name||j.args.edit.split(/[\\/]/).pop());
   const what=j.type==='video'&&j.args.edit?' in '+j.args.edit.split(/[\\/]/).pop():j.type==='teardown'&&j.args.handle?' · '+styleName('@'+j.args.handle):'';
-  const how=S.new_claude?'':` Type ${CMD} in Terminal.`,own=(j.claude||{}).opened,text=j.state==='queued'?(own?'Kiro is working on this video in its own Terminal window.':S.listening?'Kiro is picking this up.':'Waiting for Kiro.'+how)
-    :j.owner!=='home'&&!S.listening&&!own&&age>60?'Kiro is not listening.'+how:vn?`Kiro is working on ${vn}: ${s?s.text:'Starting'}`:(s?tdStep(j,s.text):'Starting')+what;
+  const how=' Tell Kiro in the IDE chat.',text=j.state==='queued'?(S.listening?'Kiro is picking this up.':'Waiting for Kiro.'+how)
+    :j.owner!=='home'&&!S.listening&&age>60?'Kiro is not listening.'+how:vn?`Kiro is working on ${vn}: ${s?s.text:'Starting'}`:(s?tdStep(j,s.text):'Starting')+what;
   const name=JOBNAME[j.type]||'Working',go=j.type==='video'?"ui.fold.videos=null;rgo('videos')":j.type==='teardown'||j.type==='skill'?"rgo('mystyle')":j.type==='skill-change'||j.type==='skill-new'?"rgo('skills')":j.type==='setup'?'goHome()':j.type==='update'||j.owner==='home'?"rgo('settings')":'';
   return {id:j.id,label:j.type==='video'||j.type==='teardown'?`${name} ${n}`:name,short:j.type==='video'||j.type==='teardown'?name:'Working',n:j.type==='video'||j.type==='teardown'?n:'',text,frac:j.state==='queued'?0:jobFrac(j),since:jobStart(j),go};   // the whole job's time, not the step's
 }
@@ -2492,7 +2464,7 @@ function sideHTML(){
     const it=(k,label,on,js,extra='')=>`<button class="rl-it ${on?'on':''}" onclick="${js}" ${extra}><span class="ic">${ic(k,20,1.9)}</span>${label}</button>`;
     return `<button class="rl-pan" data-home onclick="goHome()" title="Home" aria-label="KiroCut home">${PAN(40)}</button>${tog}
       <button class="rl-it rl-new" onclick="rgo('new')"><span class="ic">${ic('plus',20,2.2)}</span>New</button><div style="height:10px;flex-shrink:0"></div>
-      ${it('home','Home',cur==='home','goHome()')}${it('videos','Videos',cur==='videos',vgo,dropAttrs('videos',null))}${it('styles','Styles',onS,"rgo('mystyle')")}${it('brand','Brand',cur==='brand',"rgo('brand')")}${it('skill','Skills',cur==='skills',"rgo('skills')")}${it('term','Kiro',cur==='claude',"rgo('claude')")}
+      ${it('home','Home',cur==='home','goHome()')}${it('videos','Videos',cur==='videos',vgo,dropAttrs('videos',null))}${it('styles','Styles',onS,"rgo('mystyle')")}${it('brand','Brand',cur==='brand',"rgo('brand')")}${it('skill','Skills',cur==='skills',"rgo('skills')")}
       <div class="sb-sp"></div>
       ${ji?`<button class="rl-it rl-job" onclick="${ji.go}" title="${esc(ji.label+': '+ji.text)}"><span class="ic">${ringSvg(ji.frac)}${ji.n}</span>${ji.short}</button>`:''}
       ${it('heart','Support',false,"supportGo()")}${it('upload',updLabel(true),false,"sbUpd()",updBusy()?'disabled':'')}${it('gear','Settings',cur==='settings',"rgo('settings')")}${thm}`;
@@ -2511,24 +2483,17 @@ function sideHTML(){
       <button class="sb-row ${cur==='videos'&&!ui.fold.videos?'on':''}" onclick="${vgo}" ${dropAttrs('videos',null)}>${ic('videos')}<span class="lb">Your videos</span><span class="n">${vids.filter(v=>!inFold('videos',v.dir)).length}</span></button>
       <button class="sb-row ${onS?'on':''}" onclick="rgo('mystyle')">${ic('styles')}<span class="lb">Styles</span><span class="n">${st.filter(c=>!inFold('styles',c.id)).length}</span></button>
       <button class="sb-row ${cur==='brand'?'on':''}" onclick="rgo('brand')">${ic('brand')}<span class="lb">Brand</span></button>
-      <button class="sb-row ${cur==='skills'?'on':''}" onclick="rgo('skills')">${ic('skill')}<span class="lb">Skills</span></button>
-      <button class="sb-row ${cur==='claude'?'on':''}" onclick="rgo('claude')">${ic('term')}<span class="lb">Kiro</span>${clRunning()?`<span class="n">${clRunning()} running</span>`:''}</button></nav>
+      <button class="sb-row ${cur==='skills'?'on':''}" onclick="rgo('skills')">${ic('skill')}<span class="lb">Skills</span></button></nav>
     <div class="sb-fold"><div class="sb-fh">Folders<button class="sb-add" title="New folder" aria-label="New folder" onclick="newFolder(null,null,rv==='mystyle'||rv==='stylepage'?'styles':'videos')">${ic('plus',12,2.4)}</button></div>
       <div class="sb-flist">${fd('videos').folders.map(f=>frow('videos',f)).join('')}${fd('styles').folders.map(f=>frow('styles',f)).join('')}${nf}</div></div>
     <div class="sb-sp"></div>
-    ${ji?`<button class="sb-job" onclick="${askAbout()?'askOpen()':ji.go}"><div class="tp"><b>${SPIN}${esc(ji.label)}</b><span class="row" style="gap:8px;flex-shrink:0">${ji.since?`<span data-since="${ji.since}" data-f="t">${fmtT(Math.max(0,Math.round(Date.now()/1000-ji.since)))}</span>`:''}${ji.id||ji.edit?`<span class="sb-stop" role="button" tabindex="0" title="Stop Kiro on this" onclick="event.stopPropagation();stopJob(${J(ji.id||null)},${J(ji.edit||null)})" onkeydown="if(event.key==='Enter'){event.stopPropagation();stopJob(${J(ji.id||null)},${J(ji.edit||null)})}">Stop</span>`:''}</span></div><div class="tx">${askAbout()?`Kiro is asking about ${esc(askAbout())}: <u>Open</u>`:esc(ji.text)}</div><div class="trk ${ji.frac==null?'indet':''}"><i style="width:${Math.round((ji.frac||0)*100)}%"></i></div></button>`:''}
+    ${ji?`<button class="sb-job" onclick="${ji.go}"><div class="tp"><b>${SPIN}${esc(ji.label)}</b><span class="row" style="gap:8px;flex-shrink:0">${ji.since?`<span data-since="${ji.since}" data-f="t">${fmtT(Math.max(0,Math.round(Date.now()/1000-ji.since)))}</span>`:''}${ji.id||ji.edit?`<span class="sb-stop" role="button" tabindex="0" title="Stop Kiro on this" onclick="event.stopPropagation();stopJob(${J(ji.id||null)},${J(ji.edit||null)})" onkeydown="if(event.key==='Enter'){event.stopPropagation();stopJob(${J(ji.id||null)},${J(ji.edit||null)})}">Stop</span>`:''}</span></div><div class="tx">${esc(ji.text)}</div><div class="trk ${ji.frac==null?'indet':''}"><i style="width:${Math.round((ji.frac||0)*100)}%"></i></div></button>`:''}
     ${rail?'':updCard()}
     ${gsBlock()}
     ${updRow()}
     <button class="sb-row" onclick="supportGo()" title="Opens Stripe in a new tab">${ic('heart')}<span class="lb">Support KiroCut</span></button>
     <div class="sb-bot"><button class="sb-row ${cur==='settings'?'on':''}" onclick="rgo('settings')" ${upd?'title="A new version is out"':''}>${ic('gear')}<span class="lb">Settings</span>${upd?'<span class="sdot"></span>':''}</button>${thm}</div>`;
 }
-// a question for a video whose editor tab has it (askhook "elsewhere"): one row on Home and in the sidebar job card
-const askAbout=()=>{const q=window.askq;return q&&q.elsewhere?q.about||'your video':null};
-// one row per open question (QA round 4: two videos asked at once, Home showed one row)
-const askRows=()=>{const q=window.askq;return q?(q.all&&q.all.length?q.all:[q]).filter(x=>x.elsewhere):[]};
-function askRow(){return askRows().map(x=>`<div class="askrow"><span>Kiro is asking about <b>${esc(x.about||'your video')}</b></span><button class="b1 s" onclick="askOpen(${esc(JSON.stringify(x.id||''))})">Open</button></div>`).join('')}
-addEventListener('askchange',()=>{if(S)render()});
 function paintSide(){
   if(!S)return;const rail=isRail();document.body.classList.toggle('rail',rail);document.body.style.setProperty('--sw',(rail?80:232)+'px');
   paint($('#side'),sideHTML(),'side');
@@ -2663,10 +2628,10 @@ function stUpdate(){
   // the window runs Update itself (update.py market), then restarts on the new version and this tab reloads
   const u=S.update||{},j=latest('update'),busy=j&&j.state==='taken',ok=u.latest&&!u.newer,jr=(j&&j.result)||{};
   const st=!j?'':busy?`${(j.steps.at(-1)||{}).text||'Updating'}...`:j.state==='done'?`Updated to ${jr.version||u.installed}.`:j.state==='failed'?j.error:'';
-  // Kiro sessions keep the version they loaded until /reload-plugins: u.claude is the version their last command ran
-  const old=u.claude&&u.installed&&u.claude!==u.installed,recent=j&&j.state==='done'&&Date.now()/1000-(j.finished||0)<86400;
-  const rl=old||recent&&!u.claude?`<div style="display:flex;flex-direction:column;gap:8px"><div class="t2" style="white-space:normal">Kiro sessions that are open still run ${old?esc(u.claude):'the old version'}. Type this in each one:</div><span class="codebox"><span>/reload-plugins</span><button class="hlink" onclick="copyText('/reload-plugins',this)">Copy</button></span></div>`
-    :recent&&u.claude===u.installed?`<div class="t2">Kiro is on ${esc(u.installed)} too.</div>`:'';
+  // an open Kiro chat keeps the version it loaded until a new chat: u.agent is the version its last command ran
+  const old=u.agent&&u.installed&&u.agent!==u.installed,recent=j&&j.state==='done'&&Date.now()/1000-(j.finished||0)<86400;
+  const rl=old||recent&&!u.agent?`<div class="t2" style="white-space:normal">Kiro chats that are open still run ${old?esc(u.agent):'the old version'}. Start a new chat to use the new one.</div>`
+    :recent&&u.agent===u.installed?`<div class="t2">Kiro is on ${esc(u.installed)} too.</div>`:'';
   const ago=u.checked?Math.max(0,Math.round(Date.now()/1000-u.checked)):null,when=ago==null?'':ago<60?'checked just now':ago<3600?`checked ${Math.round(ago/60)} min ago`:'';
   const line=u.checking?'Checking...':u.newer?'A new version is out':u.offline?'Could not check for a new version':u.latest?'Up to date'+(when?' · '+when:''):'';
   return `<div class="scd"><div class="hd"><b>Updates</b><span class="ss">${ok?OKTICK:''}${line}</span></div>
@@ -2789,9 +2754,8 @@ const ZOOMILL={none:'<i class="zb"></i>',smooth:'<i class="zb dash"></i><i class
 const CUTILL={relaxed:[22,16,26,14,18],natural:[24,7,28,6,20],tight:[26,0,30,0,22]};
 function rrender(){
   if(rv==='settings'&&!(ui.diskAt>Date.now()-10000)){ui.diskAt=Date.now();loadDisk()}   // free space is live: read again every 10 s
-  let h=(rv==='stylepage'?vStylePage():rv==='new'?vNew():rv==='style'?vStyle():rv==='videos'?vVideos():rv==='mystyle'?vMyStyle():rv==='skills'?vSkills():rv==='claude'?vClaude():rv==='brand'?vBrand():rv==='settings'?vSettings():vHome());
-  if(rv==='home'&&askRow())h=h.replace(/^\s*(<div class="pgc[^"]*">)/,'$1'+askRow());   // Home's first row
-  $('#main').classList.toggle('pg',['home','videos','settings','mystyle','style','stylepage','skills','claude','brand'].includes(rv));
+  let h=(rv==='stylepage'?vStylePage():rv==='new'?vNew():rv==='style'?vStyle():rv==='videos'?vVideos():rv==='mystyle'?vMyStyle():rv==='skills'?vSkills():rv==='brand'?vBrand():rv==='settings'?vSettings():vHome());
+  $('#main').classList.toggle('pg',['home','videos','settings','mystyle','style','stylepage','skills','brand'].includes(rv));
   paint($('#main'),h,rv+'|'+ui.sp);$('#main').classList.toggle('spwrap',rv==='stylepage');
   if(!ui.supp&&S&&L&&!ui.create&&!ui.del&&!ui.skdel&&!ui.bconn&&suppDue()){ui.supp=true;ui.suppSeen=true}
   const md=ui.skdel?skDelModal():ui.del?delModal():ui.create?createModal():ui.bconn?bconnModal():ui.supp?suppModal():'';paint($('#modal'),md,'m');document.documentElement.style.overflow=md?'hidden':'';$('#main').classList.toggle('hmain',rv==='home');
@@ -2886,15 +2850,14 @@ function render(){
 setInterval(tickClocks,1000);
 addEventListener('resize',()=>render());
 async function load(){
-  try{const r=await fetch('/state');if(!r.ok)throw 0;S=await r.json();if(S.listening)ui.connect=null;if(Date.now()-themeAt>3000)applyTheme(S.theme)}catch(e){const uj=latest('update');if(uj&&uj.state==='done'&&Date.now()/1000-(uj.finished||0)<60){if(!ui.rst){ui.rst=1;toast('Restarting on the new version...')}return}const lv=$('#live');lv.className='live';lv.style.width='auto';lv.style.maxWidth='520px';lv.style.whiteSpace='normal';lv.textContent='The editor stopped. Run kirocut to start it again.';return}
-  // live reload: a new page version (home.html, ask.js or the Python changed) reloads this tab, keeping the view
+  try{const r=await fetch('/state');if(!r.ok)throw 0;S=await r.json();if(Date.now()-themeAt>3000)applyTheme(S.theme)}catch(e){const uj=latest('update');if(uj&&uj.state==='done'&&Date.now()/1000-(uj.finished||0)<60){if(!ui.rst){ui.rst=1;toast('Restarting on the new version...')}return}const lv=$('#live');lv.className='live';lv.style.width='auto';lv.style.maxWidth='520px';lv.style.whiteSpace='normal';lv.textContent='The editor stopped. Run kirocut to start it again.';return}
+  // live reload: a new page version (home.html, alerts.js or the Python changed) reloads this tab, keeping the view
   if(S.page){if(PV&&S.page!==PV&&canReload()){keepView();location.reload();return}PV=PV||S.page}
   // typing in a key box: do not redraw under the cursor
   const a=document.activeElement;if(a&&a.id&&a.id.startsWith('k-')&&a.value)return paintSide();
   if(a&&a.type==='range'||ui.spdrag||DRAG)return;   // dragging a slider, the caption or a card: do not redraw under the hand   // dragging a slider or the caption: do not redraw under the hand
   if(!L)await loadLib();
   if(rv==='stylepage')await loadStyle();
-  await loadClaudes();
   render();
   if(keepY!=null){window.scrollTo(0,keepY);keepY=null}
 }
@@ -2908,6 +2871,6 @@ load().then(loadRecent).then(loadBroll);setInterval(load,1500);setInterval(loadL
 <dialog id="kmdlg" aria-label="keyboard shortcuts"><div class="kmh"><b>Keyboard shortcuts</b><button class="b2 s" onclick="this.closest('dialog').close()">Done</button></div><div id="kmbody"></div></dialog>
 <script src="/shortcuts.js"></script><script>KM.editor(document.getElementById('kmbody'));
 document.getElementById('kmdlg').addEventListener('cancel',e=>{if(KM.recording())e.preventDefault()})   // Esc while recording cancels the recording, not the dialog</script>
-<script src="/ask.js"></script>
+<script src="/alerts.js"></script>
 </body>
 </html>

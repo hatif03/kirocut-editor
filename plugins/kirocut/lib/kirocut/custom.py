@@ -43,7 +43,7 @@ folder, so what you put here keeps working after every update. The editor reads 
 - `sounds/`: your own sound effects, and which sound plays where (pick them in a video's Sounds panel).
 - `prompts/judge-rubric.md`: your own version of the cut critic's rubric. Copy the editor's first.
 
-Easiest is to tell Claude what you want changed. It writes the file here for you.
+Easiest is to tell Kiro what you want changed. It writes the file here for you.
 """
 
 

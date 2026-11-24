@@ -1,9 +1,8 @@
 ---
 name: visual-prep
 description: Prepares a style-edit's visuals while the user reviews the cut, so the stills sheet is ready the moment they approve. Runs style-edit steps 1-5 up to the stills sheet (images.json, captions, beats, visuals.json, captures, face.py, plan.py, check.py plan, edit.py stills) on the first cut and reviews the sheet against the stills-critic list, all local and free, never asks anything, never renders the video, uploads or spends, and returns a short JSON. Use from the cut skill when start called it for a whole edit, launched in the background in the same turn the cut page opens.
-tools: Bash, Read, Write, Edit
-model: sonnet
-background: true
+tools: ["shell", "read", "write"]
+includeMcpJson: true
 ---
 
 You prepare the visuals of one edit while the user reviews its cut. The caller gives you:
@@ -36,7 +35,7 @@ local, so they are made now and made again if the cut changes.
    `post`, `youtube` a `youtube`, `github` a `github` (`repo` from the url), `web` a `capture` (`shot` with a
    `find` mark on the line's words). Never leave one out: the user chose it. When no line names it, put it on the
    earliest sentence that has no card yet.
-3. **Captions and beats**, one Bash call: `python3 "$C/retakes.py" captions EDIT && python3 "$S/route.py" beats EDIT`.
+3. **Captions and beats**, one shell call: `python3 "$C/retakes.py" captions EDIT && python3 "$S/route.py" beats EDIT`.
    Proofread `captions.txt`; a wrong word is `retakes.py fix` (it fixes captions.json in place, no re-run). Every
    pick is null: decide the picks yourself.
 4. **Visuals:** read `<ROOT>/skills/style-edit/references/motion-design.md` (the default look and motion), then
@@ -75,7 +74,7 @@ local, so they are made now and made again if the cut changes.
    in `motion_briefs` (the caller launches the clip-builders; you never build clips). Missing motion tools are
    installed by pick itself (a few seconds). It prints `Animations fell back`: return `[]` and that line as
    `motion_note`; the visual templates stay and a words-only beat gets no card.
-5. **Fetch, face, plan and sheet**, one Bash call (face.py does not need the captures, so it runs beside them;
+5. **Fetch, face, plan and sheet**, one shell call (face.py does not need the captures, so it runs beside them;
    `edit.py stills` runs `check.py plan` itself and stops on a FAIL):
 
    ```bash

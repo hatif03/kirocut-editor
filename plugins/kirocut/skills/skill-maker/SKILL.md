@@ -7,12 +7,12 @@ compatibility: Python 3.9+, standard library only. Runs from the full kirocut pl
 
 # Skill maker
 
-Paths: `${CLAUDE_SKILL_DIR}` means the folder containing this SKILL.md, and `${CLAUDE_PLUGIN_ROOT}` the plugin folder two levels above it.
+Paths: `${KIROCUT_SKILL}` means the folder containing this SKILL.md, and `${KIROCUT_PLUGIN}` the plugin folder two levels above it (`plugins/kirocut` here).
 
-Every question to the user goes in the question box: call the AskUserQuestion tool (2-4 options, the recommended one first). Only in an agent without that tool, ask numbered questions in text.
+Every question to the user goes in the question box: call the kirocut_ask tool (2-4 options, the recommended one first). No form in the IDE: say the numbered text it returns, then pass the reply to `kirocut_answer`.
 
 The process follows Anthropic's public skill-creator and its skill-authoring best practices, cut down for
-video skills. `M="${CLAUDE_SKILL_DIR}/scripts/skill_maker.py"`. Run it with `python3` on Mac and Linux, `py` on Windows.
+video skills. `M="${KIROCUT_SKILL}/scripts/skill_maker.py"`. Run it with `python3` on Mac and Linux, `py` on Windows.
 
 Copy this checklist and tick it off:
 
@@ -63,7 +63,7 @@ ordinary request, one edge case, one where the skill should not do something:
 Write it from step 2's notes. Read `references/kirocut-hooks.md` for where the edit's files are, how to hand a
 render to the review page, the safe zone and how to reuse the editor's renderer. Rules:
 
-- `name`: lowercase, digits and hyphens, at most 64, no "claude" or "anthropic", same as the folder.
+- `name`: lowercase, digits and hyphens, at most 64, not containing "kirocut" (the editor's own skills), same as the folder.
 - `description`: third person, what it does then "Use when the user says ..." with their own phrases, at most
   1024 characters. Name video, edit, reel or clip in the first sentence so KiroCut's style list shows it.
 - Body: only what Kiro would not know already, a copyable checklist, a check step with the fix (check,

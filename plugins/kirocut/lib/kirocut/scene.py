@@ -7,8 +7,9 @@ live in the review page and for the export.
     python3 scene.py from-video <edit> [--video render.mp4]   any other draft: its MP4 as a video clip
     python3 scene.py render <edit> [--out file.mp4] [--draft] the export (Remotion, the Scene composition)
     python3 scene.py stills <edit> <out_dir> name=frame ...   frames of the scene as PNGs (the same bundle)
-    python3 scene.py show <edit> [--at t]                   the items (ids, times, boxes) and the words said, to target
-    python3 scene.py ops <edit> '<json ops>'|ops.json [--why "<one line>"]   Claude's change: POST /scene/ops's ops
+    python3 scene.py show <edit> [--at t] [--json]          the items (ids, times, boxes) and the words said, to target
+                                                           (--json: the same as data, with the cuts and the pauses)
+    python3 scene.py ops <edit> '<json ops>'|ops.json [--why "<one line>"]   Kiro's change: POST /scene/ops's ops
     python3 scene.py add <edit> text|image|video|shape|audio --start t [--end t] [--src file] [--text "..."]
                      [--x --y --w --h] [--track name] [--json '{...}'] [--why "..."]   one item, as an op
     python3 scene.py cards <edit> [--at t,t] [--plan plan.json] [--why "..."]   plan.json's new cards (overlays, motion) as items
@@ -220,24 +221,17 @@ def changes_of(alt=None):
 
 
 def read_changes(edit, alt=None):
-    """(path to write, log). An older edit may only have review/claude.json. The next save writes agent.json and
-    removes the old file, so one edit never keeps two logs."""
+    """(path to write, log): review/agent.json (a version's review/agent.<alt>.json). An older edit's files are moved to
+    today's names first (legacy.py)."""
     e = Path(edit)
+    import legacy
+    legacy.edit(e)
     new = e / changes_of(alt)
-    old = new.with_name("claude" + new.name[len("agent"):])
     if new.is_file():
         try:
             return new, jload(new)
         except (OSError, ValueError):
             return new, []
-    if old.is_file():
-        try:
-            log = jload(old)
-        except (OSError, ValueError):
-            log = []
-        jsave(new, log)
-        old.unlink(missing_ok=True)
-        return new, log
     return new, []
 
 
@@ -286,12 +280,50 @@ def ripple(sc, at, delta, skip=None):
 
 
 def touch(it, by):
-    """Who changed the item last: by "kiro" (or an older "claude") marks it, the page (None) clears the mark,
+    """Who changed the item last: by "kiro" marks it, the page (None) clears the mark,
     "keep" (an undo or redo of the agent's change) leaves it."""
-    if by in ("kiro", "claude"):
+    if by == "kiro":
         it["by"] = "kiro"
     elif by is None:
         it.pop("by", None)
+
+
+def cut_range(sc, a, b, edit=None, by=None):
+    """Scene seconds a to b taken out of the footage (the magnet track), the gap closed, everything after moving up by the
+    same amount on every track (the magnet). "Cut the pause at 12.0 to 12.8". The clip after the gap says it was cut by
+    hand (`cut.before`), so the page lists the cut and Bring back works. SceneError when the range is not on the footage."""
+    try:
+        a, b = round(float(a), 6), round(float(b), 6)
+    except (TypeError, ValueError):
+        raise SceneError("cut takes start and end in seconds")
+    fr = 1 / sc["fps"]
+    if not 0 <= a < b - EPS:
+        raise SceneError(f"cut {a} to {b}: start must be before end, and not negative")
+    tr0 = next((t for t in sc["tracks"] if t["kind"] == "visual" and magnet(sc, t)), None)
+    if not tr0:
+        raise SceneError("cut: this scene has no footage track")
+    footage = lambda s: next(t for t in s["tracks"] if t["id"] == tr0["id"])
+    if b > max((i["end"] for i in footage(sc)["items"]), default=0) + EPS:
+        raise SceneError(f"cut {a} to {b}: the footage ends at {max(i['end'] for i in footage(sc)['items']):.2f} s")
+    for t in (a, b):   # open the footage at both ends of the range
+        hit = next((i for i in footage(sc)["items"] if i["type"] == "video" and i["start"] + fr - EPS <= t <= i["end"] - fr + EPS), None)
+        if hit and i_inside(hit, t):
+            sc = apply(sc, [{"op": "split", "item": hit["id"], "t": t}], edit, by)
+    gone = [i["id"] for i in footage(sc)["items"] if i["type"] == "video" and i["start"] >= a - EPS and i["end"] <= b + EPS]
+    if not gone:
+        raise SceneError(f"cut {a} to {b}: no footage there")
+    sc = apply(sc, [{"op": "remove", "item": g} for g in gone], edit, by)
+    nxt = next((i for i in footage(sc)["items"] if i["type"] == "video" and abs(i["start"] - a) < fr / 2), None)
+    if nxt:
+        prev = (nxt.get("cut") or {}).get("before") or {}
+        nxt["cut"] = {"before": {"reason": prev.get("reason", "by hand"), "words": prev.get("words", ""),
+                                 "dur": round(prev.get("dur", 0) + (b - a), 3)}}
+    return sc
+
+
+def i_inside(it, t):
+    """t falls strictly inside the clip, not on one of its edges."""
+    return it["start"] + EPS < t < it["end"] - EPS
 
 
 def apply(sc, ops, edit=None, by=None):
@@ -394,6 +426,8 @@ def apply(sc, ops, edit=None, by=None):
                 it["end"] = round(it["end"] + by, 6)
                 if magnet(sc, tr):
                     ripple(sc, old_end, by, skip=it)
+        elif kind == "cut":   # {"start", "end"}: those scene seconds out of the footage, the gap closed (cut_range)
+            sc = cut_range(sc, op.get("start"), op.get("end"), edit, by)
         elif kind == "asset" and op.get("asset") is None:   # an asset no item uses any more (the undo of an add)
             aid = str(op.get("id") or "")
             if any(it.get("asset") == aid for tr in sc["tracks"] for it in tr["items"]):
@@ -1038,7 +1072,7 @@ def stills(edit, outdir, pairs):
     subprocess.run(["node", str(rem / "render.mjs"), "stills", str(pub), str(pf), str(outdir), *pairs], cwd=rem, check=True)
 
 
-# ---------------------------------------------------------------- Claude's changes (SCENE.md, Claude edits the scene)
+# ---------------------------------------------------------------- Kiro's changes (SCENE.md, Kiro edits the scene)
 def diff(a, b):
     """The ops that turn scene a into scene b: what Undo and Redo of one change send."""
     loc = lambda sc: {it["id"]: (tr["id"], i, it) for tr in sc["tracks"] for i, it in enumerate(tr["items"])}
@@ -1068,7 +1102,7 @@ def diff(a, b):
 
 
 def describe(ops, sc):
-    """A change in a few words, when Claude gave no --why: "added text 'Link in bio'"."""
+    """A change in a few words, when Kiro gave no --why: "added text 'Link in bio'"."""
     out = []
     for o in ops:
         it = o.get("item") if isinstance(o.get("item"), dict) else next((x for t in sc["tracks"] for x in t["items"] if x["id"] == o.get("item")), {})
@@ -1125,8 +1159,8 @@ def server(edit):
         return None
 
 
-def claude_ops(edit, ops, why=None, alt=None):
-    """Claude's change to the scene (alt: that version's, scene.<alt>.json): through the open page's server when it runs
+def agent_ops(edit, ops, why=None, alt=None):
+    """Kiro's change to the scene (alt: that version's, scene.<alt>.json): through the open page's server when it runs
     (one undo there, drawn on the page's next poll), else straight into the scene file. (scene, change)."""
     url = server(edit)
     if url:
@@ -1186,7 +1220,7 @@ def show(sc, at=None, name=NAME):
             if it["type"] == "captions":
                 what = f"{len(it.get('words') or [])} words"
             extra = (f"  in {it['in']:.2f}" if it["type"] in ("video", "audio") else "") + (" [locked]" if it.get("locked") else "") + \
-                    (" [by kiro]" if it.get("by") in ("kiro", "claude") else "") + (f"  keys {', '.join(it['keys'])}" if it.get("keys") else "")
+                    (" [by kiro]" if it.get("by") == "kiro" else "") + (f"  keys {', '.join(it['keys'])}" if it.get("keys") else "")
             out.append(f"    {it['id']}  {it['type']} {what!r}  {it['start']:.2f}-{it['end']:.2f}{box(it)}{extra}")
         if foot:
             out.append(f"    footage clips {tr['items'][0]['id']}..{tr['items'][-1]['id']}, 0.00-{tr['items'][-1]['end']:.2f} (show --at t names the one then)")
@@ -1196,6 +1230,70 @@ def show(sc, at=None, name=NAME):
         ws = [(t, w) for t, w in ws if t is not None and (at is None or abs(t - at) <= 3)]
         out.append(("Said around %.2f s:" % at if at is not None else "Said (scene seconds):") + " " + " ".join(f"[{t:.2f}] {w}" for t, w in ws))
     return "\n".join(out)
+
+
+PAUSE_S = 0.4   # a gap between two spoken words at least this long is listed as a pause
+
+
+def show_data(sc, at=None, name=NAME, limit=80):
+    """`show` as data, for tools: {name, width, height, fps, duration, at, tracks, cuts, words, pauses}. Every item has
+    id, type, start, end, what (its text or file), box (x, y, w, h when it has one), flags and the keys it moves on.
+    A track with more than `limit` items shows its first and last few (`truncated`: how many it left out); `at` keeps
+    only the items on screen then and the words within 3 s of it. `cuts` are the AI's cuts on the footage clips (the
+    cut's `before`, with the scene second it sits at), `pauses` the gaps between spoken words."""
+    out = {"name": name, "width": sc["width"], "height": sc["height"], "fps": sc["fps"], "duration": round(sc["duration"], 3),
+           "at": at, "tracks": [], "cuts": [], "words": [], "pauses": []}
+    for tr in sc["tracks"]:
+        flags = [f for f in ("hidden", "muted", "locked") if tr.get(f)] + (["magnet"] if tr["kind"] == "visual" and magnet(sc, tr) else [])
+        its = [it for it in tr["items"] if at is None or it["start"] - EPS <= at < it["end"]]
+        rows = []
+        for it in its:
+            a = sc["assets"].get(it.get("asset") or "") or {}
+            what = it.get("text") or (Path(a["src"]).name if a.get("src") else "") or it.get("name") or ""
+            if it["type"] == "captions":
+                what = f"{len(it.get('words') or [])} words"
+            row = {"id": it["id"], "type": it["type"], "start": round(it["start"], 3), "end": round(it["end"], 3), "what": what}
+            if "x" in it:
+                row["box"] = {k: round(it[k], 1) for k in ("x", "y", "w", "h") if k in it}
+            if it["type"] in ("video", "audio"):
+                row["in"] = round(it.get("in", 0), 3)
+                row["speed"] = it.get("speed", 1)
+                row["volume"] = it.get("volume", 1)
+            if it.get("locked"):
+                row["locked"] = True
+            if it.get("by"):
+                row["by"] = it["by"]
+            if it.get("keys"):
+                row["keys"] = sorted(it["keys"])
+            if it["type"] == "text":
+                row["style"] = {k: it[k] for k in ("size", "color", "font", "weight", "align") if k in it}
+            elif it["type"] == "captions":
+                row["style"] = it.get("style") or {}   # a change sets the whole dict: send this with the key you change
+            rows.append(row)
+        left = 0
+        if len(rows) > limit:
+            left = len(rows) - limit
+            rows = rows[:limit // 2] + rows[-(limit - limit // 2):]
+        out["tracks"].append({"id": tr["id"], "name": tr.get("name"), "kind": tr["kind"], "flags": flags,
+                              "count": len(tr["items"]), "items": rows, **({"truncated": left} if left else {})})
+        for it in tr["items"]:
+            b = (it.get("cut") or {}).get("before")
+            if b and it["type"] == "video" and (at is None or abs(it["start"] - at) <= 3):
+                out["cuts"].append({"t": round(it["start"], 3), "clip": it["id"], **b})
+    cap = next((it for tr in sc["tracks"] for it in tr["items"] if it["type"] == "captions"), None)
+    if cap:
+        ws = []
+        for w in cap.get("words") or []:
+            s = to_scene(sc, cap["asset"], w["start"]) if cap.get("asset") else w["start"]
+            e2 = to_scene(sc, cap["asset"], w["end"]) if cap.get("asset") else w["end"]
+            if s is not None:
+                ws.append({"t": round(s, 3), "end": round(e2 if e2 is not None else s, 3), "w": w["w"]})
+        out["pauses"] = [{"t": a["end"], "dur": round(b["t"] - a["end"], 3)} for a, b in zip(ws, ws[1:]) if b["t"] - a["end"] >= PAUSE_S]
+        if at is not None:
+            ws = [w for w in ws if abs(w["t"] - at) <= 3]
+            out["pauses"] = [p for p in out["pauses"] if abs(p["t"] - at) <= 3]
+        out["words"] = ws if len(ws) <= 600 else ws[:300] + ws[-300:]
+    return out
 
 
 def cards_ops(edit, sc, plan, at=()):
@@ -1413,7 +1511,7 @@ def carry(base, cur, new):
     """A new draft's scene with the user's own changes on the old one kept (Max: the AI never undoes what he did by hand
     unless he asked). base: the scene as the old draft was built; cur: that scene now; new: the new draft's scene.
     A field the user changed (cur differs from base) goes onto the new item unless the new draft changed that field too
-    (then Claude was asked); an item the user added goes in on its own track; one the user deleted stays out unless the
+    (then Kiro was asked); an item the user added goes in on its own track; one the user deleted stays out unless the
     new draft changed it. Returns (scene, how many changes were kept)."""
     out = copy.deepcopy(new)
     b2c, b2n = _pairs(base, cur, 0.05), _pairs(base, out)
@@ -1440,7 +1538,7 @@ def carry(base, cur, new):
     for t in cur["tracks"]:
         for ci in t["items"]:
             if id(ci) in in_base:
-                continue   # added by hand (or by Claude on the page): on its own track again
+                continue   # added by hand (or by Kiro on the page): on its own track again
             it = copy.deepcopy(ci)
             if it["id"] in ids:
                 it["id"] = next(f"{it['id']}h{k}" for k in range(1, 999) if f"{it['id']}h{k}" not in ids)
@@ -1482,12 +1580,12 @@ def demo():
                                                       {"id": "t1", "type": "text", "text": "Hi", "start": 3, "end": 4, "y": 50}]}]}
         cur = copy.deepcopy(base)
         cur["tracks"][0]["items"][0]["x"] = 300                     # moved by hand
-        cur["tracks"][0]["items"][1]["y"] = 80                      # moved by hand, and moved by Claude too
+        cur["tracks"][0]["items"][1]["y"] = 80                      # moved by hand, and moved by Kiro too
         cur["tracks"].append({"id": "v9", "kind": "visual", "items": [{"id": "i1", "type": "text", "text": "Mine", "start": 0, "end": 1}]})
         new = copy.deepcopy(base)
         new["tracks"][0]["items"].insert(0, {"id": "i1", "type": "image", "asset": "a", "start": 0.2, "end": 0.6})   # the new plan numbers again
         new["tracks"][0]["items"][1]["id"] = "i2"
-        new["tracks"][0]["items"][2]["y"] = 20                      # Claude was asked
+        new["tracks"][0]["items"][2]["y"] = 20                      # Kiro was asked
         got, kept = carry(base, cur, new)
         its = {i.get("text") or (i["start"], i.get("x")): i for t in got["tracks"] for i in t["items"]}
         assert its[(1, 300)]["id"] == "i2" and its["Hi"]["y"] == 20 and its["Mine"]["id"] != "i1" and kept == 2, (its, kept)
@@ -1546,7 +1644,7 @@ def demo():
         assert "cut" not in vt[0] and vt[1]["cut"]["before"] == {"reason": "by hand", "words": "", "dur": 1} and vt[2]["cut"]["before"]["dur"] == 0.5
         assert not vt[0].get("locked") and v["duration"] == 4.5 and [t["name"] for t in v["tracks"]] == ["Video", "Text", "Text 2"]
         assert v["tracks"][2]["hidden"] and v["tracks"][1]["items"][0]["text"] == "Yo", v["tracks"]
-        # Claude's changes: marked by "claude", the page's touch clears it; diff undoes and redoes any change
+        # Kiro's changes: marked by "kiro", the page's touch clears it; diff undoes and redoes any change
         back = apply(s4, diff(s4, sc), e)
         assert [[{k: i.get(k) for k in ("id", "start", "end", "x", "in")} for i in t["items"]] for t in back["tracks"]] == \
             [[{k: i.get(k) for k in ("id", "start", "end", "x", "in")} for i in t["items"]] for t in sc["tracks"]] and not back["tracks"][2]["hidden"]
@@ -1578,7 +1676,7 @@ def demo():
         ch = log_change(e, sc, c1, "Link in bio at the end")
         assert ch["n"] == 1 and ch["why"] == "Link in bio at the end" and ch["t"] == 1 and set(ch["items"]) == {i["id"] for i in mine}
         assert "[by kiro]" in show(c1, 3.5) and "[0.20] one" in show(c1, 1)
-        moved = save(e, apply(c1, [{"op": "set", "item": mine[0]["id"], "props": {"y": 100}}], e))   # the user drags Claude's image
+        moved = save(e, apply(c1, [{"op": "set", "item": mine[0]["id"], "props": {"y": 100}}], e))   # the user drags Kiro's image
         assert "by" not in next(i for t in moved["tracks"] for i in t["items"] if i["id"] == mine[0]["id"]), "the page's touch clears the mark"
         u = undo_change(e, 1)
         assert not any(i["id"] in ch["items"] for t in u["tracks"] for i in t["items"]) and jload(e / CHANGES)[0]["undone"]
@@ -1651,7 +1749,11 @@ def main(a):
     elif cmd == "stills":
         stills(e, a[2], a[3:])
     elif cmd == "show":
-        print(show(scene_of(e, alt), float(opt("--at")) if opt("--at") else None, name_of(alt)))
+        at = float(opt("--at")) if opt("--at") else None
+        if "--json" in a:
+            print(json.dumps(show_data(scene_of(e, alt), at, name_of(alt)), indent=1))
+        else:
+            print(show(scene_of(e, alt), at, name_of(alt)))
     elif cmd in ("ops", "add", "cards"):
         sc = scene_of(e, alt)
         if cmd == "cards":
@@ -1674,14 +1776,14 @@ def main(a):
             ops = add_op(e, sc, a[2] if len(a) > 2 else "", num("--start"), num("--end"), opt("--src"), opt("--text"), opt("--track"),
                          {k: num("--" + k) for k in ("x", "y", "w", "h")}, extra)
         before = {it["id"] for t in sc["tracks"] for it in t["items"]}
-        after, ch = claude_ops(e, ops, opt("--why"), alt)
-        try:   # this Claude session worked on the edit: the page's notes go to it (review.py note_session)
+        after, ch = agent_ops(e, ops, opt("--why"), alt)
+        try:   # this Kiro session worked on the edit: the page's notes go to it (review.py note_session)
             import review
             review.note_session(e.resolve(), "scene")
         except Exception:
             pass
         new = [f"{it['id']} ({it['type']})" for t in after["tracks"] for it in t["items"] if it["id"] not in before]
-        print(f"Claude change {ch['n']}: {ch['why']}" if ch else "nothing changed",
+        print(f"Kiro change {ch['n']}: {ch['why']}" if ch else "nothing changed",
               f"; added {', '.join(new)}" if new else "", "; the open page shows it on its next poll" if server(e) else "", sep="")
     else:
         print(__doc__)

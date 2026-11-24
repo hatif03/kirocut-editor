@@ -7,15 +7,15 @@ compatibility: Python 3.9+, ffmpeg, the venv (numpy, pillow, OCR: ocrmac on a Ma
 
 # B-roll reel
 
-Paths: `${CLAUDE_SKILL_DIR}` means the folder containing this SKILL.md, and `${CLAUDE_PLUGIN_ROOT}` the plugin folder two levels above it.
+Paths: `${KIROCUT_SKILL}` means the folder containing this SKILL.md, and `${KIROCUT_PLUGIN}` the plugin folder two levels above it (`plugins/kirocut` here).
 
-Read `${CLAUDE_PLUGIN_ROOT}/PRINCIPLES.md` first: the rules every video in this plugin follows (asking, looking real, motion, story and framing, privacy, cost).
+Read `${KIROCUT_PLUGIN}/PRINCIPLES.md` first: the rules every video in this plugin follows (asking, looking real, motion, story and framing, privacy, cost).
 
-Every question to the user goes in the question box: call the AskUserQuestion tool (2-4 options, the recommended one first). Only in an agent without that tool, ask numbered questions in text.
+Every question to the user goes in the question box: call the kirocut_ask tool (2-4 options, the recommended one first). No form in the IDE: say the numbered text it returns, then pass the reply to `kirocut_answer`.
 
 Run the scripts with `python3` on Mac and Linux, `py` on Windows.
-`PY="${CLAUDE_PLUGIN_ROOT}/lib/kirocut/run.py"` (`python3 "$PY" <script>` runs the editor's venv Python; `py "$PY"` on Windows),
-`R="${CLAUDE_SKILL_DIR}/scripts/reel.py"`, `L="${CLAUDE_PLUGIN_ROOT}/lib/kirocut"`, `EDIT` the job's `edit=` folder,
+`PY="${KIROCUT_PLUGIN}/lib/kirocut/run.py"` (`python3 "$PY" <script>` runs the editor's venv Python; `py "$PY"` on Windows),
+`R="${KIROCUT_SKILL}/scripts/reel.py"`, `L="${KIROCUT_PLUGIN}/lib/kirocut"`, `EDIT` the job's `edit=` folder,
 `REEL` the job's clip (the reel the page downloaded into the library).
 
 ```
@@ -61,7 +61,7 @@ one per shot in order.
 
 ```bash
 python3 "$PY" "$R" build EDIT
-python3 "${CLAUDE_PLUGIN_ROOT}/skills/style-edit/scripts/edit.py" render EDIT
+python3 "${KIROCUT_PLUGIN}/skills/style-edit/scripts/edit.py" render EDIT
 python3 "$L/review.py" EDIT start --video EDIT/render.mp4 --stage edit --plan EDIT/plan.json
 ```
 
@@ -70,6 +70,6 @@ its clip and inside the reels safe zone, no clip with someone else's words burne
 
 ## 5. Notes
 
-Run `review.py EDIT wait` in the background, as for any edit (`style-edit/references/review.md`). A note about a shot
+Call `kirocut_events`, as for any edit (`style-edit/references/review.md`). A note about a shot
 changes its pick in `picks.json`; a note about words changes `reel.json` `texts` (a note on a caption names it).
 Then build, render and `review.py EDIT round --video EDIT/render.mp4 --stage edit --plan EDIT/plan.json`.

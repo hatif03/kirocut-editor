@@ -286,7 +286,7 @@ def cmd_measure(a):
 
 
 def summary_line(s, path):
-    """One line for Claude's context: the full block is style.json "sound", --json prints it."""
+    """One line for Kiro's context: the full block is style.json "sound", --json prints it."""
     kinds = ", ".join(f"{k} {v}%" for k, v in list(s["kinds"].items())[:4]) or "none"
     m = s["music"]
     music = "no music" if not m["present_pct"] else f"music in {m['present_pct']}% at {m['level_db']} dB"

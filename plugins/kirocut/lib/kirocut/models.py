@@ -95,7 +95,7 @@ def _before(edit):
 def announce(what, edit=None, run=None, say=None, bar=True):
     """A download that still happens during an edit (setup fetches everything it can), said where the user is
     looking: a step on the home page's video job for edit ("Downloading the cutout model, first time only",
-    detail "12 of 15 MB", through progress.py), and Claude's activity on the edit's review page when it has one,
+    detail "12 of 15 MB", through progress.py), and Kiro's activity on the edit's review page when it has one,
     its bar read from a log of "12/15" lines (bar=False: no bar, for a download with no progress). Returns a
     urlretrieve reporthook; call its .done() when the download is over: the step that was current before comes
     back on both pages. Best effort: never fails the edit."""

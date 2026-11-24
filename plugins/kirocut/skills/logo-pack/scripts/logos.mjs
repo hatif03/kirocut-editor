@@ -4,7 +4,7 @@
 //   node logos.mjs edits/NAME [--fresh]    fetch, trim, 512 px PNG, check, contact sheet
 //   node logos.mjs demo                    self-check (offline)
 //
-// logos.json, written by Claude first (the logo-pack skill), then filled in here:
+// logos.json, written by Kiro first (the logo-pack skill), then filled in here:
 //   {"logos": [{"name": "Notion", "brand"?: "notion", "domain"?: "notion.so", "url"?: "https://.../logo.svg"}],
 //    "together": [["Notion", "Linear"]]}
 // "keep": "why" on a logo accepts its problems (the brand publishes nothing better, e.g. only an app icon).
@@ -13,7 +13,7 @@
 // Source order: the logo's "url" (the brand's own SVG or press kit), then capture.mjs's order (Simple Icons in the
 // brand colour, Simple Icons in black, the site's own SVG / apple-touch icon, Google's favicon service).
 // A file already in images/ is kept (the user's own, or an earlier run); "url" or --fresh fetches it again.
-// images/logos-sheet.png shows every logo on white and on black with its problems, for Claude to look at.
+// images/logos-sheet.png shows every logo on white and on black with its problems, for Kiro to look at.
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -195,7 +195,7 @@ function demo() {
   const s = sizeSvg('<svg xmlns="http://www.w3.org/2000/svg" width="24" viewBox="0 0 24 12"><path/></svg>');
   ok(/width="2048" height="1024"/.test(s) && !/width="24"/.test(s), s);
   ok(sizeSvg("<svg><path/></svg>") === "<svg><path/></svg>", "no viewBox: unchanged");
-  ok(slug("Claude Code") === "claude-code", "slug matches capture.mjs");
+  ok(slug("Final Cut") === "final-cut", "slug matches capture.mjs");
   console.log("logos ok");
 }
 

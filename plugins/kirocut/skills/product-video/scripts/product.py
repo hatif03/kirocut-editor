@@ -127,7 +127,7 @@ def inside(r, box, slack=8):
 
 
 def brief_lines(site):
-    """The brief's first answers, so Claude never reads site.json: the tagline and the nav's own words."""
+    """The brief's first answers, so Kiro never reads site.json: the tagline and the nav's own words."""
     h1 = next((c["text"] for c in site["copy"] if c["tag"] == "h1"), "")
     nav = list(dict.fromkeys(c["text"] for c in site["copy"] if c["rect"][1] < 90 and 0 < len(c["text"].split()) <= 4))
     return [f"tagline: {site.get('description') or h1 or site.get('title', '')}", f"nav: {' | '.join(nav[:12]) or '(none)'}"]

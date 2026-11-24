@@ -358,10 +358,10 @@ def demo_cache():
 
 def demo():
     demo_cache()
-    t = keyterms_from("# Intro\nToday I built it with Claude Code and GPT-4o. The API costs $20.\n"
-                      "Then I asked Claude again. It's 3x faster than Jev's, in 2 s.")
-    assert t == ["Intro", "Claude", "Code", "GPT-4o", "API", "20", "3x", "Jev"], t
-    assert clean_keyterms(["a<b", "x" * 50, "one two three four five six", "Jev", "jev", " Claude  Code "]) == ["Jev", "Claude Code"]
+    t = keyterms_from("# Intro\nToday I built it with Final Cut and GPT-4o. The API costs $20.\n"
+                      "Then I asked Final again. It's 3x faster than Jev's, in 2 s.")
+    assert t == ["Intro", "Final", "Cut", "GPT-4o", "API", "20", "3x", "Jev"], t
+    assert clean_keyterms(["a<b", "x" * 50, "one two three four five six", "Jev", "jev", " Final  Cut "]) == ["Jev", "Final Cut"]
     assert len(clean_keyterms([f"T{i}" for i in range(300)])) == MAX_KEYTERMS
     assert whisper_prompt([]) == FILLER_PROMPT and whisper_prompt(["Jev"]).endswith(" Jev.")
     try:   # a model that is not installed: exit 4, never a download
@@ -455,7 +455,7 @@ def write(out, words):
     out.write_text(json.dumps(words, indent=1), encoding="utf-8")
     n = sum(1 for w in words if w["type"] == "word")
     print(f"{n} words -> {out}")
-    progress.step("Finding retakes and pauses", job="video", key=out.parent)   # the words are in: Claude decides the cuts next
+    progress.step("Finding retakes and pauses", job="video", key=out.parent)   # the words are in: Kiro decides the cuts next
 
 
 if __name__ == "__main__":

@@ -20,7 +20,7 @@ sheet against the `stills-critic` list and fixes what fails, and copies its `dec
 second. It renders no video, uploads nothing and spends nothing.
 
 Wait for its JSON if it is still running. Its `motion_briefs` went to clip-builder agents (motion skill): wait
-for them too, then `python3 "${CLAUDE_PLUGIN_ROOT}/skills/motion/scripts/motion.py" place edits/<name>` and plan
+for them too, then `python3 "${KIROCUT_PLUGIN}/skills/motion/scripts/motion.py" place edits/<name>` and plan
 and stills again in one Bash call, so the sheet shows the clips (a clip that failed keeps its template card).
 Cut approved unchanged (`cmp decisions.json prep-decisions.json`)
 and `stills/sheet.png` there: go straight to step 5. With `"reviewed": "pass"` the sheet is already checked:
@@ -32,8 +32,8 @@ Never run route.py again, rewrite visuals.json or ask what to show: the sheet sh
 the changes. Cut changed after notes:
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/skills/cut/scripts/retakes.py" remap edits/<name>
-python3 "${CLAUDE_PLUGIN_ROOT}/skills/cut/scripts/retakes.py" captions edits/<name>
+python3 "${KIROCUT_PLUGIN}/skills/cut/scripts/retakes.py" remap edits/<name>
+python3 "${KIROCUT_PLUGIN}/skills/cut/scripts/retakes.py" captions edits/<name>
 python3 "$S/route.py" beats edits/<name>
 python3 "$VPY" "$S/face.py" edits/<name>
 ```
@@ -164,7 +164,7 @@ track" / "YouTube Audio Library or Creative Commons (I'll credit it)" / "License
 etc.)" / "Not sure". Then:
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/skills/product-video/scripts/product.py" music edits/<name> --url '<link>' \
+python3 "${KIROCUT_PLUGIN}/skills/product-video/scripts/product.py" music edits/<name> --url '<link>' \
   [--start S --end S] --rights own|cc|licensed|unsure [--credit '...']
 ```
 

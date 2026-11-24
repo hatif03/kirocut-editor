@@ -7,9 +7,9 @@ compatibility: Python 3.9+, standard library only. Runs from the full kirocut pl
 
 # Taste
 
-Paths: `${CLAUDE_SKILL_DIR}` means the folder containing this SKILL.md, and `${CLAUDE_PLUGIN_ROOT}` the plugin folder two levels above it.
+Paths: `${KIROCUT_SKILL}` means the folder containing this SKILL.md, and `${KIROCUT_PLUGIN}` the plugin folder two levels above it (`plugins/kirocut` here).
 
-Every question to the user goes in the question box: call the AskUserQuestion tool (2-4 options, the recommended one first). Only in an agent without that tool, ask numbered questions in text.
+Every question to the user goes in the question box: call the kirocut_ask tool (2-4 options, the recommended one first). No form in the IDE: say the numbered text it returns, then pass the reply to `kirocut_answer`.
 
 The user's own rules, kept outside the plugin (plugin updates never touch them):
 
@@ -22,10 +22,13 @@ The user's own rules, kept outside the plugin (plugin updates never touch them):
 Never write a correction into the plugin's own files (a SKILL.md, a reference, a script): an update
 replaces them. Everything the user teaches goes in the files above.
 
-`S="${CLAUDE_SKILL_DIR}/scripts"`. Stdlib only, any `python3` (`py` on Windows).
+`S="${KIROCUT_SKILL}/scripts"`. Stdlib only, any `python3` (`py` on Windows).
 
 ## When the user reacts to an edit
 
+0. A video they are looking at now: make the change on it first (the quick-edit skill: one `kirocut_scene_ops` call), then
+   save the rule below. A rule saved with nothing changed leaves the video wrong until the next one. The MCP tool
+   `kirocut_taste` does the same as `taste.py add` without a shell.
 1. Find the behaviour behind what they said, not the one instance. "The 'router' card is too
    small" becomes "Cards fill the space they have", not "make the router card bigger".
 2. Scope. After every correction, ask in the question box: "Is this about this video, your style, or
@@ -132,7 +135,7 @@ the creator's style disagree, say so once and follow the rule.
 ## Files
 
 - `scripts/learn.py`: a raw take and the user's posted cut of it in, their cut settings out; `demo`.
-- `${CLAUDE_PLUGIN_ROOT}/lib/kirocut/custom.py`: `path`, `rule "<rule>"` (a rule file in custom/rules/, which `show` prints), `list`.
+- `${KIROCUT_PLUGIN}/lib/kirocut/custom.py`: `path`, `rule "<rule>"` (a rule file in custom/rules/, which `show` prints), `list`.
 - `scripts/taste.py`: `add`, `report`, `show`, `forget`, `rule`, `set`, `unset`, `get`, `suggest`, `issue`, `demo`. A thin
   CLI over the plugin's `lib/kirocut/taste.py`, whose `load_json()` and `merge()` are what plan.py
   and the cut use to lay the taste over the defaults and style.json.

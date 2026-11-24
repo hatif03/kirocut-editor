@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Line the transcript up with the user's script, for Claude to read before deciding spans.
+"""Line the transcript up with the user's script, for Kiro to read before deciding spans.
 
     python3 script_match.py <edit_dir> [--script <file>]   writes <edit_dir>/script-match.md
     python3 script_match.py demo                            self-check
@@ -8,7 +8,7 @@ Reads <edit_dir>/words.raw.json (timed words) and <edit_dir>/script.md (or --scr
 line: each take that says it (times and the transcript's own words), complete or partial, and the LAST
 complete take marked keeper. Lines the script itself says twice (or near enough, by any character) are
 say-twice: every take that matches a separate script line is kept. Transcript stretches no line matches
-are listed as off-script, which is never a reason to cut. It never writes spans.json: Claude decides.
+are listed as off-script, which is never a reason to cut. It never writes spans.json: Kiro decides.
 """
 import difflib
 import re
@@ -120,7 +120,7 @@ def match(script_text, words):
     # Then, in a run of such takes: no more complete takes than copies, the last copy gets the last take
     # and each copy before it the one before. More complete takes than copies: the first goes to the first
     # copy, the last ones to the later copies, and those between are ambiguous (a retake of either copy):
-    # Claude decides by order or voice, and no copy's only take is ever called an earlier take.
+    # Kiro decides by order or voice, and no copy's only take is ever called an earlier take.
     uniq = [o for o in takes if len(o["alt"]) == 1]
 
     def fit(t, li):

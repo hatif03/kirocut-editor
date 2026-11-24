@@ -55,7 +55,8 @@ is behind the letters (CSS text-shadow); on a picture, clip or shape it is behin
   `{"op": "track", "track": id, "props": {...}}`, `{"op": "add_track", "track": {...}, "index"?}`,
   `{"op": "remove_track", "track": id}`, `{"op": "split", "item": id, "t": seconds}`,
   `{"op": "trim", "item": id, "edge": "start" | "end", "by": seconds}` (a later edge for by > 0: the in-point
-  moves with a start edge), `{"op": "asset", "id": id, "asset": {"src": "media/x.mp4"}}` (a file in the edit,
+  moves with a start edge), `{"op": "cut", "start": s, "end": e}` (those scene seconds out of the footage, split where needed, the
+  gap closed on every track; the clip after it says `cut.before` "by hand"), `{"op": "asset", "id": id, "asset": {"src": "media/x.mp4"}}` (a file in the edit,
   probed); `{"op": "asset", "id": id, "asset": null}` drops an asset no item uses (the undo of an add). The page gets
   each asset with `url` (`/scene/asset/<id>?v=`, never saved).
 - `window.KiroCutLive.mountScene(el, scene)` returns the same player stand-in `mount()` does; `.update(scene)`
@@ -120,9 +121,9 @@ block names the versions the notes were left on.
 - Each command is one change: with the page's server running it goes through `POST /scene/ops` with `"by": "kiro"`
   and `"why"` (the server's journal, the page draws it on its next 3 s poll with no reload); with no server it is
   written to scene.json directly. A file outside the edit is copied into `media/` first.
-- Items Kiro added or changed carry `by: "claude"`: a small Kiro mark on their timeline clip. Any change from the
+- Items Kiro added or changed carry `by: "kiro"`: a small Kiro mark on their timeline clip. Any change from the
   page clears it (`scene.touch`).
-- Every change is kept in `review/agent.json` (a version's in `review/agent.<alt>.json`, `scene.changes_of`). An older edit that only has `review/claude.json` is read once and then saved as `agent.json`. Fields: `n`, `why`,
+- Every change is kept in `review/agent.json` (a version's in `review/agent.<alt>.json`, `scene.changes_of`). An older edit's change log under its old name is renamed to `agent.json` once (`legacy.py`). Fields: `n`, `why`,
   `at` [stage, round], `t`, `items`, and the ops that undo (`back`) and redo (`fwd`) it. `/state`'s `agent_changes` lists
   the draft's own and those of the round `round --scene` came from (`scene_from`), each with its `alt` (null: the main
   draft); the notes panel shows the ones on the version on screen under **Kiro's changes**, each with Undo or Redo, and

@@ -18,7 +18,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "lib"))
 
 NAME = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
-RESERVED = ("claude", "anthropic")
+RESERVED = ("kirocut",)   # the editor's own name: a user's skill never reads as one of the editor's
 MAX_LINES = 500
 from kirocut.skillrules import for_editing  # noqa: E402  the test home.py editing_skills() lists a skill by
 
@@ -150,7 +150,7 @@ def demo():
         (d / "references").mkdir()
         (d / "references" / "colours.md").write_text("yellow\n", encoding="utf-8")
         assert check(d) == [], check(d)
-        (d / "SKILL.md").write_text("---\nname: claude-helper\ndescription: I can help.\n---\n", encoding="utf-8")
+        (d / "SKILL.md").write_text("---\nname: kirocut-helper\ndescription: I can help.\n---\n", encoding="utf-8")
         levels = [m for lv, m in check(d) if lv == "FAIL"]
         assert any("must not contain" in m for m in levels) and any("third person" in m for m in levels) \
             and any("Use when" in m for m in levels) and any("match the folder" in m for m in levels), levels

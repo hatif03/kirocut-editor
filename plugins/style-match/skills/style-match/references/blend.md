@@ -7,7 +7,7 @@ the user each `look.md` side by side (5 lines each: pace, motion, captions, face
 the Step 0 parts question in the question box if it is still open. Blend:
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/editplan.py" blend <name> --from alice,bob \
+python3 "${KIROCUT_SKILL}/scripts/editplan.py" blend <name> --from alice,bob \
     --captions alice --pace bob --visuals bob --sound bob   # or --weights alice=0.7,bob=0.3
 ```
 

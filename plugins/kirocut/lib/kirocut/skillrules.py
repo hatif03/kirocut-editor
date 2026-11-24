@@ -38,11 +38,6 @@ def kiro_dir():
     return Path(os.environ.get("KIRO_HOME", "").strip() or Path.home() / ".kiro").expanduser()
 
 
-def claude_dir():
-    """Old name for kiro_dir(). Callers that still say claude_dir read Kiro's folder."""
-    return kiro_dir()
-
-
 def skill_dirs():
     """Where the user's own skills live (read-write): $KIROCUT_SKILLS, this folder's .kiro/skills, ~/.kiro/skills."""
     env = [Path(x) for x in os.environ.get("KIROCUT_SKILLS", "").split(os.pathsep) if x]
@@ -234,7 +229,7 @@ def demo():
         assert t.index(RULES) < t.index(LOG) and t.rstrip().endswith('added "Logos sit beside the head, never over the face"'), t
         assert add(md, "logos sit beside the head, never over the face", "again", today="2024-06-04")[0] == "duplicate"
         assert len(learned(md.read_text(encoding="utf-8"))) == 1
-        # alike: listed, so Claude sharpens it instead of adding a second line
+        # alike: listed, so Kiro sharpens it instead of adding a second line
         sim = similar(md.read_text(encoding="utf-8"), "Logos beside the head")
         assert sim and sim[0][1].startswith("- Logos sit"), sim
         assert similar(md.read_text(encoding="utf-8"), "Captions one size smaller") == []

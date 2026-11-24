@@ -21,6 +21,7 @@ Read a skill's `SKILL.md` in full before doing its task.
 | `start` | `plugins/kirocut/skills/start/` | "edit my video", "make my video look like @creator", drops a video |
 | `setup` | `plugins/kirocut/skills/setup/` | "set up the editor", or a tool is missing |
 | `cut` | `plugins/kirocut/skills/cut/` | "cut my video", "remove my mistakes" |
+| `quick-edit` | `plugins/kirocut/skills/quick-edit/` | a one-line change to a video that already has an edit: "trim the first 2 seconds", "add a link at the end", "undo that" |
 | `style-edit` | `plugins/kirocut/skills/style-edit/` | "style it", "add captions and zooms", "render the edit" |
 | `overlays` | `plugins/kirocut/skills/overlays/` | after a render: "add an animation here", "this card is wrong", "the card covers my face", "swap the logo", "show the real page instead", "fewer cards" |
 | `taste` | `plugins/kirocut/skills/taste/` | a reaction to an edit: "captions too small", "fewer zooms"; "learn from my edit" (a raw take and the posted cut) |
@@ -34,7 +35,7 @@ Read a skill's `SKILL.md` in full before doing its task.
 | `style-match` | `plugins/style-match/skills/style-match/` | "break down @handle", "tear down @handle" |
 
 Order: `start` asks a few questions once, then runs setup, style-match, cut and style-edit in order.
-On a first run `start` offers the home page (`plugins/kirocut/lib/kirocut/home.py`, `start/references/home.md`): the user pastes a creator and drops a video there, `home.py wait` hands each job to the agent as one line (`JOB teardown @handle ...`), and the agent runs the skill and reports back with `home.py status`.
+On a first run `start` opens the editor window (`kirocut_open_editor`, `start/references/home.md`): the user pastes a creator and drops a video there, `kirocut_events` hands each job to the agent as one line (`JOB teardown @handle ...`), and the agent runs the skill and reports back with `kirocut_report`.
 `style-match` measures a creator, `cut` cleans the user's take, `style-edit` renders
 it in that creator's style. Every render (cut, edit, clip, product video) is handed over on the review page
 (`plugins/kirocut/lib/kirocut/review.py`): the user leaves notes at moments, Kiro fixes and re-renders. `taste` runs whenever the user corrects an edit; a correction the user says would help everyone goes to
@@ -45,8 +46,8 @@ it in that creator's style. Every render (cut, edit, clip, product video) is han
 
 The skills are written for Kiro, which fills in two variables. Elsewhere, read them as:
 
-- `${CLAUDE_SKILL_DIR}`: the folder containing that `SKILL.md`.
-- `${CLAUDE_PLUGIN_ROOT}`: the plugin folder two levels above it (`plugins/kirocut/`).
+- `${KIROCUT_SKILL}`: the folder containing that `SKILL.md`.
+- `${KIROCUT_PLUGIN}`: the plugin folder two levels above it (`plugins/kirocut/`).
 
 These skills share code in `plugins/kirocut/lib/` and the renderer in
 `plugins/kirocut/remotion/`, so keep the repo layout. Clone the whole repo rather than copying
@@ -54,13 +55,14 @@ single skill folders.
 
 ## Install
 
-- **Kiro:** open this folder. Steering in `.kiro/steering/` and `.kiro/skills/` load with the workspace. Say "edit my video".
+- **Kiro:** open this folder. Steering, skills, agents and hooks in `.kiro/` load with the workspace. For the `kirocut` tools, copy `docs/spike/workspace-mcp.json` to `.kiro/settings/mcp.json` (a Power install brings its own `mcp.json`). Say "edit my video".
 - **Kiro Power:** `kiro-cli powers install` the `plugins/kirocut` folder, then `plugins/style-match`. See the README.
 - **Cursor and Codex:** this repo ships `.cursor-plugin/plugin.json` and `.codex-plugin/plugin.json`,
   both pointing at the same skill folders.
 
 ## Rules for every agent
 
+- Use the `kirocut` tools (the MCP server in `plugins/kirocut/mcp/`) for what they cover: reading and changing a scene, the editor window and what the user did in it, questions, renders. They return data and say what to do on an error. Shell commands are for the scripts the skills name.
 - Never ask the user to paste an API key into the chat. Keys are saved with the commands the
   skills give, in the user's own terminal.
 - Ask before creating a GitHub repo or spending money on AWS.

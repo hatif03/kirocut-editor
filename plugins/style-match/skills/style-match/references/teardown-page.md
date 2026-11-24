@@ -51,7 +51,7 @@ picture, are missed.
 fewer, a line of text at most, none running out of it and none filling half the box: a logo; 4+ OCR lines: a screenshot; text
 on a flat ground: a text card). `gemini.py kinds` replaces the guess and drops crops it calls
 `part of the set`; each crop goes with its size on screen ("9% x 5% of a 1080 x 1920 frame,
-near-square"), which the enlarged crop hides. Without a key: one Agent call, `model: "haiku"`, reads the crops in
+near-square"), which the enlarged crop hides. Without a key: one sub-agent call on a small, fast model, reads the crops in
 `graphics/` and writes `kind` and `what` into each `video/<id>.graphics.json`, then
 `graphics.py merge <handle>`.
 

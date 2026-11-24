@@ -10,7 +10,7 @@ style-match's `fetch.py setkey` writes, so a key saved by either plugin works in
 With KIROCUT_HOME set, the file is $KIROCUT_HOME/.env instead and the shared one is never
 read or written, so an isolated test run never finds or spends real keys.
 An environment variable of the same name wins over the file. A .env in the working folder is never
-read: it belongs to whatever project Claude Code started in. Lines for other keys (style-match's,
+read: it belongs to whatever project Kiro started in. Lines for other keys (style-match's,
 or an old TYPESAFE_API_KEY) are kept as they are and never read here.
 """
 import contextlib
@@ -201,7 +201,7 @@ if __name__ == "__main__":   # self-check: saving one key keeps the others
         work = Path(d) / "another-project"
         work.mkdir()
         (work / ".env").write_text(f"ELEVENLABS_API_KEY={'e' * 24}\n", encoding="utf-8")
-        os.chdir(work)   # the folder Claude Code started in: its .env is another project's, never read
+        os.chdir(work)   # the folder Kiro started in: its .env is another project's, never read
         try:
             os.environ.pop("ELEVENLABS_API_KEY", None)
             assert get("elevenlabs") == (None, None), "read a key from the working folder's .env"

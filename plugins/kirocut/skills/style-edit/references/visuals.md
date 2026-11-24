@@ -268,8 +268,8 @@ python3 "$S/source.py" credits edits/<name>                          # credits.t
 
 ### logo
 
-Every time a brand or product is named in passing: `{"kind": "logo", "word": "Claude", "nth": 1,
-"brand": "claude"}`, plus `"domain": "example.com"` for brands Simple Icons lacks. It runs in its
+Every time a brand or product is named in passing: `{"kind": "logo", "word": "Notion", "nth": 1,
+"brand": "notion"}`, plus `"domain": "example.com"` for brands Simple Icons lacks. It runs in its
 own lane above the captions for 1.2 s and is dropped while a scene or the split panel is up.
 When the logo-pack skill ran (`edits/<name>/logos.json`), its files are already checked in `images/`:
 route.py lists each sentence's `logos` (the `brand` to use), and each `together` group is one `logo_cluster`.
@@ -301,13 +301,13 @@ given as `{"logo": "brand"}`.
 ## Proposing the beats cheaply
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/route.py" beats edits/<name>
+python3 "${KIROCUT_SKILL}/scripts/route.py" beats edits/<name>
 ```
 
 Splits captions.json into sentences and marks the profile's named things in each, into
 `edits/<name>/beats.json`. Kiro picks one route per sentence from that file, leaning to the creator's
 `graphics.kinds` mix it prints when edits/<name>/style.json has it ("From the teardown"). Then only the template props are left: the `template-filler` agent
-(haiku) fills them from beats.json, or Kiro does.
+(the template-filler agent) fills them from beats.json, or Kiro does.
 
 ## Template-filler contract
 

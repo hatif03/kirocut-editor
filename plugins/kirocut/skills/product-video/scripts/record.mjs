@@ -4,10 +4,10 @@
 //
 //   node record.mjs <dir> [flows.json] [--only <id>] [--cookies cookies.json]
 //
-// <dir>/flows.json (written by Claude from use-cases.md; references/story.md "Flows"):
+// <dir>/flows.json (written by Kiro from use-cases.md; references/story.md "Flows"):
 //   {"viewport": [1440, 900], "flows": [{"id": "pick-project", "url": "https://...", "steps": [
 //     {"wait": 0.6}, {"move": "text=Projects"}, {"click": "text=Build a Second Brain"}, {"scroll": 500},
-//     {"type": "input[placeholder*=Search]", "text": "claude"}, {"key": "Enter"}, {"hover": "css or text=..."},
+//     {"type": "input[placeholder*=Search]", "text": "kiro"}, {"key": "Enter"}, {"hover": "css or text=..."},
 //     {"key": "Meta+k"}, {"write": "github"}, {"goto": "https://..."}]}]}
 // A target is "text=<words on the page>" (the smallest visible element holding them, links and buttons
 // first) or a CSS selector. Writes <dir>/flows/<id>.mp4 (30 fps, 2x) and <id>.json: the cursor path, every

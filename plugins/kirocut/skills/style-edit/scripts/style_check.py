@@ -9,7 +9,7 @@ corrections and this video's settings laid over, as plan.py reads it, so a chang
 target, not a mismatch): caption size, place, words a caption, case, font and plain look; zooms a minute, kind and
 scale; cards a minute, their kinds and where they sit; sound cues and camera pans a minute. A part the blend did
 not take is not compared. Prints one `style:` line per mismatch with the fix, then a count. Exit 0 always: the
-lines are for Claude to fix before the stills (SKILL.md step 4). Stdlib only.
+lines are for Kiro to fix before the stills (SKILL.md step 4). Stdlib only.
 """
 import json
 import sys

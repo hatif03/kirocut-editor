@@ -414,12 +414,12 @@ body.asidex aside{display:none}body:not(.asidex) .popen{background:var(--railon)
 #ptabs{flex-shrink:0}#pmeta{flex:1 0 auto;max-width:100%;text-align:right}   /* no room beside the tabs: its own line, never "3 not..." */
 .mhead2{display:none}
 #list{flex:1;min-height:0;overflow:auto;padding:4px 16px 16px;display:flex;flex-direction:column;gap:8px;scrollbar-width:thin}
-.claude{display:flex;flex-direction:column;gap:12px;padding:14px;border:1px solid var(--line);border-radius:12px;flex-shrink:0}
-.claude>div{display:flex;flex-direction:column;gap:2px}
+.agent{display:flex;flex-direction:column;gap:12px;padding:14px;border:1px solid var(--line);border-radius:12px;flex-shrink:0}
+.agent>div{display:flex;flex-direction:column;gap:2px}
 .sesscp{align-self:flex-start;border:0;background:none;padding:0;font-size:12px;line-height:16px;color:var(--muted);text-decoration:underline;text-underline-offset:2px;cursor:pointer}.sesscp:hover{color:var(--ink)}
-.claude b{font-size:13px;line-height:16px;font-weight:600;color:var(--strong)}
-.claude p{margin:0;font-size:14px;line-height:20px;color:var(--ink)}
-.claude a{color:var(--ink);text-underline-offset:3px;text-decoration-color:var(--line2)}
+.agent b{font-size:13px;line-height:16px;font-weight:600;color:var(--strong)}
+.agent p{margin:0;font-size:14px;line-height:20px;color:var(--ink)}
+.agent a{color:var(--ink);text-underline-offset:3px;text-decoration-color:var(--line2)}
 .steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
 .steps li{display:flex;align-items:center;gap:8px;font-size:13px;line-height:18px;color:var(--body)}
 .steps li .ic{width:16px;height:16px;flex-shrink:0;display:grid;place-items:center;color:var(--quiet)}
@@ -432,7 +432,7 @@ body.asidex aside{display:none}body:not(.asidex) .popen{background:var(--railon)
 .steps li.pb em i{display:block;height:100%;background:var(--ink);border-radius:2px;transition:width .6s}
 .steps li.todo{color:var(--quiet)}.steps li.todo .ic i{width:11px;height:11px;border-radius:6px;border:1.5px solid var(--line2)}
 .steps li.now .ic i{width:11px;height:11px;border-radius:6px;border:1.5px solid var(--strong)}
-.claude code.cmd{display:block;margin-top:8px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font:12px/16px ui-monospace,Menlo,monospace;color:var(--body);word-break:break-all;user-select:all}
+.agent code.cmd{display:block;margin-top:8px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font:12px/16px ui-monospace,Menlo,monospace;color:var(--body);word-break:break-all;user-select:all}
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes pulse{50%{opacity:.3}}
 .since{font-size:12px;line-height:16px;color:var(--muted)}
@@ -987,7 +987,7 @@ body.making #making{display:flex}
 </div>
 <div id="toast" role="status"></div>
 <dialog id="learnov" class="ov" aria-label="teach your style"></dialog>
-<div id="moremenu" class="pmenu" popover role="menu"><button id="nsopen" role="menuitem">New style from this video</button><button id="scdup" role="menuitem" hidden>Duplicate this timeline</button><button id="clcnew" role="menuitem" hidden>Start a new Kiro</button></div>
+<div id="moremenu" class="pmenu" popover role="menu"><button id="nsopen" role="menuitem">New style from this video</button><button id="scdup" role="menuitem" hidden>Duplicate this timeline</button></div>
 <div id="rpop" class="rpop" popover role="dialog" aria-label="make this a rule"><b>Make this a rule</b>
  <label>Rule<input id="rptext" class="lname rin" maxlength="160"></label>
  <label>Save to<select id="rpto" class="rsel"></select></label>
@@ -1094,28 +1094,16 @@ const setAside=x=>{asidex=x;document.body.classList.toggle('asidex',x);try{local
 $('popen').onclick=()=>setAside(!asidex);
 let railx=false;try{railx=localStorage.getItem('review-railx')==='1'}catch(e){}
 document.body.classList.toggle('railx',railx);
-// the Kiro control: Show Kiro brings its Terminal tab to the front; Start Kiro carries on in the Kiro that worked
-// here (typed into it, or its conversation opened again), else a new one. Where no terminal opens, the command is copied.
-// It says where notes go: the desktop session or Terminal Kiro that last had them (its short id), else a new Kiro.
-const CLS={working:'working on your notes',waiting:'listening',open:'open',off:'not running',idle:'not listening'};
-const CLW={desktop:'Notes go to your desktop session',terminal:'Notes go to your Terminal Kiro',other:'Notes go to your Kiro'};
-function renderClaude(asking){
-  const c=S.claude_ui||{},st=c.state==='off'&&alive(S)?'working':c.state||'off',el=$('clc'),b=$('clcbtn'),b2=$('clcnew');
-  const idle=st==='idle',start=st==='off'||idle,where=CLW[c.where];
-  el.hidden=asking||!!S.raw&&!c.last;el.className='clc '+st;
-  $('clct').textContent=idle?'Desktop session':where||(st==='off'?'Notes go to a new Kiro':'Kiro is '+CLS[st]);
-  $('clcs').textContent=!where?'':[c.name,CLS[st]].filter(Boolean).join(', ');$('clcs').title=c.name?'Session '+c.name:'';el.title=(idle?'Your desktop session for this video isn\u2019t listening':$('clct').textContent)+($('clcs').textContent?' ('+$('clcs').textContent+')':'');
-  b.textContent=idle?'Open the desktop app':start?'Start Kiro':'Show Kiro';b.className=start?'go':'';
-  b.hidden=!start&&!c.show;b.dataset.act=idle?'desktop':start?'start':'show';b2.hidden=!idle;
+// the Kiro control: Kiro is the chat in the IDE. It hears this page while it waits (kirocut_events); otherwise Tell Kiro
+// copies a line for the user to paste into the chat.
+function renderAgent(){
+  const c=S.agent_ui||{},st=c.state||'open',el=$('clc'),b=$('clcbtn');
+  el.hidden=!!S.raw&&!c.last;el.className='clc '+st;
+  $('clct').textContent=st==='waiting'?'Kiro is listening':st==='working'?'Kiro is working on your notes':'Kiro is in the IDE chat';$('clcs').textContent='';el.title='';
+  b.textContent='Tell Kiro';b.className=st==='waiting'||st==='working'?'':'go';b.hidden=st==='waiting'||st==='working';
 }
-$('clcnew').onclick=()=>{$('moremenu').hidePopover?.();$('clcbtn').dataset.act='start';$('clcbtn').onclick()};
-$('clcbtn').onclick=async()=>{const b=$('clcbtn');b.disabled=true;
-  try{if(b.dataset.act==='desktop'){const r=await post('/claude/desktop',{});toast(r.opened?'Opened the Kiro app. Tell your session to listen for notes.':'Open the Kiro app and tell your session to listen for notes.')}
-    else if(b.dataset.act==='show'){const r=await post('/claude/show',{});if(!r.shown)toast('Its Terminal window was not found. Start Kiro opens it again.')}
-    else{const r=await post('/claude',{});if(r.opened)toast(r.how==='typed'?'Sent to the Kiro open in Terminal':'Kiro is opening in Terminal');
-      else if(r.command){try{await navigator.clipboard.writeText(r.command);toast('Terminal did not open. The command is copied: paste it into a terminal.')}catch(x){toast('Run this in a terminal: '+r.command)}}
-      else if(!r.how)toast('Kiro is already on this video.')}}
-  finally{b.disabled=false;await load(true)}};
+$('clcbtn').onclick=async()=>{const line='Check the KiroCut editor for "'+(S.name||'my video')+'": I sent notes or pressed Approve. Please carry on.';
+  try{await navigator.clipboard.writeText(line);toast('Copied. Paste it in the Kiro chat and press Enter.')}catch(x){toast('Tell the Kiro chat: '+line)}};
 $('railtog').onclick=()=>{railx=!railx;document.body.classList.toggle('railx',railx);try{localStorage.setItem('review-railx',railx?'1':'0')}catch(e){}
   $('railtog').title=$('railtog').ariaLabel=railx?'Collapse the sidebar':'Expand the sidebar'};
 let PV=null,followNew=false;   // followNew: Go back was pressed, so show the round it opens wherever the page was
@@ -1137,7 +1125,7 @@ async function load(force){const sent=performance.now();
     view=cur();followNew=false;if(was&&was!==key(cur()))tab='notes'}   // follow a new round when it lands
   if(S.baked&&S.baked!==DATA._baked){DATA._baked=S.baked;delete DATA[key(S)]}   // a bake remade this round's data (cards moved)
   for(const r of S.rounds||[])if(!(key(r) in DATA)){DATA[key(r)]=null;fetch('/data?k='+key(r)).then(x=>x.json()).then(j=>{DATA[key(r)]=j;txSig='';render()}).catch(()=>{})}
-  setVideo();render();SC.check().then(on=>{if(!on)liveFetch();else scClaude()});   // a scene (review-scene.js) or the plan's live player
+  setVideo();render();SC.check().then(on=>{if(!on)liveFetch();else scAgent()});   // a scene (review-scene.js) or the plan's live player
   if(landing===2){landing=0;toast(S.stills?'The preview is ready':'The edit is ready')}
 }
 // Kiro's words reach the page as written. Check output never should ("Render check: 1 FAIL left", "-12.7 LUFS",
@@ -1167,7 +1155,7 @@ $('dl').addEventListener('click',async e=>{
       if(i===1)toast('Saving the video. It downloads in a moment.');await new Promise(r=>setTimeout(r,1000))}
     toast('The video did not download. Try again.')}finally{delete a.dataset.busy}
 });
-const sessBtn=()=>'';   // Copy session moved into the Kiro control (Show Kiro / Start Kiro)
+const sessBtn=()=>'';   // Copy for Kiro is the Kiro control's Tell Kiro
 function toast(t,ms){const e=$('toast');e.innerHTML=TICK+esc(t);e.classList.remove('act');e.classList.add('show');clearTimeout(toast.h);toast.h=setTimeout(()=>e.classList.remove('show'),ms||3500)}
 function cmpOptions(){   // what can play beside this round: its other versions, then earlier rounds of this stage
   const r=viewRound(),o=['',...(r.alts||[]).map(a=>a.name)].filter(x=>x!==alt).map(x=>({k:key(view),alt:x,label:lab(x)}));
@@ -1270,19 +1258,15 @@ function steps(){
     $(id).disabled=!has(st);
   });
 }
-// the new Kiro review.py opened for this edit in the last 15 min (Submit with no Kiro on it, or Open a new Kiro)
-const newClaude=S=>!S.listening&&S.claude&&Date.now()/1000-S.claude.at<900?(S.claude.how==='desktop-idle'?'Notes saved':S.claude.opened?{typed:'Your notes went to the Kiro already open in Terminal',resumed:'The Kiro that worked on this opens again in Terminal'}[S.claude.how]||'A new Kiro is starting in its own Terminal window':'Run this in a terminal to start Kiro: '+S.claude.command):'';
 function listenText(S){
-  if((S.claude_ui||{}).state==='idle')return '';   // the desktop session is not listening: the Kiro control says so
   const e=S.events[S.events.length-1],picked=!!(S.sent&&e&&e.handled);
   if(picked&&e.type==='approve')return e.stills?'Kiro is making the video':e.stage==='cut'?(S.stage==='cut'&&!S.final?'Kiro is making the edit':'The cut is approved'):'Approved';
-  if(picked&&!alive(S))return newClaude(S)||'Kiro stopped. Your notes are saved.';
-  if(picked)return S.raw?(S.cut_steps&&S.cut_steps.state==='queued'?((S.cut_steps.claude||{}).opened?'Kiro is working in its own Terminal window':'Waiting for Kiro'):'Kiro is making the cut'):e.type==='edits'?'Kiro is applying your changes':'Kiro is working on the next draft';
-  if(S.sent&&newClaude(S))return newClaude(S);
+  if(picked&&!alive(S))return 'Notes saved. Kiro picks them up in the chat.';
+  if(picked)return S.raw?(S.cut_steps&&S.cut_steps.state==='queued'?'Waiting for Kiro':'Kiro is making the cut'):e.type==='edits'?'Kiro is applying your changes':'Kiro is working on the next draft';
   if(S.sent)return e&&e.type==='edits'?'Changes sent':e&&e.type==='approve'?(e.stills?'Preview approved':e.stage==='cut'?'Cut approved':'Approved'):'Notes sent';
   const first=!(S.rounds||[]).some(r=>r.stage===S.stage&&r.round>=1&&r.round<S.round&&!r.stills);   // the first video of the cut or the edit (the stills before it are not one)
   if(S.listening)return S.round>1&&!S.comments.some(c=>c.stage===S.stage&&c.round===S.round)?(first?(S.stage==='edit'?(S.stills?'The preview is ready':'The edit is ready'):'The cut is ready'):cap(dn(S))+' is ready'):'';   // waiting for notes: the Kiro control says it
-  return '';   // working, waiting or not running: the Kiro control says it (submitting with none starts one)
+  return '';   // working, waiting or there: the Kiro control says it
 }
 function render(){
   if(!S)return;
@@ -1291,10 +1275,9 @@ function render(){
   $('name').textContent=S.name;$('name').title=S.name;document.title=S.name+(p==='send'?' · Kiro working':' · '+dn(S));steps();
   const idleEdit=makingEdit()&&makeState().idle,busyNow=!idleEdit&&(picked&&alive(S)&&(p==='send'||!!S.raw)||makingEdit()||approving);
   const nowAct=busyNow&&(S.activity||[]).filter(x=>x.round===S.round&&!x.done).pop();
-  const asking=!!document.documentElement.dataset.ask;   // ask.js: Kiro's question box is open on this page
-  $('listen').innerHTML=asking?'<b>Kiro is asking you something</b>':esc(approving?(S.stills?'Preview approved':'Cut approved'):idleEdit?'Kiro is not working on the edit':listenText(S))+(!asking&&nowAct&&nowAct.text?` <span class="stp">· ${esc(nowAct.text)}</span>`:'');
-  renderClaude(asking);
-  $('statusbox').classList.toggle('work',busyNow&&!asking);$('statusbox').querySelector('i').innerHTML=busyNow&&!asking?SPIN:'';
+  $('listen').innerHTML=esc(approving?(S.stills?'Preview approved':'Cut approved'):idleEdit?'Kiro is not working on the edit':listenText(S))+(nowAct&&nowAct.text?` <span class="stp">· ${esc(nowAct.text)}</span>`:'');
+  renderAgent();
+  $('statusbox').classList.toggle('work',busyNow);$('statusbox').querySelector('i').innerHTML=busyNow?SPIN:'';
   $('mstage').textContent=STAGE[view.stage];$('msub').textContent=S.name+' · '+rn(view).toLowerCase();
   const mine=S.comments.filter(c=>c.stage===S.stage&&c.round===S.round).length,live=isCur()&&!p;
   // Send is primary while there are notes; once a round lands with none, Approve is. Stop replaces Send while Kiro works.
@@ -1350,7 +1333,6 @@ function meta(){   // "Round 1 · 31s ago", ticked every few seconds so the age 
   $('pmeta').textContent=view.round===0?rn(view):live&&mine&&tab==='notes'?plural(mine,'note')+', not sent yet':rn(view)+' · '+(!isCur()?'read only':working?'still plays':p==='approve'?'approved':nv?(nv+1)+' versions':ago(vr.at||S.at||Date.now()));
 }
 setInterval(()=>{if(S&&view)meta()},5000);
-addEventListener('askchange',()=>{if(S)render()});
 function noteCount(){   // "2 done · 1 open" over this round's notes and last round's answered ones
   const cs=S.comments.filter(c=>onAlt(c)&&c.stage===view.stage&&(c.round===view.round||c.round===view.round-1));
   const n=st=>cs.filter(c=>c.status===st).length,parts=[n('fixed')?n('fixed')+' done':'',n('open')?n('open')+' open':''].filter(Boolean);
@@ -1601,10 +1583,10 @@ let JQ=[];
 function edPush(what,undo,redo,key){const j=JQ.splice(0),l=EH.u[EH.u.length-1];if(key&&l&&l.key===key&&performance.now()-edAt<4000){l.redo=redo;l.j=[...(l.j||[]),...j]}else{EH.u.push({what,undo,redo,key,j});if(EH.u.length>60)EH.u.shift()}EH.r=[];edAt=performance.now();edBtns()}
 const jPush=what=>edPush(what,async()=>{},async()=>{});   // an edit undone by its journal alone
 // Kiro's changes to the scene (scene.py ops, SCENE.md): drawn on the poll that sees scene.json change, each one Undo
-// ("Kiro: <why>") that takes it off by its own ops (POST /scene/claude), so the user's edits since stay
-const CL={v:{},seen:new Set()},clMine=()=>((S.agent_changes||S.claude_changes)||[]).filter(c=>(c.alt||'')===(alt||''));   // each version: its own scene, its own changes
+// ("Kiro: <why>") that takes it off by its own ops (POST /scene/agent), so the user's edits since stay
+const CL={v:{},seen:new Set()},clMine=()=>(S.agent_changes||[]).filter(c=>(c.alt||'')===(alt||''));   // each version: its own scene, its own changes
 async function clUndo(n,undo){const r=await post('/scene/agent',{n,undo,alt:alt||null});if(!r.ok)throw new Error(r.error||'That did not save.');if(r.scene&&SC.on){SC.s=r.scene;SC.show()}}
-async function scClaude(){if(!SC.on)return;
+async function scAgent(){if(!SC.on)return;
   const sv=(S.scene_v||{})[alt||''];if(sv!==CL.v[alt||'']&&!SC.busy&&!SC.drag&&!SC.edit){if((alt||'') in CL.v)await SC.fetch();CL.v[alt||'']=sv}
   for(const c of clMine())if(!CL.seen.has((alt||'')+'|'+c.n)){CL.seen.add((alt||'')+'|'+c.n);if(!c.undone){EH.u.push({what:'Kiro: '+c.why,undo:()=>clUndo(c.n,true),redo:()=>clUndo(c.n,false),j:[]});EH.r=[];edBtns()}}
   const sig=JSON.stringify(clMine());if(sig!==CL.sig){CL.sig=sig;renderList()}}   // the list drew before the scene was on
@@ -1871,26 +1853,26 @@ function workHtml(){
       :`<li class="todo"><span class="ic"><i></i></span>${esc(m.steps[k])}</li>`).join('')
       +(m.extra?`<li class="now"><span class="ic">${SPIN}</span>${esc(m.extra)}</li>`:'');
     const ok=S.stills?'The preview is approved. ':'The cut is approved. ';
-    return `<div class="claude"><div><b>Kiro</b><p>${esc(m.idle?ok+m.idle:ok+(S.stills?'Kiro is making the video':'Kiro is making the edit')+(m.style?' in '+m.style:'')+'.')}</p></div><ol class="steps">${li}</ol>${m.at&&!m.idle?`<span class="since" data-since="${esc(m.at)}">Working for ${dur((Date.now()-new Date(m.at))/1000)}</span>`:''}${sessBtn()}</div>`}
-  if(p==='approve')return `<div class="claude"><div><b>Kiro</b><p>${S.stage==='cut'?'The cut is approved. It is the finished video.':'Approved. The edit is finished.'}</p></div></div>`+($('learnov').open?'':learnHtml());
+    return `<div class="agent"><div><b>Kiro</b><p>${esc(m.idle?ok+m.idle:ok+(S.stills?'Kiro is making the video':'Kiro is making the edit')+(m.style?' in '+m.style:'')+'.')}</p></div><ol class="steps">${li}</ol>${m.at&&!m.idle?`<span class="since" data-since="${esc(m.at)}">Working for ${dur((Date.now()-new Date(m.at))/1000)}</span>`:''}${sessBtn()}</div>`}
+  if(p==='approve')return `<div class="agent"><div><b>Kiro</b><p>${S.stage==='cut'?'The cut is approved. It is the finished video.':'Approved. The edit is finished.'}</p></div></div>`+($('learnov').open?'':learnHtml());
   if(S.raw&&S.cut_steps)return cutHtml(S.cut_steps);
   if(p!=='send'&&(!live||S.stage==='cut'))return '';   // the cut is ready: what Kiro does next is the edit's prep, not this round
   const ed=editsSent()?S.events[S.events.length-1]:null,nch=ed?plural(ed.n,'transcript change'):'';
-  const head=S.raw?'Making the cut. Your clip plays meanwhile. Notes you leave now go on the cut.':ed?(act.length?`Kiro is applying your changes (${nch}). The next draft opens here.`:picked&&alive(S)?`Kiro has your ${nch} and is starting ${nextDn()}.`:S.listening||S.busy?`${nch} saved. Waiting for Kiro to pick them up.`:`${nch} saved. Submit opens a new Kiro to apply them.`):p==='send'?(act.length?`Making ${nextDn()}.`:picked&&alive(S)?`Kiro has your notes and is starting ${nextDn()}.`:newClaude(S)||(!alive(S)?'Notes sent, but Kiro is not listening. Press Copy for Kiro at the top and paste it into Kiro.':'Notes sent. Waiting for Kiro to pick them up.'+(S.listening||!S.busy?'':' Kiro is finishing something and takes them next.'))):'Still coming in this draft:';
+  const head=S.raw?'Making the cut. Your clip plays meanwhile. Notes you leave now go on the cut.':ed?(act.length?`Kiro is applying your changes (${nch}). The next draft opens here.`:picked&&alive(S)?`Kiro has your ${nch} and is starting ${nextDn()}.`:S.listening||S.busy?`${nch} saved. Waiting for Kiro to pick them up.`:`${nch} saved. Kiro applies them when it next listens in the chat.`):p==='send'?(act.length?`Making ${nextDn()}.`:picked&&alive(S)?`Kiro has your notes and is starting ${nextDn()}.`:(!alive(S)?'Notes sent. Kiro picks them up in the chat: press Tell Kiro at the top if it is not listening.':'Notes sent. Waiting for Kiro to pick them up.'+(S.listening||!S.busy?'':' Kiro is finishing something and takes them next.'))):'Still coming in this draft:';
   if(p!=='send'&&!ed&&!S.raw&&!act.some(x=>x.step||x.pct!=null))   // the draft is out: a plain line from Kiro is a remark, not work still coming
-    return `<div class="claude"><div><b>Kiro</b>${act.map(x=>`<p>${esc(x.text)}</p>`).join('')}</div></div>`;
+    return `<div class="agent"><div><b>Kiro</b>${act.map(x=>`<p>${esc(x.text)}</p>`).join('')}</div></div>`;
   const li=act.map(x=>x.done?`<li><span class="ic">${TICK}</span>${esc(x.text)}</li>`
     :`<li class="now"><span class="ic">${SPIN}</span>${esc(x.text)}</li>`+(x.pct!=null?`<li class="pb"><em><i style="width:${x.pct}%"></i></em>${x.pct}%</li>`:'')).join('');
   const sent=e&&e.type==='send'?e.at:null;
-  return `<div class="claude"><div><b>Kiro</b><p>${esc(head)}</p></div>${li?`<ol class="steps">${li}</ol>`:''}${sent&&p==='send'?`<span class="since" data-since="${esc(sent)}">Working for ${dur((Date.now()-new Date(sent))/1000)}</span>`:''}${sessBtn()}</div>`;
+  return `<div class="agent"><div><b>Kiro</b><p>${esc(head)}</p></div>${li?`<ol class="steps">${li}</ol>`:''}${sent&&p==='send'?`<span class="since" data-since="${esc(sent)}">Working for ${dur((Date.now()-new Date(sent))/1000)}</span>`:''}${sessBtn()}</div>`;
 }
 // round 0: every step the cut takes (review.py cut_steps, from the scripts' own reports), ticked as they finish
 function cutHtml(c){
-  const cl=c.claude||{},head=c.state==='failed'?'The cut stopped. '+(c.error||'')
-    :c.state==='queued'?(cl.opened?'Kiro is working on this video in its own Terminal window.':cl.command?'To make this video, run this in a new Terminal window:':'Waiting for Kiro to pick this up.')
-    :(cl.opened?'Kiro is working on this video in its own Terminal window. ':'Kiro is making the cut. ')+'Your clip plays meanwhile. Notes you leave now go on the cut.';
+  const head=c.state==='failed'?'The cut stopped. '+(c.error||'')
+    :c.state==='queued'?'Waiting for Kiro to pick this up in the chat.'
+    :'Kiro is making the cut. Your clip plays meanwhile. Notes you leave now go on the cut.';
   const li=c.steps.map(x=>`<li class="${x.state==='done'?'ok':x.state}"><span class="ic">${x.state==='done'?TICK:x.state==='now'&&c.state==='taken'?SPIN:'<i></i>'}</span>${esc(x.text)}</li>`).join('');
-  return `<div class="claude"><div><b>Kiro</b><p>${esc(head)}</p>${c.state==='queued'&&!cl.opened&&cl.command?`<code class="cmd">${esc(cl.command)}</code>`:''}</div><ol class="steps">${li}</ol></div>`;
+  return `<div class="agent"><div><b>Kiro</b><p>${esc(head)}</p></div><ol class="steps">${li}</ol></div>`;
 }
 // a rule Kiro saved from a note or the Teach panel: "Saved to <style>: <rule>. Undo" (Undo only for a rule this save added)
 function rcptHtml(id){
@@ -1951,7 +1933,7 @@ function makeState(){   // the edit's steps from Kiro's status reports (review.p
   const pct=!land&&last&&!last.done&&last.step==='render'&&last.pct!=null?last.pct:null;
   const frac=cur<0?0:Math.min(1,(cur+(closed?1:pct!=null?pct/100:.5))/keys.length);
   const left='';   // no time estimates on a step
-  const idle=!alive(S)?'No word from Kiro for a while. If it stopped, press Start Kiro at the top.':'';
+  const idle=!alive(S)?'No word from Kiro for a while. If it stopped, press Tell Kiro at the top.':'';
   return {steps,keys,cur,closed,pct,frac,at,left,idle,style:(S.making&&S.making.style)||'',
     now:open?open.text:cur>=0?steps[keys[cur]]:'Starting',extra:open&&!open.step?open.text:''};
 }
@@ -2004,7 +1986,7 @@ function renderList(){
     h+=also.map(c=>`<button class="chg" ${c.t!=null?`data-t="${c.t}" title="jump to ${fmt(c.t)}"`:'tabindex="-1"'}>${c.t!=null?`<span class="tchip num">${fmt(c.t)}</span>`:''}<span>${esc(c.text)}</span></button>`).join('');
     if(vr.note&&!vr.back_to)h+=`<div class="sum"><p>${esc(vr.note)}</p></div>`;
     if(mine.length)h+=`<p class="sub">Your notes on ${dn(viewRound())}</p>`;
-  }else if((vr.note||cc)&&!(isCur()&&p==='send'))h+=`<div class="claude"><div><b>Kiro</b><p>${esc(vr.note||'')}${cc}</p></div></div>`;
+  }else if((vr.note||cc)&&!(isCur()&&p==='send'))h+=`<div class="agent"><div><b>Kiro</b><p>${esc(vr.note||'')}${cc}</p></div></div>`;
   const CC=isCur()&&SC.on?clMine():[];   // Kiro's changes to the scene on this draft, each undoable
   if(CC.length)h+=`<div class="chhead"><b>Kiro's changes</b></div>`+CC.map(c=>`<div class="chg ccl${c.undone?' off':''}"${c.t!=null?` data-t="${c.t}" title="jump to ${fmt(c.t)}"`:''}>${c.t!=null?`<span class="tchip num">${fmt(c.t)}</span>`:''}<span>${esc(c.why)}</span><button class="obtn" data-cln="${c.n}" data-clu="${c.undone?0:1}">${c.undone?'Redo':'Undo'}</button></div>`).join('');
   h+=mine.map(noteHtml).join('');
@@ -2039,14 +2021,14 @@ const TRK={hooks:['New hooks','A different first line.'],same:['Same order','Fro
   animations:['New animations','New motion graphics and cards.']};
 const DOWN='<svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 let TR=null,trV=-1,trMenu=null,trAsk='',trOpened=-1,trFor=null;
-const kindLab=ks=>ks[0]==='claude'?'Let Kiro decide':ks.map(k=>TRK[k][0]).join(' + ');
+const kindLab=ks=>ks[0]==='kiro'?'Let Kiro decide':ks.map(k=>TRK[k][0]).join(' + ');
 function trSync(){const t=S.trials;if(t.v===trV)return;trV=t.v;trMenu=null;
   TR={versions:t.versions.map(v=>({kinds:[...v.kinds],k0:v.kinds.join(),line:v.line})),hooks:new Set(t.hooks.map((h,i)=>i)),idea:!!t.idea}}
 function trMaking(){const t=S.trials;return t&&t.state==='chosen'?t.picks.versions.map((v,i)=>'t'+(i+1)):[]}
 function trLab(x){const t=S.trials,m=/^t(\d+)$/.exec(x),v=t&&m&&(t.picks||t).versions[m[1]-1];return v?x+' · '+kindLab(v.kinds):lab(x)}
 function trialsHtml(){
   const t=S.trials;trSync();
-  const say=(x,cls)=>`<div class="claude"><div><b>Kiro</b><p>${esc(x)}</p></div></div>`;
+  const say=(x,cls)=>`<div class="agent"><div><b>Kiro</b><p>${esc(x)}</p></div></div>`;
   let h=t.message?say(t.message):'';
   h+=(t.asks||[]).map(q=>`<div class="trq">${esc(q.text)}</div>`+(q.reply?say(q.reply):'')).join('');
   if(t.state==='skipped')return h+'<p class="empty2">Skipped. No trial reels for this one.</p>';
@@ -2062,7 +2044,7 @@ function trialsHtml(){
   if(t.hooks.length)h+=`<div class="trhooks"><div class="trh">Spare hooks</div>${t.hooks.map((x,i)=>`<label class="lrule trhook"><input type="checkbox" data-trhook="${i}"${TR.hooks.has(i)?' checked':''}${off?' disabled':''}><span>"${esc(x.text)}"${x.from?`<small>${esc(x.from)}</small>`:''}</span></label>`).join('')}</div>`;
   h+=`<div class="trvs"><div class="trh">Versions<button data-trall${off?' disabled':''}>Let Kiro decide all</button></div>`;
   TR.versions.forEach((v,i)=>{
-    const line=v.line&&v.kinds.join()===v.k0?v.line:v.kinds[0]==='claude'?'Kiro picks the mix that looks most different.':'Kiro picks the details when it makes it.';
+    const line=v.line&&v.kinds.join()===v.k0?v.line:v.kinds[0]==='kiro'?'Kiro picks the mix that looks most different.':'Kiro picks the details when it makes it.';
     h+=`<div class="trv"><div class="row"><span class="tn">t${i+1}</span><button class="trsel" data-trk="${i}"${off?' disabled':''}><span>${esc(kindLab(v.kinds))}</span>${DOWN}</button></div><div class="ln">${esc(line)}</div>${trMenu===i?trMenuHtml(v,i):''}</div>`;
     if(v.idea&&t.idea)h+=`<div class="tridea"><span>Kiro suggests: <b>${esc(kindLab(t.idea.kinds))}.</b> ${esc(t.idea.line)}</span><div class="trbtns"><button class="go" data-truse="${i}">Use this</button><button data-tranother="${i}">Another idea</button></div></div>`;
   });
@@ -2078,14 +2060,14 @@ function trialsHtml(){
 function trNotesHtml(n){
   const t=S.trials,ns=t.notes||[],names=Array.from({length:n},(_,i)=>'t'+(i+1)),def=names.includes(alt)?alt:'all',who=trFor||def;
   const lab=x=>(x.for==='all'?'All trial reels':x.for)+(x.t!=null?' · '+fmt(x.t):'');
-  let h=ns.map(x=>`<div class="trq"><small>${esc(lab(x))}</small>${esc(x.text)}</div>`+(x.reply?`<div class="claude"><div><b>Kiro</b><p>${esc(x.reply)}</p></div></div>`:'')).join('');
+  let h=ns.map(x=>`<div class="trq"><small>${esc(lab(x))}</small>${esc(x.text)}</div>`+(x.reply?`<div class="agent"><div><b>Kiro</b><p>${esc(x.reply)}</p></div></div>`:'')).join('');
   if(ns.some(x=>!('reply' in x)))h+='<p class="trwait"><i></i>Kiro has your notes and is changing the trial reels...</p>';
   return h+`<div class="trfoot"><label class="trforl">For <select class="trfor" aria-label="which trial reel the note is for"><option value="all"${who==='all'?' selected':''}>All trial reels</option>${names.map(x=>`<option value="${x}"${who===x?' selected':''}>${x}${x===alt?' (on screen)':''}</option>`).join('')}</select></label>
     <div class="trask"><textarea class="trta" rows="2" placeholder="Feedback on the trial reels: a different hook, cut this bit, a new title..."></textarea><button data-trsend aria-label="send to Kiro">${'<svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 12V2M3 6l4-4 4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>'}</button></div></div>`;
 }
 function trMenuHtml(v,i){
-  const c=v.kinds[0]==='claude',on=k=>v.kinds.includes(k),dis=k=>k==='same'&&on('rewind')||k==='rewind'&&on('same');
-  return `<div class="trmenu" role="menu"><button class="${c?'on':''}" data-trpick="claude"><i class="rd"></i><span><b>Let Kiro decide</b><small>Kiro picks the mix that makes this one look most different.</small></span></button><hr><div class="lab">Or pick one or more</div>`
+  const c=v.kinds[0]==='kiro',on=k=>v.kinds.includes(k),dis=k=>k==='same'&&on('rewind')||k==='rewind'&&on('same');
+  return `<div class="trmenu" role="menu"><button class="${c?'on':''}" data-trpick="kiro"><i class="rd"></i><span><b>Let Kiro decide</b><small>Kiro picks the mix that makes this one look most different.</small></span></button><hr><div class="lab">Or pick one or more</div>`
     +Object.keys(TRK).map(k=>`<button class="${on(k)?'on':''}" data-trpick="${k}"${dis(k)?' disabled title="Same order and Rewind both set the order"':''}><i></i><span><b>${TRK[k][0]}</b><small>${dis(k)?'Off while '+(k==='same'?'Rewind':'Same order')+' is on: both set the order.':TRK[k][1]}</small></span></button>`).join('')
     +(TR.versions.length>1?`<hr><button class="rm" data-trrm="${i}"><span><b>Remove t${i+1}</b></span></button>`:'')+'</div>';
 }
@@ -2107,12 +2089,12 @@ $('list').addEventListener('click',e=>{
   const b=e.target.closest('button');if(!b||!TR||tab!=='trials'||b.disabled)return;const d=b.dataset;
   if(d.trk!=null)trMenu=trMenu===+d.trk?null:+d.trk;
   else if(d.trpick){const v=TR.versions[trMenu],k=d.trpick;
-    if(k==='claude')v.kinds=['claude'];
-    else{const ks=v.kinds.filter(x=>x!=='claude');v.kinds=ks.includes(k)?ks.filter(x=>x!==k):[...ks,k];if(!v.kinds.length)v.kinds=['claude'];
-      v.kinds=Object.keys(TRK).filter(x=>v.kinds.includes(x)).concat(v.kinds.includes('claude')?['claude']:[])}}
+    if(k==='kiro')v.kinds=['kiro'];
+    else{const ks=v.kinds.filter(x=>x!=='kiro');v.kinds=ks.includes(k)?ks.filter(x=>x!==k):[...ks,k];if(!v.kinds.length)v.kinds=['kiro'];
+      v.kinds=Object.keys(TRK).filter(x=>v.kinds.includes(x)).concat(v.kinds.includes('kiro')?['kiro']:[])}}
   else if(d.trrm!=null){TR.versions.splice(+d.trrm,1);trMenu=null}
-  else if(d.trall!=null){TR.versions.forEach(v=>v.kinds=['claude']);trMenu=null}
-  else if(d.tradd!=null){TR.versions.push({kinds:['claude'],k0:'',line:'',idea:TR.idea});trMenu=null}
+  else if(d.trall!=null){TR.versions.forEach(v=>v.kinds=['kiro']);trMenu=null}
+  else if(d.tradd!=null){TR.versions.push({kinds:['kiro'],k0:'',line:'',idea:TR.idea});trMenu=null}
   else if(d.truse!=null){const v=TR.versions[+d.truse];v.kinds=[...S.trials.idea.kinds];v.k0=v.kinds.join();v.line=S.trials.idea.line;v.idea=false}
   else if(d.tranother!=null)return trPost({action:'ask',text:`Another idea for t${+d.tranother+1}`});
   else if(d.trsend!=null)return trSend();
@@ -3222,7 +3204,7 @@ document.addEventListener('keydown',e=>{if(ovOpen())return;
   if(!typing&&del&&vsel!=null&&view.stage==='edit'){e.preventDefault();return cutPiece(vsel)}
   const zi=KM.is(e,'zoom_in');if(!typing&&(zi||KM.is(e,'zoom_out'))){e.preventDefault();return setZoom(zm*(zi?2:.5))}   // the timeline, not the page
   if(!typing&&KM.is(e,'fit')){tfol=true;return setZoom(1)}
-  if(typing||e.target.isContentEditable||e.target.closest?.('#askq')||document.documentElement.dataset.askOpen)return;const k=e.key,is=id=>KM.is(e,id);   // never while typing or while Kiro's question is up
+  if(typing||e.target.isContentEditable)return;const k=e.key,is=id=>KM.is(e,id);   // never while typing
   if(is('play')){e.preventDefault();shutOff();toggle()}
   else if(is('back')||is('stop')||is('fwd'))shuttle(is('back')?-1:is('stop')?0:1);
   else if(is('frame_back')||is('frame_fwd')){e.preventDefault();shutOff();v.pause();stepO((is('frame_back')?-1:1)/FPS)}
@@ -3402,4 +3384,4 @@ load();setInterval(load,3000);
     if(document.body.classList.contains('vertical'))keep('--plw',Math.round(Math.max(20,Math.min(75,(e.clientX-r.left)/r.width*100)))+'cqw');
     else keep('--txsplit',Math.round(Math.max(20,Math.min(85,(e.clientY-r.top)/r.height*100)))+'%')},clear('--txsplit','--plw'));
 })();
-</script><script src="/review-scene.js"></script><script src="/ask.js"></script></body></html>
+</script><script src="/review-scene.js"></script><script src="/alerts.js"></script></body></html>

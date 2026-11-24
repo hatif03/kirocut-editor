@@ -33,7 +33,7 @@ The ElevenLabs key stays where KiroCut already keeps it: `~/.config/kirocut/.env
 `KIROCUT_HOME` set, both read and save keys in `$KIROCUT_HOME/.env` instead and never open the
 shared file.
 
-Python scripts run with `python3 "${CLAUDE_PLUGIN_ROOT}/lib/kirocut/run.py" <script>` (`py` on Windows), the editor's venv.
+Python scripts run with `python3 "${KIROCUT_PLUGIN}/lib/kirocut/run.py" <script>` (`py` on Windows), the editor's venv.
 Stdlib-only scripts may run with any `python3`.
 
 ## Transcription
@@ -138,7 +138,7 @@ Only answered keys are stored; `profile.py missing` lists the rest and `load()` 
  "audience": "developers who use Kiro", "goal": "follow + comment for the guide",
  "brand": {"colors": ["#F2EEE6", "#E5482C"], "font": "Archivo", "logo": "/path/logo.svg"},
  "assets_dir": "/path/to/my/screenshots",
- "names": [{"name": "Claude", "domain": "claude.com"}],
+ "names": [{"name": "Kiro", "domain": "kiro.dev"}],
  "avoid": {"emoji": true, "stock": true, "icons": true, "colors": ["#7B61FF"], "notes": ""},
  "captions": {"on": true, "style": "creator"},
  "sound": {"sfx": true, "music": false}}

@@ -7,16 +7,16 @@ compatibility: Python 3.9+, standard library only for the intake. The steps it r
 
 # Start
 
-Paths: `${CLAUDE_SKILL_DIR}` means the folder containing this SKILL.md, and `${CLAUDE_PLUGIN_ROOT}` the plugin folder two levels above it.
+Paths: `${KIROCUT_SKILL}` means the folder containing this SKILL.md, and `${KIROCUT_PLUGIN}` the plugin folder two levels above it (`plugins/kirocut` here).
 
-Read `${CLAUDE_PLUGIN_ROOT}/PRINCIPLES.md` first: the rules every video follows (where, asking, looking real, motion, story, privacy, cost).
+Read `${KIROCUT_PLUGIN}/PRINCIPLES.md` first: the rules every video follows (where, asking, looking real, motion, story, privacy, cost).
 
-Every question goes in the question box: the AskUserQuestion tool (2-4 options, recommended first). Only in an agent without it, ask numbered questions in text. `Attached images: <paths>` in an answer: Read each first.
+Every question goes in the question box: the kirocut_ask tool (2-4 options, recommended first). No form in the IDE: say the numbered text it returns, then pass the reply to `kirocut_answer`.
 
 The user's whole job: drop a video, answer a few questions, approve the cut, approve the stills, both on
 the review page. Everything else is this skill's job.
 
-`P="${CLAUDE_PLUGIN_ROOT}/lib/kirocut/profile.py"`. Run it with `python3` (`py` on Windows).
+`P="${KIROCUT_PLUGIN}/lib/kirocut/profile.py"`. Run it with `python3` (`py` on Windows).
 
 **First run** (the session-start line says so, or `setup.py doctor --quiet` prints a line): the
 setup skill's step 0 first (window, then installs in the background), then carry on here.
@@ -27,7 +27,7 @@ If the message has any link, @handle or file path, route it before anything else
 link is; the classifier knows.
 
 ```bash
-L="${CLAUDE_PLUGIN_ROOT}/lib/kirocut/links.py"
+L="${KIROCUT_PLUGIN}/lib/kirocut/links.py"
 python3 "$L" route "<the user's whole message>" [--own]
 ```
 
@@ -52,7 +52,7 @@ Only download what the user may edit; a creator's video is for the teardown, not
 
 ## 1. The video
 
-"Open the home page" (`kirocut`, `/kirocut:start`), "listen for jobs", "take job <id>", "carry on <edit>": `references/home.md`. No video,
+"Open the home page", "carry on <edit>": `references/home.md` (open the window with `kirocut_open_editor`, then listen with `kirocut_events`). No video,
 link or creator (a bare "edit my video"): ask **Open the home page (Recommended)** / **I'll give
 the path** / **Use the sample take** (cut's "No video yet?"). Edit folder: `IMG_1234.MOV` -> `edits/img-1234`.
 

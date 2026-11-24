@@ -832,7 +832,7 @@ def placed_sounds(plan, edit_dir):
 
 def typed_texts(edit_dir):
     """The text the user typed on the review page's Text tool (<edit>/texts.json, review.py writes it when the round
-    goes to Claude): plan.json "texts" kind "label" exactly as typed, styled and placed. Never reworded or moved."""
+    goes to Kiro): plan.json "texts" kind "label" exactly as typed, styled and placed. Never reworded or moved."""
     f = edit_dir and Path(edit_dir) / "texts.json"
     if not f or not f.exists():
         return []
@@ -1992,7 +1992,7 @@ DANGLING = {"and", "or", "but", "so", "the", "a", "an", "to", "of", "if", "with"
 
 
 def letterbox_title(words):
-    """The fallback when Claude wrote no --title: the first sentence or clause, lowercase, at most LB_TITLE_WORDS
+    """The fallback when Kiro wrote no --title: the first sentence or clause, lowercase, at most LB_TITLE_WORDS
     words, never ending on a joining word ("... horrible mindset and"); a question keeps its mark."""
     out = []
     for w in words:
@@ -3839,18 +3839,18 @@ def demo_face_every():
 
 def demo_board():
     ws = [{"text": t, "start": i * 0.8, "end": i * 0.8 + 0.6} for i, t in enumerate(
-        "So which tool should you use? I use Notion and Linear. It is fine. Then Claude writes it. Why does it work? Nobody knows.".split())]
+        "So which tool should you use? I use Notion and Linear. It is fine. Then Figma draws it. Why does it work? Nobody knows.".split())]
     at = lambda w: next(x["start"] for x in ws if clean(x["text"]) == w)   # noqa: E731
     logo = lambda w, slug: {"anim": {"type": "logo", "props": {"src": f"images/logo-{slug}.svg"}}, "start": at(w) - 0.1,   # noqa: E731
                             "end": at(w) + 1.5, "trigger_word": w, "lane": "logo"}
     over = {"anim": {"type": "notes", "props": {}}, "start": at("fine") - 0.1, "end": at("fine") + 0.6, "trigger_word": "fine",
             "box": [10, 10, 80, 30]}
-    cards, L = board_layout([logo("Notion", "notion"), logo("Linear", "linear"), over, logo("Claude", "claude")], ws, 20.0, None)
+    cards, L = board_layout([logo("Notion", "notion"), logo("Linear", "linear"), over, logo("Figma", "figma")], ws, 20.0, None)
     b1, b2 = L["boards"]
     assert [t["label"] for t in b1["tiles"]] == ["notion", "linear"] and b1.get("question"), b1   # tiles after a question: it rises
     assert [w for w, _ in b1["heading"]] == ["which", "tool", "should", "you", "use"], b1["heading"]   # "so" dropped
     assert b1["start"] <= b1["rise"] < b1["tiles"][0]["at"] and b1["end"] <= over["start"] - 0.5, b1
-    assert [w for w, _ in b2["heading"]][-1] == "claude" and b2["x"] != b1["x"] and b2["y"] > b1["y"], b2
+    assert [w for w, _ in b2["heading"]][-1] == "figma" and b2["x"] != b1["x"] and b2["y"] > b1["y"], b2
     assert len(cards) == 1 and cards[0]["box"] == BOARD_OVERLAY_BOX[0] and cards[0]["side"] == "left"   # the overlay, left
     assert any(k[2] == 1 and k[0] < over["start"] for k in L["face"]), L["face"]   # the speaker moved right before it
     assert [q["words"][0][0] for q in L["questions"]] == ["why"], L["questions"]   # a question with no board: centred

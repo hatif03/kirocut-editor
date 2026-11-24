@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Find the best short clips in a long video. Transcribe once, then code ranks and Claude reads the shortlist.
+"""Find the best short clips in a long video. Transcribe once, then code ranks and Kiro reads the shortlist.
 
     python3 clips.py link       <video file> <clips_dir>   the source, linked (never copied when avoidable)
     python3 clips.py candidates <clips_dir> [--min 20 --max 40] [--speakers 1|2] [--style style.json] [--top 8]
@@ -19,7 +19,7 @@ candidates  1. Sentences from the word timings (. ? ! or a 1.2 s silence ends on
                numbers said (things style-edit can show as real captures), a start that leans on
                earlier context ("and", "so", "that's why").
             4. Score = the features, then the top --top candidates that do not overlap:
-               shortlist.md (about 1,500 tokens) for Claude, who judges each on the hook alone,
+               shortlist.md (about 1,500 tokens) for Kiro, who judges each on the hook alone,
                self-contained, pays off, concrete (claim, number, story), plus the "what works"
                moves from the creator's style.json, listed at the top.
             Writes candidates.json, shortlist.json, shortlist.md.
@@ -198,7 +198,7 @@ def name_list(profile_names):
 
 
 def names_said(words, starts, names):
-    """The profile's names said, plus runs of capitalised words ("Claude Code") that do not start a
+    """The profile's names said, plus runs of capitalised words ("Final Cut") that do not start a
     sentence (ids in `starts`, or after . ? !), are not single letters, and are never said in lower
     case in the same words ("And" next to "and"). Whisper's "-for" tokens join the word before."""
     joined = []
@@ -405,7 +405,7 @@ def page(d, recommend=()):
     doc = (f'<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" '
            f'content="width=device-width,initial-scale=1"><title>Clip picks</title><style>{CSS}</style></head>'
            f'<body><main><h1>Clip picks: {html.escape(d.name)}</h1><p class="sub">{len(order)} clips, best first. '
-           f'The bold line is the hook. Pick in the question box in Claude Code.</p>{"".join(cards)}</main></body></html>')
+           f'The bold line is the hook. Pick in the Kiro chat.</p>{"".join(cards)}</main></body></html>')
     out = d / "picks.html"
     out.write_text(doc, encoding="utf-8")
     print(f"{out} ({out.stat().st_size // 1024} KB)")
@@ -587,9 +587,9 @@ def demo():
     assert what_works(style) == style["what_works"]["levers"]
     assert what_works({"what_works": ["x"]}) == [] and what_works({}) == []
     # names: no sentence starts (a gap ends a sentence with no full stop), no single letters, real names kept
-    ws_ = [{"text": x} for x in "we tried it at Acme and it worked So we told Claude Code about T".split()]
+    ws_ = [{"text": x} for x in "we tried it at Acme and it worked So we told Final Cut about T".split()]
     got = names_said(ws_, {id(ws_[0]), id(ws_[8])}, ["Jev"])
-    assert got == ["Acme", "Claude Code"], got
+    assert got == ["Acme", "Final Cut"], got
     assert names_said([{"text": "Ask"}, {"text": "Jev"}], set(), ["Jev"]) == ["Jev"]
     assert PROMO.search("Today's video is sponsored by Acme") and not PROMO.search("the subscription price")
 
@@ -652,8 +652,13 @@ def demo():
         assert link_source(v, Path(td) / "a")[1] == "already there"
         def no(*_):
             raise OSError("cross-device link")
+        try:   # Windows without Developer Mode may not make symlinks: then the copy is the next step
+            os.symlink(v, Path(td) / "probe")
+            can_link = True
+        except OSError:
+            can_link = False
         dst, how = link_source(v, Path(td) / "b", link=no)
-        assert how == "symlink" and dst.is_symlink() and dst.read_bytes() == b"video", how
+        assert (how == "symlink" and dst.is_symlink() if can_link else how == "copy") and dst.read_bytes() == b"video", how
         dst, how = link_source(v, Path(td) / "c", link=no, symlink=no)
         assert how == "copy" and not dst.is_symlink() and dst.read_bytes() == b"video", how
     # an audio-only podcast: found like a video, and each clip is its audio over the podcast's own cover
@@ -692,7 +697,7 @@ def main():
     ap.add_argument("--speakers", type=int, choices=[1, 2], default=1)
     ap.add_argument("--style", help="the creator's or the edit's style.json (its what_works moves are scored)")
     ap.add_argument("--top", type=int, default=8)
-    ap.add_argument("--recommend", default="", help="page: comma-separated ids Claude recommends, in order")
+    ap.add_argument("--recommend", default="", help="page: comma-separated ids Kiro recommends, in order")
     ap.add_argument("--name", help="trim: edit name prefix (default: the clips folder name)")
     ap.add_argument("--edits", default="edits")
     a = ap.parse_args()

@@ -7,15 +7,15 @@ compatibility: Python 3.9+, standard library only. Runs from the full kirocut pl
 
 # Skill improver
 
-Paths: `${CLAUDE_SKILL_DIR}` means the folder containing this SKILL.md, and `${CLAUDE_PLUGIN_ROOT}` the plugin folder two levels above it.
+Paths: `${KIROCUT_SKILL}` means the folder containing this SKILL.md, and `${KIROCUT_PLUGIN}` the plugin folder two levels above it (`plugins/kirocut` here).
 
-Every question to the user goes in the question box: call the AskUserQuestion tool (2-4 options, the recommended one first). Only in an agent without that tool, ask numbered questions in text.
+Every question to the user goes in the question box: call the kirocut_ask tool (2-4 options, the recommended one first). No form in the IDE: say the numbered text it returns, then pass the reply to `kirocut_answer`.
 
 taste saves one correction the moment the user says it. This skill works on a whole finished video: it reads
 every note, keeps the lasting ones and writes them into the style or skill that made the video.
 
-`K="${CLAUDE_PLUGIN_ROOT}/lib/kirocut/skillrules.py"`, `R="${CLAUDE_PLUGIN_ROOT}/lib/kirocut/review.py"`,
-`T="${CLAUDE_PLUGIN_ROOT}/skills/taste/scripts/taste.py"`. Run them with `python3` on Mac and Linux, `py` on Windows.
+`K="${KIROCUT_PLUGIN}/lib/kirocut/skillrules.py"`, `R="${KIROCUT_PLUGIN}/lib/kirocut/review.py"`,
+`T="${KIROCUT_PLUGIN}/skills/taste/scripts/taste.py"`. Run them with `python3` on Mac and Linux, `py` on Windows.
 
 Copy this checklist and tick it off:
 
@@ -122,6 +122,6 @@ Tell the user in one line what was saved and where.
 
 ## Files
 
-- `${CLAUDE_PLUGIN_ROOT}/lib/kirocut/skillrules.py`: `target`, `similar`, `add`, `remove`, `list`, `demo`.
-- `${CLAUDE_PLUGIN_ROOT}/lib/kirocut/review.py`: `learn --propose` / `--done` (the Teach panel).
-- `${CLAUDE_PLUGIN_ROOT}/lib/kirocut/styleskill.py`: `learn`, a settings style's rules and skill.
+- `${KIROCUT_PLUGIN}/lib/kirocut/skillrules.py`: `target`, `similar`, `add`, `remove`, `list`, `demo`.
+- `${KIROCUT_PLUGIN}/lib/kirocut/review.py`: `learn --propose` / `--done` (the Teach panel).
+- `${KIROCUT_PLUGIN}/lib/kirocut/styleskill.py`: `learn`, a settings style's rules and skill.

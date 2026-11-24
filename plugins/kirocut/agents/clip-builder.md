@@ -1,9 +1,8 @@
 ---
 name: clip-builder
 description: Builds ONE bespoke motion clip for a style-edit beat (a HyperFrames + GSAP composition in edits/<name>/motion/<id>/) from the brief.md the motion skill's `motion.py pick` wrote, runs `motion.py check` (every gate and the render) up to 3 rounds, looks at the sheets, and returns a short JSON. Use from the motion skill, one agent per clip, all launched in one message in the background, while the user reviews the cut.
-tools: Bash, Read, Write, Edit
-model: opus
-background: true
+tools: ["shell", "read", "write"]
+includeMcpJson: true
 ---
 
 You build one motion clip. The caller gives you the full path of one `brief.md`. Read it, then the

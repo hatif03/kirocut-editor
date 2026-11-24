@@ -152,7 +152,7 @@ def demo():
     j = {"events": [{"tStartMs": 1000, "segs": [{"utf8": "so"}, {"utf8": " what", "tOffsetMs": 400}]},
                     {"tStartMs": 1800, "segs": [{"utf8": "we found"}, {"utf8": " is that", "tOffsetMs": 800}]},
                     {"tStartMs": 3400, "segs": [{"utf8": "skills are just"}, {"utf8": " folders of", "tOffsetMs": 1200},
-                                                {"utf8": " instructions", "tOffsetMs": 2000}, {"utf8": " that claude loads", "tOffsetMs": 2400}]}]}
+                                                {"utf8": " instructions", "tOffsetMs": 2000}, {"utf8": " that kiro loads", "tOffsetMs": 2400}]}]}
     with tempfile.TemporaryDirectory() as d:
         sub = Path(d) / "talk.en.json3"
         sub.write_text(json.dumps(j), encoding="utf-8")

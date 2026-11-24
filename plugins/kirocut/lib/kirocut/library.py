@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The library: one folder for every video, wherever Claude Code was started. Stdlib only.
+"""The library: one folder for every video, wherever Kiro was started. Stdlib only.
 
     python3 library.py path                 print the library folder (made if missing)
     python3 library.py set <folder>         move it: new videos land there, older ones stay listed
@@ -95,7 +95,7 @@ def _review(d):
 
 
 def status(r):
-    """cutting (no cut yet: no review page, or round 0 on the raw clip), making (Claude has the notes), ready (to review), done (approved)."""
+    """cutting (no cut yet: no review page, or round 0 on the raw clip), making (Kiro has the notes), ready (to review), done (approved)."""
     if not r or r.get("raw"):   # round 0 plays the raw clip while the cut is made
         return "cutting"
     last = (r.get("events") or [{}])[-1]
