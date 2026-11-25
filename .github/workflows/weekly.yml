@@ -100,7 +100,7 @@ jobs:
         run: python -m pip install --no-deps --require-hashes -r plugins/kirocut/requirements/requirements.lock 2>&1 | tee "$RUNNER_TEMP/install.log"
       - name: Demos
         id: demos
-        run: tests/demos.sh 2>&1 | tee "$RUNNER_TEMP/demos.log"
+        run: python tests/run_demos.py 2>&1 | tee "$RUNNER_TEMP/demos.log"
       - name: Report
         if: always()
         run: |

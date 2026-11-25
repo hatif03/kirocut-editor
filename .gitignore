@@ -5,7 +5,7 @@ node_modules/
 plugins/*/evals/results/
 eval-results/
 
-# What users make when they start Claude Code in this folder
+# What users make when they edit in this folder
 /edits/
 /clips/
 /product/
@@ -13,5 +13,4 @@ eval-results/
 /*.mp4
 /*.mov
 /*.MOV
-.claude/settings.local.json
 .context/

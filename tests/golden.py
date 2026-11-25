@@ -21,7 +21,8 @@ which also lands over it.
 
 Each OS rasterises fonts its own way (Linux moves a chat bubble's text enough to cross TILE_MAX), so
 the references are per OS: tests/golden/linux/ (CI, from the golden-out artifact or --update on
-Linux), tests/golden/darwin/ (made on a Mac). An OS with no set fails and says to run --update there.
+Linux), tests/golden/darwin/ (made on a Mac), tests/golden/windows/ (made on Windows 11 with the setup venv:
+`~/.kirocut/venv/Scripts/python.exe tests/golden.py`). An OS with no set fails and says to run --update there.
 Every run also proves the threshold still bites on the real stills: the fresh still moved down 24 px
 (a card moved) and with its middle third blanked (a card gone) must both fail against the reference.
 """

@@ -1,9 +1,9 @@
-// ask.js alert rules, run in node (no browser): a question chimes once per id, a video once when Claude finishes.
+// alerts.js rules, run in node (no browser): an id is announced once, a video chimes once when Kiro finishes it.
 import fs from 'fs';
 import assert from 'assert';
-const m={};new Function('module',fs.readFileSync(new URL('../plugins/kirocut/lib/kirocut/ask.js',import.meta.url),'utf8'))(m);
+const m={};new Function('module',fs.readFileSync(new URL('../plugins/kirocut/lib/kirocut/alerts.js',import.meta.url),'utf8'))(m);
 const {firstTime,finished}=m.exports;
-// the same question after a reload or in a second tab: no second chime
+// the same id after a reload or in a second tab: no second chime
 let seen=firstTime([],'q1');assert.deepEqual(seen,['q1']);
 assert.equal(firstTime(seen,'q1'),null);
 assert.deepEqual(firstTime(seen,'q2'),['q2','q1']);
@@ -11,9 +11,7 @@ assert.equal(firstTime(Array.from({length:40},(_,i)=>'x'+i),'q').length,30,'the 
 // a draft finishes: cutting -> cut chimes, a new or unchanged video does not
 let r=finished({a:'cutting',b:'cut'},{a:'cut',b:'cut',c:'cutting'});
 assert.deepEqual(r.done,['a']);assert.deepEqual(r.next,{a:'cut',b:'cut',c:'cutting'});
-// a question mid-make is not a finished draft, and answering it is not either; the render finishing later is
-r=finished({a:'notes'},{a:'ask'});assert.deepEqual(r.done,[]);assert.equal(r.next.a,'notes');
-r=finished(r.next,{a:'notes'});assert.deepEqual(r.done,[]);
+// the notes go round: working, then the next draft is ready
+r=finished({a:'notes'},{a:'rendering'});assert.deepEqual(r.done,[]);
 r=finished(r.next,{a:'done'});assert.deepEqual(r.done,['a']);
-assert.deepEqual(finished({},{a:'ask'}).next,{a:'ask'});
 console.log('alerts ok');

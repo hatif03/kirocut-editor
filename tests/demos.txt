@@ -1,0 +1,99 @@
+# Every script's self-check: one command per line, run from the repo root by tests/run_demos.py (no network, no keys).
+# A plain line runs with the Python that holds requirements.lock; `node ...` runs with node.
+plugins/style-match/skills/style-match/scripts/fetch.py demo
+plugins/style-match/skills/style-match/scripts/editplan.py demo
+plugins/style-match/skills/style-match/scripts/visual.py demo
+plugins/style-match/skills/style-match/scripts/graphics.py demo
+plugins/style-match/skills/style-match/scripts/sound.py demo
+plugins/style-match/skills/style-match/scripts/report.py demo
+plugins/style-match/skills/style-match/scripts/match.py demo
+plugins/style-match/skills/style-match/scripts/format_check.py demo
+plugins/style-match/skills/style-match/scripts/look.py demo
+plugins/style-match/skills/style-match/scripts/gemini.py demo
+plugins/style-match/skills/style-match/scripts/parallel.py demo
+plugins/style-match/skills/style-match/scripts/_progress.py demo
+plugins/kirocut/skills/cut/scripts/test_build_timeline.py
+plugins/kirocut/skills/cut/scripts/test_retakes.py
+plugins/kirocut/skills/cut/scripts/test_media.py
+plugins/kirocut/skills/cut/scripts/verify_cut.py demo
+plugins/kirocut/skills/cut/scripts/hook_check.py demo
+plugins/kirocut/skills/cut/scripts/join.py demo
+plugins/kirocut/skills/cut/scripts/judge_cut.py demo
+plugins/kirocut/skills/cut/scripts/read_cut.py demo
+plugins/kirocut/skills/cut/scripts/transcribe.py demo
+plugins/kirocut/skills/cut/scripts/trend.py demo
+plugins/kirocut/skills/cut/scripts/splice_check.py demo
+plugins/kirocut/skills/cut/scripts/script_match.py demo
+plugins/kirocut/skills/cut/scripts/mirror.py demo
+plugins/kirocut/lib/kirocut/keys.py
+plugins/kirocut/lib/kirocut/post.py demo
+plugins/kirocut/lib/kirocut/net.py demo
+plugins/kirocut/lib/kirocut/progress.py demo
+plugins/kirocut/lib/kirocut/profile.py demo
+plugins/kirocut/lib/kirocut/brandkit.py demo
+plugins/kirocut/lib/kirocut/links.py demo
+plugins/kirocut/lib/kirocut/lock.py demo
+plugins/kirocut/lib/kirocut/models.py
+plugins/kirocut/lib/kirocut/run.py demo
+plugins/kirocut/lib/kirocut/review.py demo
+plugins/kirocut/lib/kirocut/styleskill.py demo
+plugins/kirocut/lib/kirocut/skillrules.py demo
+plugins/kirocut/skills/skill-maker/scripts/skill_maker.py demo
+plugins/kirocut/lib/kirocut/home.py demo
+plugins/kirocut/lib/kirocut/pagekit.py demo
+plugins/kirocut/lib/kirocut/legacy.py demo
+tests/run_evals.py demo
+plugins/kirocut/lib/kirocut/assets.py demo
+plugins/kirocut/lib/kirocut/library.py demo
+plugins/kirocut/lib/kirocut/thumbs.py demo
+plugins/kirocut/lib/kirocut/custom.py demo
+plugins/kirocut/lib/kirocut/presets.py demo
+plugins/kirocut/lib/kirocut/launcher.py demo
+plugins/kirocut/lib/kirocut/live.py demo
+plugins/kirocut/lib/kirocut/broll.py demo
+plugins/kirocut/skills/style-edit/scripts/plan.py demo
+plugins/kirocut/skills/style-edit/scripts/edit.py demo
+plugins/kirocut/skills/style-edit/scripts/export_nle.py demo
+plugins/kirocut/skills/style-edit/scripts/chapters.py demo
+plugins/kirocut/skills/style-edit/scripts/source.py demo
+plugins/kirocut/skills/style-edit/scripts/matte.py demo
+plugins/kirocut/skills/clips/scripts/clips.py demo
+plugins/kirocut/skills/broll-reel/scripts/reel.py demo
+plugins/kirocut/skills/setup/scripts/setup.py demo
+plugins/kirocut/skills/taste/scripts/taste.py demo
+plugins/kirocut/skills/taste/scripts/learn.py demo
+plugins/kirocut/skills/style-edit/scripts/face.py demo
+plugins/kirocut/skills/style-edit/scripts/check.py demo
+plugins/kirocut/skills/style-edit/scripts/quality.py demo
+plugins/kirocut/skills/style-edit/scripts/sfx.py demo
+plugins/kirocut/skills/style-edit/scripts/sheet.py demo
+plugins/kirocut/skills/style-edit/scripts/ai_tells.py demo
+plugins/kirocut/skills/style-edit/scripts/route.py demo
+plugins/kirocut/skills/motion/scripts/motion.py demo
+plugins/kirocut/skills/motion/scripts/check_clip.py demo
+plugins/kirocut/skills/motion/scripts/check_motion.py demo
+plugins/kirocut/skills/motion/scripts/check_composition.py demo
+plugins/kirocut/skills/motion/scripts/measure_ink.py demo
+plugins/kirocut/skills/motion/scripts/clip_motion.py demo
+plugins/kirocut/skills/style-edit/scripts/style_check.py demo
+plugins/kirocut/skills/product-video/scripts/gates.py demo
+plugins/kirocut/skills/product-video/scripts/product.py demo
+plugins/kirocut/skills/product-video/scripts/journey.py demo
+plugins/kirocut/skills/product-video/scripts/meter.py demo
+plugins/kirocut/skills/product-video/scripts/sound.py demo
+plugins/kirocut/skills/improve/scripts/improve.py demo
+plugins/kirocut/skills/update/scripts/update.py demo
+plugins/kirocut/skills/style-edit/scripts/preview.py demo
+tests/golden.py demo
+tests/fresh_install.py demo
+plugins/kirocut/mcp/server.py demo
+docs/spike/checklist.py demo
+plugins/kirocut/lib/kirocut/kirohook.py demo
+plugins/kirocut/lib/kirocut/authcookie.py demo
+plugins/kirocut/lib/kirocut/proc.py demo
+node plugins/kirocut/skills/logo-pack/scripts/logos.mjs demo
+node plugins/kirocut/skills/motion/scripts/verify.mjs demo
+node tests/test_alerts.mjs
+node tests/test_record.mjs
+tests/check_extension.py
+tests/sync_kiro.py --check
