@@ -4,6 +4,14 @@ KiroCut is a video editor for people who make videos. The chat is Kiro. They nev
 
 This plan comes from Kiro's install and Powers docs (pages current as of 20 Nov 2026) and from this repo's setup skill.
 
+## Where this stands (24 Nov 2026)
+
+Phase 1 is built, apart from the proof on a clean machine. The window points at the Kiro chat in this folder: a `kirocut` MCP server
+(`plugins/kirocut/mcp/`) gives the chat typed tools for the scene, the editor window, its events, questions and renders; hooks in
+`.kiro/hooks/` carry what the user pressed in the window into the chat; nothing opens a terminal for Kiro. What is left of phase 1 is
+the IDE spike (`docs/KIRO-COMPAT.md`, about 20 minutes in the IDE) and one sample take run through the chat on Windows and Mac. The
+rest of this file is the plan as first written; read "terminal" and "connect" in it as the old route.
+
 ## The sentence
 
 KiroCut is a video editor. You talk about the video in the Kiro chat, and you watch, trim, and approve it in a browser tab. Editors and marketers stay in those two places. Kiro is the engine under the chat. Installing KiroCut sets the engine up. Nobody pastes a terminal command, names a plugin, or learns what an agent is.

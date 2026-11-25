@@ -9,7 +9,7 @@ Paths: `A` = `plugins/kirocut/skills`, `E` = `plugins/kirocut/evals`. CI runs ev
 
 | Rule | Written in | Enforced by | Tested by |
 |---|---|---|---|
-| Every question goes in the question box | PRINCIPLES "Asking"; every SKILL.md | `tests/check_plugins.py`: every own SKILL.md must say AskUserQuestion | evals with an `asks-and-waits` grader (llm: a question with choices that stops the turn; headless eval runs have no AskUserQuestion): `E/start-asks`, `E/launch-video-url`, `E/captions-too-small`, `style-match/evals/tear-down-handle`; check_plugins fails if those graders go |
+| Every question goes in the question box | PRINCIPLES "Asking"; every SKILL.md | `tests/check_plugins.py`: every own SKILL.md must say kirocut_ask | evals with an `asks-and-waits` grader (llm: a question with choices that stops the turn; headless eval runs have no kirocut_ask): `E/start-asks`, `E/launch-video-url`, `E/captions-too-small`, `style-match/evals/tear-down-handle`; check_plugins fails if those graders go |
 | First run: the window opens before any install or question, and installs run in the background with progress on the page | PRINCIPLES "Asking"; `A/setup/SKILL.md` step 0; `A/start/SKILL.md` | SessionStart hook (`setup.py doctor --quiet` prints the first-run line); `setup.py install-all --report`; `home.py` serve is stdlib only | `E/setup-window-first/graders/window-first.md`, `background-install.md` (llm); `setup.py demo` (install-all with stub steps reaching a real page state) |
 | Skipped steps are remembered and resumable | PRINCIPLES "Asking"; setup step 0 | `setup.py later <step>` writes `~/.kirocut/later.json`; `setup.py todo` lists it; doctor reminds | `setup.py demo` (later, dedupe, still_later) |
 | Direct links to each key's page | `A/setup/SKILL.md` "Keys" | `tests/check_plugins.py` KEY_URLS | check_plugins |
@@ -38,8 +38,8 @@ Paths: `A` = `plugins/kirocut/skills`, `E` = `plugins/kirocut/evals`. CI runs ev
 ## Not enforceable by code
 
 - **Asking, and asking well** (the question box, the setup plan, the brief, the "help everyone" question):
-  these are what the agent says before any script runs. Covered by evals (llm and tool_used graders) and
-  by check_plugins keeping those evals and the AskUserQuestion line in every SKILL.md.
+  these are what the agent says before any script runs. Covered by evals (llm and skill_used graders, tests/run_evals.py) and
+  by check_plugins keeping those evals and the kirocut_ask line in every SKILL.md.
 - **The user said yes** before an approval, a create or a GitHub issue: code can require the stamp
   (`approve`, `"allow": true`, `issue --yes`) but not see the answer in the question box. Covered by the
   skill text and `E/render-unapproved`.

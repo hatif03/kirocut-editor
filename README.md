@@ -15,26 +15,25 @@ It also makes:
 
 ## Start here
 
-Open the folder in Kiro. The `.kiro` steering files load with the workspace. Say **edit my video**.
+Open the folder in Kiro. Its steering files, skills, agents and hooks load with the workspace, and the `kirocut` tools (an MCP server)
+start with it. Say **edit my video** in the chat.
 
-The same folder still runs from a terminal after setup:
+The tools need one file this repo cannot add for you (Kiro keeps `.kiro/settings/` to itself): copy `docs/spike/workspace-mcp.json` to
+`.kiro/settings/mcp.json`, or install the Power, which brings its own `mcp.json`. Check with **Kiro: MCP servers** that `kirocut` is connected.
 
-```
-kirocut
-```
-
-One command opens everything: your editor in the browser, at the same address every time (bookmark it),
-and Kiro behind it, listening for what you make there. Run it again when the window is already open
-and it opens the window, plus a new Terminal window with Kiro if none is listening. `kirocut --window-only` opens just the window. If the window ever says nobody is listening, press **Connect Kiro**:
-it opens Kiro in a new Terminal window for you. Inside Kiro, `/start` or **edit my video**
-does the same. Setup adds the command; `python3 plugins/kirocut/skills/setup/scripts/setup.py uninstall-launcher` removes it.
+Kiro opens the editor window for you and puts the link in the chat. Press what you need in the window: drop a clip, pick a style,
+**Make my video**, leave notes on a draft, **Approve**. Kiro hears it while it waits for you, and when you next write in the chat.
+If it is not waiting, the window's **Tell Kiro** button copies a line to paste. Small changes you can just say:
+"trim the first 2 seconds", "cut out 0:12 to 0:14", "add a link at the end", "undo that".
 
 **The window.** A sidebar on the left has **+ New video**, **Home**, **Your videos**, **Styles**, your
 folders, the video being made right now with its progress, and **Settings**. The panel button folds the
 sidebar into a row of icons. To make a video: drop in your clip (or click one you added before), pick a
-style, press **Make my video**. **Make it in a new Kiro chat** keeps that video's questions in their
-own chat. The first time, Kiro asks whether you trust this folder: press the down arrow to pick
-**Yes, I trust this folder**, then Enter (Enter alone picks **No, exit**). It is your videos folder.
+style, press **Make my video**. Kiro does the work in this chat; its questions come as a form in the IDE, or as numbered
+text you answer in the chat.
+
+Where the editor shows depends on your IDE (see [docs/KIRO-COMPAT.md](docs/KIRO-COMPAT.md)): in your browser by default, or
+beside the chat in the IDE's Simple Browser or with the small [kirocut-view](extensions/kirocut-view/README.md) extension.
 
 Your videos are saved in one folder, wherever you start: `~/Movies/KiroCut` on a Mac,
 `~/Videos/KiroCut` on Windows and Linux. Change it in Settings (or set `KIROCUT_LIBRARY`).
@@ -195,6 +194,7 @@ Your styles, skills and settings live in your library folder, not in the plugin,
 | `style-match` | "break down @creator", "tear down @creator" | a TikTok, YouTube or Instagram profile, or single video links |
 | `cut` | "cut my video", "remove my mistakes" | a video file path |
 | `style-edit` | "style it", "add captions and zooms", "render the edit", "export to Final Cut" (or Premiere, Resolve, CapCut) | |
+| `quick-edit` | "trim the first 2 seconds", "cut out 0:12 to 0:14", "add a link at the end", "undo that" | |
 | `overlays` | after a render: "add an animation here", "make a diagram of how this works", "this card is wrong", "swap the logo", "show the real page instead", "fewer cards" | |
 | `taste` | "captions too small", "fewer zooms" | |
 | `logo-pack` | "make a logo pack", "get the logos for this video", "the logos look fake" | |
@@ -255,8 +255,8 @@ for that video.
 | Something is missing or broken                                      | Say **run the editor doctor**. Every line reads `ok`, or `FIX` with the exact command for your computer.                                                                                                                                                                                                    |
 | Doctor says something moved off the pinned versions                 | Say **repair the editor setup**. Kiro runs `setup.py repair` from wherever the plugin is installed, and it puts the exact pinned set back. From a cloned folder (Way 1) you can run it yourself: `python3 plugins/kirocut/skills/setup/scripts/setup.py repair` (`py` instead of `python3` on Windows). |
 | You skipped a key or step                                           | Say **finish setup**. Only the skipped steps run.                                                                                                                                                                                                                                                           |
-| Where do Kiro's questions show up?                                | In the editor's window or review page when one is open in front of you; answer there. Otherwise in the terminal. Permission prompts (Allow or Deny for a command) always show in the terminal.                                                                                                              |
-| Kiro does not know "edit my video"                                | The editor is not loaded. Type `/reload-plugins`, or install it with Way 2.                                                                                                                                                                                                                                 |
+| Where do Kiro's questions show up?                                | In the Kiro chat: a form when your IDE can show one, else numbered text you answer in the chat. Permission prompts (Allow or Deny for a command) always show in the IDE.                                                                                                              |
+| Kiro does not know "edit my video"                                | The editor is not loaded. Trust the folder and start a new chat, or install the Power (Other installs).                                                                                                                                                                                                                                 |
 | `python3` not found                                                 | Mac: `brew install python`. Windows: `winget install -e --id Python.Python.3.12`, then open a new terminal. Linux: `sudo apt install -y python3 python3-venv`.                                                                                                                                              |
 | Node is too old on Debian or Ubuntu                                 | Doctor prints the fix: it adds NodeSource's signed package source, then installs Node.                                                                                                                                                                                                                      |
 | Chrome or Chromium installed as a Flatpak                           | Only logged-in product videos need your Chrome, and a Flatpak one cannot be used. Install Google Chrome or your distro's `chromium` package; doctor says which it found.                                                                                                                                    |
@@ -306,8 +306,11 @@ move `.kiro/skills` aside and put it back when you are done.
 - Run the checks before a pull request:
   ```
   python3 tests/check_plugins.py
+  python3 tests/run_demos.py
+  python3 tests/check_extension.py
   python3 tests/smoke.py
   ```
 
-  plus each script's `demo` (the list is in `.github/workflows/check.yml`). The model evals cost
-  money; `tests/run_evals.sh --runs 1 --case <case>` runs one.
+  `tests/run_demos.py` runs each script's `demo` (the list is `tests/demos.txt`). After changing a skill or agent run
+  `python3 tests/sync_kiro.py`: it rewrites the copies Kiro loads from `.kiro/`. The model evals cost
+  money (Kiro CLI, headless); `python3 tests/run_evals.py --runs 1 --case <case>` runs one (RELEASING.md).

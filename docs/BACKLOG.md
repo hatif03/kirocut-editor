@@ -11,6 +11,19 @@ Sources: a first-time user's path through setup, a cut, and a styled edit.
 
 ## Next
 
+Kiro IDE (the chat-driven editor, see docs/KIRO-COMPAT.md):
+- Run the IDE spike (`py docs/spike/checklist.py`, about 20 minutes) and record the answers. Until then the editor opens in the
+  browser and questions use elicitation only if the client advertises it. A recorded `extension_panel=yes` or
+  `command_link=yes` + `simple_frame=yes` switches `kirocut_open_editor` to the IDE panel (`checklist.py decide`).
+- Add `.kiro/settings/mcp.json` (Kiro keeps that folder to itself: copy `docs/spike/workspace-mcp.json`). Check the
+  relative path to `launch.mjs` resolves from the workspace folder (spike key `mcp_cwd_root`); if not, write an absolute path.
+- The sample take in a real Kiro IDE chat, on a clean Windows and Mac machine. The same steps ran on Windows through the
+  MCP server as the chat calls it (a synthetic spoken take: status, transcribe, cut, review round, scene edits, stills,
+  render); the IDE's own pieces (hooks between turns, elicitation forms) still need the spike.
+- Run the evals once with the Kiro CLI (`python3 tests/run_evals.py --runs 1`) and fix the tool names in each case's `tools`
+  if the CLI names its read or sub-agent tools differently (the run's JSON lists every tool it called).
+- A Windows job for the golden stills in CI (the set is in `tests/golden/windows/`; CI checks Linux only).
+
 - Laptop render estimate on a fresh home's first benchmark. The benchmark times Chrome's start-up
   apart from the frames. Check a cold first estimate against the render on an idle machine and a
   new KIROCUT_HOME with an empty renderer cache. The Modal quote is Modal's rates times container
