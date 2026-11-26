@@ -13,6 +13,18 @@ It also makes:
 - **Shorts from a long video or podcast.** Paste the link. It finds the clips and edits each one.
 - **A product video from a website.** Paste the URL. It asks what to show, records the real product and cuts a launch film with its own music.
 
+## Examples
+
+Edits KiroCut made, from footage anyone may publish. They are also on the editor's Home, under **Examples**.
+
+| | |
+|---|---|
+| [![A raw NASA interview, cut](docs/examples/nasa-interview-cut/poster.jpg)](docs/examples/nasa-interview-cut/preview.mp4) | **A raw NASA interview, cut.** An unedited 8 min 38 s interview, cut to 6 min 57 s: false starts, stammers and fillers out, pauses tightened. [The cut](docs/examples/nasa-interview-cut/preview.mp4) · [the raw take](docs/examples/nasa-interview-cut/before.mp4). Public domain, NASA's Scientific Visualization Studio. |
+| [![Edited from the chat](docs/examples/chat-smoke-test/poster.jpg)](docs/examples/chat-smoke-test/preview.mp4) | **Edited from the chat, start to finish.** A synthetic spoken take driven through the `kirocut` tools as the chat calls them: cut, reviewed, styled, a line added, rendered. [The video](docs/examples/chat-smoke-test/preview.mp4) · [how Kiro made it](docs/examples/chat-smoke-test/replay.mp4). |
+
+Add one with `python3 plugins/kirocut/lib/kirocut/examples.py save <edit> <name> --title ... --what ... --license "Public domain"`
+(or `--own` for your own footage). It refuses footage it may not publish, and never keeps another creator's video.
+
 ## Start here
 
 You need [Kiro](https://kiro.dev), [Node](https://nodejs.org) 20+, Python 3.10+ and ffmpeg. On Windows:

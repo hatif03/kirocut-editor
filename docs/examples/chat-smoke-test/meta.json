@@ -1,0 +1,23 @@
+{
+  "name": "chat-smoke-test",
+  "title": "Edited from the chat, start to finish",
+  "what": "A 24 s synthetic spoken take (a computer voice over a test pattern) with a retake, a filler and a long pause, driven through the kirocut tools as the Kiro chat calls them: cut to 9 s, reviewed with a note, approved, captioned and zoomed in the default style, a line added at the end, then rendered. The replay shows each step.",
+  "stage": "edit",
+  "license": "own footage",
+  "source": null,
+  "credit": null,
+  "lengths_s": {
+    "cut": 9.07,
+    "edit": 9.07
+  },
+  "preview": {
+    "from_s": 0.0,
+    "seconds": 9.07
+  },
+  "files": [
+    "preview.mp4",
+    "poster.jpg",
+    "replay.mp4"
+  ],
+  "saved": "2026-11-26"
+}

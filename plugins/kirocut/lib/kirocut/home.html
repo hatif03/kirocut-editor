@@ -749,6 +749,11 @@ body.rail .sb-theme{margin-top:2px}
 .t1{font-size:14px;line-height:18px;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.t2{font-size:13px;line-height:16px;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hd-clip .more2{position:static;margin-left:auto;background:none;color:var(--t3);opacity:0;flex-shrink:0}.hd-clip:hover .more2,.hd-clip .more2[aria-expanded=true]{opacity:1}
 .hd-clip .cmenu{left:auto;right:8px;top:calc(100% + 4px)}
+.exs{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px}
+.exc{display:flex;flex-direction:column;gap:6px;min-width:0}
+.exp{display:flex;align-items:center;justify-content:center;aspect-ratio:16/9;border-radius:12px;background:#111 center/cover no-repeat}
+.exp span{display:flex;width:44px;height:44px;border-radius:22px;align-items:center;justify-content:center;background:#0009;color:#fff}
+.exc .t2{white-space:normal}.exl{display:flex;flex-wrap:wrap;gap:10px}.exl a{color:var(--ink)}
 .hshelf{display:flex;gap:40px;min-width:0}.hshelf>.sec2:first-child{flex:1.4 1 0}.hshelf>.sec2:last-child{flex:1 1 0}
 .sts{display:flex;gap:12px;flex-wrap:wrap;row-gap:16px}
 .stl{display:flex;flex-direction:column;gap:8px;min-width:0;cursor:pointer}
@@ -2344,12 +2349,23 @@ function vHome(){
   const crow=c=>`<button class="cr" ${c.studying?'disabled':''} onclick="openStyle(${P(c.id)})"><span class="ava" style="${c.face?`background-image:url('${esc(c.face)}')`:''}">${c.face?'':SIL}</span><span style="min-width:0"><span class="t1" style="display:block">${esc(c.name)}</span><span class="t2" style="display:block">${c.studying?'Being analysed now':c.videos?`Analysed from ${c.videos} videos`:'Analysed'}</span></span></button>`;
   const shelves=()=>`<div class="sec2"><div class="sh"><b>Built by you</b>${seeAllGo(own.length,ns,"ui.fold.styles=null;ui.stab='own';rgo('mystyle')")}</div><div class="sts">${own.slice(0,ns).map(c=>stl(c,st.indexOf(c))).join('')||'<div class="none">No styles yet. Build one with the captions, zooms and sound you want.</div><button class="b2 s" style="align-self:flex-start" onclick="buildYourself()">Build a style</button>'}</div></div>
     <div class="sec2"><div class="sh"><b>Matched styles</b>${seeAllGo(cr.length,3,"ui.fold.styles=null;ui.stab='cr';rgo('mystyle')")}</div><div class="crs">${cr.slice(0,3).map(crow).join('')||'<div class="none">No matched styles yet. Paste 3 to 6 videos edited the same way.</div><button class="b2 s" style="align-self:flex-start" onclick="openCreate()">Match a style</button>'}</div></div>`;
-  if(vids.length===1)return `<div class="pgc">${firstVideoHome(vids[0])}<div class="hshelf">${shelves()}</div></div>`;
+  if(vids.length===1)return `<div class="pgc">${firstVideoHome(vids[0])}<div class="hshelf">${shelves()}</div>${exShelf()}</div>`;
   return `<div class="pgc">
   <div class="ph"><h1>Home</h1>${vids.length?`<p>${vSum(vids)}</p>`:''}</div>
   <div class="hdrop"><label class="hd-box" id="droptile">${ic('up',20)}<div><div class="t1" style="font-weight:600">Drop a video here</div><div class="t2">or choose a file</div></div><input type="file" multiple accept="video/*,.mov,.mkv,.mp4" class="hide" onchange="const f=[...this.files];this.value='';rgo('new');chooseFiles(f)"></label>${rec.map(clip).join('')}${'<div aria-hidden="true"></div>'.repeat(nc-rec.length)}</div>
   <div class="sec2"><div class="sh"><b>Your videos</b>${seeAllGo(vids.length,per,"ui.fold.videos=null;rgo('videos')")}</div>${vids.length?cardRows(vids.slice(0,per)):'<div class="none">No videos yet. Drop a clip above, or pick one to start.</div><button class="b2 s" style="align-self:flex-start" onclick="rgo(\'new\')">New video</button>'}</div>
-  <div class="hshelf">${shelves()}</div></div>`;
+  <div class="hshelf">${shelves()}</div>${exShelf()}</div>`;
+}
+// ---- Examples: edits KiroCut made from footage anyone may publish (docs/examples, examples.py), to watch before your own
+let EX;
+function exShelf(){
+  if(EX===undefined){EX=null;fetch('/examples').then(r=>r.json()).then(d=>{EX=d.examples||[];render()}).catch(()=>{EX=[]})}
+  if(!EX||!EX.length)return '';
+  const u=(n,f)=>`/examples/${encodeURIComponent(n)}/${f}`;
+  const card=x=>`<div class="exc"><a href="${u(x.name,'preview.mp4')}" target="_blank" rel="noopener" class="exp" style="background-image:url('${u(x.name,'poster.jpg')}')" aria-label="Watch ${esc(x.title)}"><span>${ic('play',18)}</span></a>
+    <div class="t1">${esc(x.title)}</div><div class="t2">${esc(x.what)}</div>
+    <div class="t2 exl">${x.files.includes('replay.mp4')?`<a href="${u(x.name,'replay.mp4')}" target="_blank" rel="noopener">How Kiro made it</a>`:''}${x.files.includes('before.mp4')?`<a href="${u(x.name,'before.mp4')}" target="_blank" rel="noopener">The raw take</a>`:''}<span>${esc(x.license)}${x.credit?' · '+esc(x.credit):''}</span></div></div>`;
+  return `<div class="sec2"><div class="sh"><b>Examples</b></div><div class="exs">${EX.map(card).join('')}</div></div>`;
 }
 // ---- Your videos: Now (cards) and Done (tiles); a folder opens from the sidebar
 function vVideos(){

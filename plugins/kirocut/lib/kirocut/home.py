@@ -2133,6 +2133,17 @@ def make_handler(token):
                 self.send_header("Content-Length", "0")
                 self.end_headers()
                 return
+            if path == "/examples":   # Home's Examples shelf: edits KiroCut made from footage anyone may publish
+                import examples
+                return self.send(200, {"examples": examples.listing()})
+            m = re.match(r"^/examples/([a-z0-9][a-z0-9-]{1,40})/(preview\.mp4|replay\.mp4|before\.mp4|poster\.jpg)$", path)
+            if m:
+                import examples
+                f = examples.STORE / m[1] / m[2]
+                if not f.is_file():
+                    return self.send(404, {})
+                return self.send(200, f.read_bytes(), "image/jpeg" if m[2].endswith(".jpg") else "video/mp4",
+                                 cache="private, max-age=3600")
             m = re.match(r"^/td/([a-z0-9._-]+)/(.+)$", path)   # the teardown page and its own files
             if m:
                 base = (Path(read()["root"]) / "style-matches" / m[1]).resolve()
@@ -3171,6 +3182,16 @@ def demo():
             assert e.code == 400
     assert post("/keys", {"reset": "play"})["keys"] == {} and post("/keys", {"reset_all": True})["keys"] == {} and get("/keys") == {"keys": {}}
     assert b'src="/alerts.js"' in HTML.read_bytes() and b"aveAlert" in urllib.request.urlopen(base + "/alerts.js?t=" + tok).read()
+    exs = get("/examples")["examples"]   # Home's Examples shelf, from docs/examples (examples.py)
+    assert isinstance(exs, list) and all({"name", "title", "license", "files"} <= set(x) for x in exs), exs
+    for x in exs[:1]:
+        assert urllib.request.urlopen(f"{base}/examples/{x['name']}/poster.jpg?t={tok}").read()[:2] == b"\xff\xd8"
+    for bad in ("/examples/../x/poster.jpg", "/examples/a/meta.json"):
+        try:
+            urllib.request.urlopen(base + bad + "?t=" + tok)
+            raise AssertionError(f"{bad} was served")
+        except urllib.error.HTTPError as e:
+            assert e.code == 404
     for gone in ("/ask", "/ask.js"):   # questions are asked in the chat
         try:
             get(gone)

@@ -1,0 +1,23 @@
+{
+  "name": "nasa-interview-cut",
+  "title": "A raw NASA interview, cut",
+  "what": "An unedited 8 min 38 s interview answering eight questions about Artemis II. KiroCut removed the false starts, stammers and fillers and tightened the pauses: 6 min 57 s, 98.7% of the kept words checked in the render.",
+  "stage": "cut",
+  "license": "Public domain",
+  "source": "https://commons.wikimedia.org/wiki/File:NASA_Interview_Opportunity-_Moonbound!_NASA%E2%80%99s_Artemis_II_Mission_Days_From_Launch_%E2%80%94_First_Crewed_Journey_Around_the_Moon_in_More_Than_50_Years!_(SVS14934_-_Kelsey_Young_SOTs_Artemis_II_1).webm",
+  "credit": "NASA's Scientific Visualization Studio (svs.gsfc.nasa.gov/14934)",
+  "lengths_s": {
+    "raw": 517.7,
+    "cut": 416.83
+  },
+  "preview": {
+    "from_s": 62.52,
+    "seconds": 45
+  },
+  "files": [
+    "preview.mp4",
+    "poster.jpg",
+    "before.mp4"
+  ],
+  "saved": "2026-11-26"
+}
