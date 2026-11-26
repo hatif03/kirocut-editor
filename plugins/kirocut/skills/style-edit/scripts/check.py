@@ -774,6 +774,42 @@ def font_findings(plan, fonts):
             for f, where in named.items() if f and f not in fonts]
 
 
+VISION_FRAMES = 12
+
+
+def vision_moments(plan, n=VISION_FRAMES):
+    """Where to look: an early frame, then each card once it has settled (1.6 s in, or its middle), spread to n."""
+    fps = plan.get("fps") or 30
+    dur = (plan.get("durationInFrames") or 0) / fps
+    ts = [min(1.0, dur / 2)] + [round(min(c["start"] + 1.6, (c["start"] + c["end"]) / 2), 2) for c in plan.get("cards") or []]
+    ts = sorted({t for t in ts if 0 <= t < dur})
+    if len(ts) > n:
+        ts = [ts[round(i * (len(ts) - 1) / (n - 1))] for i in range(n)]
+    return ts
+
+
+def vision_findings(plan, video):
+    """A local vision model's look at frames of the render (vision.py, through Ollama): a covered face or an
+    unreadable caption is a WARN, a machine-made look a LOOK. No Ollama: one note, nothing found."""
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "lib" / "kirocut"))
+    import tempfile
+    import vision
+    if vision.models() is None:
+        print("note: vision check skipped: Ollama is not running (lib/kirocut/vision.py says how to install it)")
+        return []
+    with tempfile.TemporaryDirectory() as d:
+        for t in vision_moments(plan):
+            subprocess.run(["ffmpeg", "-v", "error", "-y", "-ss", f"{t:.2f}", "-i", str(video), "-frames:v", "1",
+                            "-vf", "scale=768:-2", str(Path(d) / f"t{t:07.2f}.png")], capture_output=True)
+        res = vision.review(d)
+        if not res["ran"]:
+            print(f"note: vision check skipped: {res['why']}")
+            return []
+        what = {"face": "a face looks covered", "caption": "the caption looks hard to read", "ai": "the frame looks machine-made"}
+        return [finding(f["level"], float(f["still"][1:-4]), f"{what[f['check']]} (local vision model {res['model']})", f["fix"])
+                for f in res["findings"]]
+
+
 def report(found, mode):
     order = {"FAIL": 0, "WARN": 1, "LOOK": 2}
     found.sort(key=lambda f: (order[f["level"]], f["t"] if f["t"] is not None else -1))
@@ -1063,6 +1099,12 @@ def demo():
     lg = {**pics, "captions": {"chunks": [{"text": "youtube"}]}, "cards": [{"anim": {"type": "logo", "props": {"src": "images/l.svg",
           "exit": {"kind": "fade", "ease": "power1.in"}}}, "trigger_word": "youtube", "start": 1, "end": 2, "box": [40, 15, 20, 11]}]}
     assert not unsaid_numbers(lg), unsaid_numbers(lg)
+    # the vision check looks at an early frame and each card once settled, at most VISION_FRAMES of them
+    vp = {"fps": 30, "durationInFrames": 300, "cards": [{"start": 2, "end": 4}, {"start": 5, "end": 5.5}, {"start": 12, "end": 13}]}
+    assert vision_moments(vp) == [1.0, 3.0, 5.25], vision_moments(vp)   # the card past the end is not looked at
+    many = {"fps": 30, "durationInFrames": 3000, "cards": [{"start": i * 4, "end": i * 4 + 3} for i in range(20)]}
+    vm = vision_moments(many)
+    assert len(vm) == VISION_FRAMES and vm[0] == 1.0 and vm[-1] == 77.5, vm
     print("demo ok")
 
 
@@ -1166,6 +1208,7 @@ def main():
             known = {s.lower() for s in re.findall(r"[\w']+", json.dumps([rd("visuals.json") or [], rd("words.json") or [],
                                                                         rd("fixes.json") or {}]))}
             found += caption_looks(heard, shown, known)
+        found += vision_findings(plan, video)
     n = report(found, a.mode)
     out = edit / f"check{tag}.json"
     doc = json.loads(out.read_text(encoding="utf-8")) if out.exists() else {}

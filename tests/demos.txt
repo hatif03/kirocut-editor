@@ -100,3 +100,4 @@ tests/check_extension.py
 tests/sync_kiro.py --check
 plugins/kirocut/lib/kirocut/replay.py demo
 plugins/kirocut/lib/kirocut/examples.py demo
+plugins/kirocut/lib/kirocut/vision.py demo
