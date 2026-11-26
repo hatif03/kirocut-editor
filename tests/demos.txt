@@ -43,6 +43,7 @@ plugins/kirocut/lib/kirocut/home.py demo
 plugins/kirocut/lib/kirocut/pagekit.py demo
 plugins/kirocut/lib/kirocut/legacy.py demo
 tests/run_evals.py demo
+tests/bench/bench.py demo
 plugins/kirocut/lib/kirocut/assets.py demo
 plugins/kirocut/lib/kirocut/library.py demo
 plugins/kirocut/lib/kirocut/thumbs.py demo

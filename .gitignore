@@ -14,3 +14,6 @@ eval-results/
 /*.mov
 /*.MOV
 .context/
+# benchmark media and reports (tests/bench/bench.py): downloaded videos are never committed
+/bench-report/
+tests/bench/out/

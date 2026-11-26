@@ -1,0 +1,14 @@
+{
+  "note": "Footage the benchmark edits. Each entry is openly licensed; the file itself is downloaded to ~/.kirocut/bench/takes and never committed. The reference video the user names is measured locally and never stored here.",
+  "takes": [
+    {
+      "name": "young",
+      "what": "A NASA scientist answering eight questions about the Artemis II mission to camera, unedited (raw interview sound-on-tape), 1920x1080, 8 min 38 s",
+      "source": "https://commons.wikimedia.org/wiki/File:NASA_Interview_Opportunity-_Moonbound!_NASA%E2%80%99s_Artemis_II_Mission_Days_From_Launch_%E2%80%94_First_Crewed_Journey_Around_the_Moon_in_More_Than_50_Years!_(SVS14934_-_Kelsey_Young_SOTs_Artemis_II_1).webm",
+      "file": "https://upload.wikimedia.org/wikipedia/commons/8/89/NASA_Interview_Opportunity-_Moonbound%21_NASA%E2%80%99s_Artemis_II_Mission_Days_From_Launch_%E2%80%94_First_Crewed_Journey_Around_the_Moon_in_More_Than_50_Years%21_%28SVS14934_-_Kelsey_Young_SOTs_Artemis_II_1%29.webm",
+      "credit": "NASA's Scientific Visualization Studio (svs.gsfc.nasa.gov/14934)",
+      "license": "Public domain (work of NASA, a US government agency); attribution not required",
+      "license_source": "Wikimedia Commons file page, LicenseShortName = Public domain, AttributionRequired = false"
+    }
+  ]
+}
