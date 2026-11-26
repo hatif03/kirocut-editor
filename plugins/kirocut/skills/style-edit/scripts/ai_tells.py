@@ -265,10 +265,11 @@ def check_plan(plan, visuals=None, table=None):
     typed = [c for c in content if (c.get("anim") or {}).get("type") in TYPE_ONLY]
     if content and len(typed) / len(content) >= 0.5:
         out.append(tell("text-only-cards", "cards", f"{len(typed)} of {len(content)} cards are words on a ground"))
-    if len(content) >= 4:
-        ents = {c.get("entrance") for c in content}
+    over = [c for c in content if c.get("layout") != "scene"]   # a full-frame cut-away arrives by its transition, not an entrance
+    if len(over) >= 4:
+        ents = {c.get("entrance") for c in over}
         if len(ents) == 1:
-            out.append(tell("same-entrance", "cards", f"all {len(content)} enter with '{ents.pop()}'"))
+            out.append(tell("same-entrance", "cards", f"all {len(over)} enter with '{ents.pop()}'"))
     scenes = [c for c in content if c.get("layout") == "scene"]
     pairs = {(c.get("transition_in"), c.get("transition_out")) for c in scenes}
     if len(scenes) >= 3 and len(pairs) == 1 and pairs != {("cut", "cut")}:
@@ -506,13 +507,19 @@ def demo():
     got = check_plan(plan, [{"word": "city", "url": "https://www.pexels.com/photo/1"}, {"word": "robot", "src": "images/midjourney-robot.png"}], T)
     g = ids(got)
     for t in ("multiplier-stat", "heading-subline-rule", "eyebrow-label", "one-accent-word", "slop-icon", "icon-only-card",
-              "slop-copy", "emoji", "title-case", "text-only-cards", "same-entrance", "whoosh-every-card", "one-sfx-repeated",
+              "slop-copy", "emoji", "title-case", "text-only-cards", "whoosh-every-card", "one-sfx-repeated",
               "meme-sfx", "preset-captions", "default-grotesk-body", "ai-image-broll", "stock-broll"):
         assert t in g, (t, g)
     assert not any("social_post" in f["where"] and f["tell"] in ("slop-copy", "slop-structure") for f in got), got
     assert all(f["level"] in ("BAN", "WARN") and f["fix"] for f in got)
     assert check_plan({"width": 1080, "height": 1920, "look": {"preset": "neutral", "font": "Newsreader"},
                        "cards": [{"src": "images/capture-1.png", "entrance": "pop"}]}, [], T) == []
+    # four cards over the footage that all enter the same way: the tell; full-frame cut-aways (b-roll scenes) enter by
+    # their transition, so 53 of them "scaling in" is not one (found on the NASA benchmark edit)
+    same = [{"src": f"images/capture-{i}.png", "entrance": "scale"} for i in range(4)]
+    assert "same-entrance" in ids(check_plan({"cards": same}, [], T))
+    cuts = [{**c, "layout": "scene", "transition_in": t, "transition_out": "cut"} for c, t in zip(same * 2, ("cut", "push") * 4)]
+    assert "same-entrance" not in ids(check_plan({"cards": cuts}, [], T))
     # every scene cut hard (a creator who only cuts) is the fix, not the tell
     sc = [{"src": f"images/capture-{i}.png", "entrance": e, "layout": "scene", "transition_in": "cut", "transition_out": "cut"}
           for i, e in enumerate(("pop", "slide", "fade"))]
