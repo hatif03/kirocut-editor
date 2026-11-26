@@ -3,3 +3,6 @@ This product includes software adapted from HyperFrames
 licensed under the Apache License, Version 2.0
 (http://www.apache.org/licenses/LICENSE-2.0). Adapted files are under
 plugins/kirocut/remotion/ and were modified from the originals.
+
+The rest of KiroCut is under the MIT License in LICENSE.
+plugins/kirocut/skills/motion-design/ keeps its own MIT licence (Copyright (c) 2025 LottieFiles).
