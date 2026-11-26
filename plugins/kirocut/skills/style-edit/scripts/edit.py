@@ -364,6 +364,20 @@ def watch(cmd, log, stall, start=STALL_START_S, cwd=None, env=None, echo=True):
         return p.returncode
 
 
+FRAME_MISS = "No frame found at position"   # Remotion's OffthreadVideo cache missing a frame: a fresh Chrome renders it
+
+
+def frame_miss(log, since=0):
+    """The render (from byte `since` of its log on) failed on a missed video frame: transient on a loaded laptop (the
+    NASA benchmark's full-frame b-roll edit hit it at frames 71, 569, 634 and 795 on four tries), so worth a retry."""
+    try:
+        with open(log, "rb") as f:
+            f.seek(since)
+            return FRAME_MISS.encode() in f.read()
+    except OSError:
+        return False
+
+
 def render_failed(code, log, edit):
     """A failed render: one short message with the log and the next step, never a traceback."""
     lines = [x.strip() for x in Path(log).read_text(errors="replace", encoding="utf-8").splitlines()
@@ -541,9 +555,10 @@ def render_chunks(edit, plan_path, pub, out, draft, log, stall, run=None, bundle
     for c in pieces:
         cmd = ["node", str(REMOTION / "render.mjs"), "chunk", str(bundle), str(plan_path),
                str(tmp / "chunks" / f"chunk-{c['i']}.mkv"), str(c["from"]), str(c["to"]), *(["--draft"] if draft else [])]
+        mark = Path(log).stat().st_size if Path(log).exists() else 0
         r = run(cmd, log, stall, cwd=REMOTION, env=aws_env())
-        if r == STALLED:
-            print(f"frames {c['from']}-{c['to']} stalled too; once more")
+        if r == STALLED or (r and frame_miss(log, since=mark)):
+            print(f"frames {c['from']}-{c['to']} {'stalled' if r == STALLED else 'missed a video frame'} too; once more")
             r = run(cmd, log, stall, cwd=REMOTION, env=aws_env())
         if r:
             render_failed("stalled" if r == STALLED else r, log, edit)
@@ -571,6 +586,11 @@ def render_laptop(edit, plan_path, pub, out, draft, run=None, chunks=None):
     if r == STALLED:
         print(f"\nthe render stalled: no new frame for {stall:.0f} s. Stopped it; rendering again in "
               f"{CHUNK_FRAMES}-frame pieces (log: {log})", flush=True)
+        (chunks or render_chunks)(edit, plan_path, pub, out, draft, log, stall)
+        return
+    if r and frame_miss(log):
+        print(f"\nthe renderer missed a video frame ({FRAME_MISS}): rendering again in {CHUNK_FRAMES}-frame pieces, "
+              f"each retried once (log: {log})", flush=True)
         (chunks or render_chunks)(edit, plan_path, pub, out, draft, log, stall)
         return
     if r:
@@ -1454,6 +1474,41 @@ def demo():
         n = subprocess.run(["ffprobe", "-v", "error", "-count_frames", "-select_streams", "v:0", "-show_entries",
                             "stream=nb_read_frames", "-of", "csv=p=0", str(out)], capture_output=True, text=True).stdout
         assert int(n) == 450 and not (Path(t) / ".render-chunks").exists(), n
+        # a missed video frame (Remotion's "No frame found at position") goes to the pieces too, and a piece that
+        # misses one is tried once more; any other failure still stops with its message
+        miss = f"Rendered 795/9994\nError: Compositor error: {FRAME_MISS} 796796 for source x.mp4\n"
+        went.clear()
+
+        def missed(cmd, log, stall, **k):
+            Path(log).write_text(miss, encoding="utf-8")
+            return 1
+        render_laptop(Path(t), Path(t) / "plan.json", Path(t), Path(t) / "render.mp4", False, run=missed, chunks=lambda *a: went.append(a))
+        assert went, "a missed frame renders again in pieces"
+        assert frame_miss(Path(t) / "render.renderer.log") and not frame_miss(Path(t) / "render.renderer.log", since=10 ** 6)
+        tries.clear()
+        tries_seen = []
+        orig = fake
+
+        def fake2(cmd, log, stall, **k):   # every piece renders on its first try except 200-399, which misses once
+            a, b = int(cmd[-2]), int(cmd[-1])
+            tries_seen.append((a, b))
+            if (a, b) == (200, 399) and tries_seen.count((a, b)) == 1:
+                with open(log, "a", encoding="utf-8") as f:
+                    f.write(miss)
+                return 1
+            tries.append((a, b))
+            tries.append((a, b))   # orig treats a second try as the one that renders
+            return orig(cmd, log, stall)
+        render_chunks(Path(t), Path(t) / "plan.json", Path(t), out, False, Path(t) / "c2.log", 1, run=fake2,
+                      bundle_to=lambda a, b: None)
+        assert tries_seen.count((200, 399)) == 2 and tries_seen.count((0, 199)) == 1, tries_seen
+        Path(t, "render.renderer.log").write_text("Error: Request closed\n", encoding="utf-8")
+        try:
+            render_laptop(Path(t), Path(t) / "plan.json", Path(t), Path(t) / "render.mp4", False,
+                          run=lambda c, log, s, **k: 1, chunks=lambda *a: went.append("no"))
+            raise AssertionError("another failure went to the pieces")
+        except SystemExit:
+            pass
     print("demo ok")
 
 
