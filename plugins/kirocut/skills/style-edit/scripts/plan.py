@@ -177,14 +177,15 @@ def chunk_captions(words, n, mode):
     out = []
     for i, c in enumerate(chunks):
         nxt = chunks[i + 1][0]["start"] if i + 1 < len(chunks) else None
+        ws = [{"text": cased(w["text"], mode), "start": w["start"], "end": w["end"]} for w in c]
+        ws = [w for w in ws if w["text"]]
         # A transcriber can stretch one word over a pause or a misheard run; never hold past
-        # a plausible spoken length plus a short tail.
-        last = c[-1]
+        # a plausible spoken length plus a short tail. The tail runs from the last word shown: a token the
+        # caption drops ("100 %", the "%") held "100" 0.48 s past it (check.py plan's FAIL on the NASA benchmark).
+        last = ws[-1] if ws else c[-1]
         end = min(last["end"], last["start"] + MAX_WORD_S) + HOLD_TAIL_S
         if nxt is not None:
             end = min(end, nxt)
-        ws = [{"text": cased(w["text"], mode), "start": w["start"], "end": w["end"]} for w in c]
-        ws = [w for w in ws if w["text"]]
         if ws:
             out.append({"text": " ".join(w["text"] for w in ws), "start": c[0]["start"],
                         "end": round(end, 3), "words": ws})
@@ -3550,6 +3551,10 @@ def demo():
            {"kind": "capture", "word": "c", "url": "https://y.dev"}]
     assert [i["word"] for i in one_per_page([{"word": w, "src": w} for w in "abc"], vis)] == ["a", "c"]
     assert tx[1]["end"] == 5.0 and tx[1]["x_pct"] >= SAFE["9:16"][0] and tx[2]["box"] == [13, 14, 74, 20] and tx[2]["start"] == 4.0, tx
+    # a token the caption drops ("100 %") does not hold the page: the tail runs from the last word shown
+    pct = chunk_captions([{"text": "see", "start": 0.0, "end": 0.3}, {"text": "100", "start": 0.3, "end": 0.6},
+                          {"text": "%", "start": 0.6, "end": 0.9}], 6, "sentence")
+    assert [w["text"] for w in pct[0]["words"]] == ["see", "100"] and pct[0]["end"] == round(0.6 + HOLD_TAIL_S, 3), pct
     # her cut-away to b-roll is the clip edge to edge; a scene a beat asked for keeps its card
     vb = as_scene({"start": 1, "end": 3, "scene_by": "creator", "anim": {"type": "video_card", "props": {"src": "images/b.mp4"}}}, None, {}, 0)
     assert vb["anim"]["props"] == {"src": "images/b.mp4", "full": True} and vb["layout"] == "scene", vb
