@@ -18,6 +18,19 @@ What changed for every user.
 - Windows: golden stills for the renderer (`tests/golden/windows/`), and the self-checks pass there (a junction stands in for a symlink when Windows does not allow one; the motion check runs `hyperframes.cmd` through cmd.exe, which newer Node needs).
 - Fixed: `kirocut_status` hung on its tool checks, because a program it started could wait for input on the chat's own connection. The server keeps that connection to itself now, and what a program prints can never reach it.
 - `kirocut_scene_undo` with no number undoes Kiro's newest change ("undo that"); with `redo` it puts back the newest undone one.
+- Watch Kiro edit. A new edit opens its page on your raw take at once (`kirocut_open_editor` with `source`); each step of the cut ticks off there, even for an edit started in the chat, and the transcript strikes every word Kiro removes as it decides.
+- "Show me how you edited it": `kirocut_replay` makes a short labelled time-lapse of every step, change and draft (`replay.py`), played on the review page.
+- Install in one step: the Power from `https://github.com/hatif03/KiroCut/tree/main/plugins/kirocut`, whose server starts from `${PLUGIN_ROOT}`. The first `kirocut_status` on a new machine installs the Python packages, the speech model and the renderer in the background; a missing system tool comes back as one command for your terminal. A clone runs `setup.py workspace` once (the session hook says so).
+- Examples: the editor's Home and the README show edits KiroCut made, from footage anyone may publish (`examples.py`; never another creator's video).
+- A creator's film grade is matched: warm highlights, the tint of the shadows and contrast, measured on both sides and burned into your footage with ffmpeg.
+- A long reference video is read in four stretches from start to end instead of every frame: a 15-minute video takes minutes, not hours.
+- Sound cues come in three takes each and rotate, so no cue plays the same file twice running.
+- Captions can be italic (`captions.italic`), for a film's subtitle look.
+- A clip a card plays (b-roll, a quoted video) renders from a proxy: muted, at the output size, a keyframe every 15 frames. A 7-minute edit with 53 b-roll cut-aways renders about seven times faster.
+- Full-frame cut-aways are no longer flagged as "every card enters the same way".
+- A local vision model (moondream in Ollama, optional) looks at the rendered frames for a covered face, an unreadable caption or a machine-made look (`vision.py`, in `check.py render`).
+- New mark: Kiro's ghost crossed by a film strip.
+- `tests/bench/bench.py` measures a KiroCut render and a reference video with the same code and lists every gap.
 
 - The editor is KiroCut. Open this folder in the Kiro IDE and say "edit my video". The mark is Kiro's ghost on Kiro purple, cut by CapCut's crossed bars.
 - The Python package is `kirocut`, in `plugins/kirocut/lib/kirocut`.
