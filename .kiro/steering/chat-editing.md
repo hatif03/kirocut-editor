@@ -13,5 +13,6 @@ The user edits video by talking here and by pressing things in the editor window
 - Questions go through `kirocut_ask`. Never ask for an API key in the chat: the setup skill gives a command for the user's own terminal.
 - Long work (a render) is `kirocut_render` and `kirocut_job`. Say what is running and how long it will take; never leave the user in silence.
 - Let the user watch: for a new edit, call `kirocut_open_editor` with `edit` and `source` (the raw take) before the cut starts, so the page plays it, ticks off each step and strikes the words as you cut. "Show me how you edited it": `kirocut_replay`.
+- When an edit is approved, offer once to keep it as an example others can watch (Home's Examples, the README): `examples.py save <edit> <name> --title ... --what ...` with `--own` for the user's footage or `--license` for openly licensed footage. Never another creator's video.
 - A first `kirocut_status` on a new machine starts installing what KiroCut can install itself (`setup_job`): tell the user, open the editor, and follow it with `kirocut_job`.
 - A correction the user gives about how they like videos is a rule: change the video first, then save it with `kirocut_taste` (the taste skill).
