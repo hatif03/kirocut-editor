@@ -1660,10 +1660,18 @@ def place_sfx(plan, words, kit, sound=None):
             kept.append((t, name))
     if not sound.get("kinds"):   # never the same cue twice running, unless her measured mix repeats them itself
         kept = [k for i, k in enumerate(sorted(kept)) if i == 0 or k[1] != sorted(kept)[i - 1][1]]
-    # on the frame Sfx.tsx starts it on (round(t x fps)): the plan's t is when the cue really plays
+    # on the frame Sfx.tsx starts it on (round(t x fps)): the plan's t is when the cue really plays. A cue used again
+    # plays its next take (sfx.py TAKES: the same sound pitched apart), so no file is heard twice running.
     fps = plan["fps"]
-    return [{"t": round(round(max(0.0, t - kit["cues"][n]["attack_s"]) * fps) / fps, 4), "src": f".sfx/{n}.wav", "event": round(t, 3)}
-            for t, n in kept]
+    out, used = [], {}
+    for t, n in sorted(kept):
+        k = used.get(n, 0)
+        used[n] = k + 1
+        takes = kit["cues"][n].get("takes") or [kit["cues"][n]["attack_s"]]
+        i = k % len(takes)
+        src = f".sfx/{n}.wav" if i == 0 else f".sfx/{n}-{i + 1}.wav"
+        out.append({"t": round(round(max(0.0, t - takes[i]) * fps) / fps, 4), "src": src, "event": round(t, 3)})
+    return out
 
 
 def with_sfx(build):
@@ -3364,7 +3372,10 @@ def demo():
     assert place_sfx(sp, sw, kit, {"sfx_per_min": 0}) == []
     assert all("whoosh" not in c["src"] for c in place_sfx(sp, sw, kit, {"kinds": {"impact": 100}}))
     if "impact" in kit["cues"]:   # mostly impacts: the zooms and scene cuts take the low boom
-        assert {c["src"] for c in place_sfx(sp, sw, kit, {"kinds": {"impact": 57, "pop": 7}})} <= {".sfx/impact.wav", ".sfx/pop.wav"}
+        taken = {"cues": {n: {**c, "takes": [c["attack_s"]] * 3} for n, c in kit["cues"].items()}}   # sfx.py's kit has 3 takes a cue
+        imp = [c["src"] for c in place_sfx(sp, sw, taken, {"kinds": {"impact": 57, "pop": 7}})]
+        assert {re.sub(r"-\d\.wav$", ".wav", s) for s in imp} <= {".sfx/impact.wav", ".sfx/pop.wav"}, imp
+        assert all(a != b for a, b in zip(imp, imp[1:])), f"a take is never heard twice running: {imp}"
     # one lead model for plan, renderer and check: motion.ts carries the same two numbers
     ts = (Path(__file__).resolve().parents[3] / "remotion" / "src" / "motion.ts").read_text(encoding="utf-8")
     assert f"CARD_LEAD_S = {CARD_LEAD_S};" in ts and f"OVERLAY_LEAD_S = {OVERLAY_LEAD_S};" in ts, "motion.ts lead drifted"

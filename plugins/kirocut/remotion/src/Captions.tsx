@@ -48,17 +48,19 @@ export type CaptionStyle = {
   flat?: boolean;
   /** The creator's second face for pages marked "face": "light" (plan.py LIGHT_FONT), set at 400. */
   light_font?: string;
+  /** Italic captions (a film's subtitles in an italic serif): the family's italic face when it has one. */
+  italic?: boolean;
 };
 
-export const useFamily = (name: string | undefined, weight: number) => {
+export const useFamily = (name: string | undefined, weight: number, italic = false) => {
   const [family, setFamily] = useState<string | null>(null);
   const [handle] = useState(() => delayRender(`font ${name}`));
   // the stressed word draws one weight heavier (CaptionLine), so that weight loads too
   useEffect(() => {
-    loadFamily(name, [weight, Math.min(900, weight + 100)])
+    loadFamily(name, [weight, Math.min(900, weight + 100)], italic ? "italic" : "normal")
       .then(async (f) => { await document.fonts.ready; setFamily(f); })
       .finally(() => continueRender(handle));
-  }, [name, weight, handle]);
+  }, [name, weight, italic, handle]);
   return family;
 };
 
@@ -113,6 +115,7 @@ export const CaptionLine: React.FC<{ style: CaptionStyle; chunk: Chunk; t: numbe
       : style.flat || style.shadow === false || style.box || style.stroke ? undefined : `0 ${size * 0.04}px ${size * 0.18}px rgba(0,0,0,0.5)`;
     return (
       <div style={{ transform: pageT, opacity: pageO, textAlign: "center", fontFamily: family, fontWeight: weight, fontSize: size,
+        fontStyle: style.italic ? "italic" : undefined,
         lineHeight: 1.14, color, whiteSpace: lines === 1 ? "nowrap" : undefined, padding: boxed ? `${size * 0.12}px ${size * 0.3}px` : 0, borderRadius: size * 0.2,
         background: style.box ? "rgba(0,0,0,0.72)" : boxed ? rgba(tc, 0.45) : "transparent", maxWidth: boxW }}>
         {words.map((w, i) => {
@@ -156,8 +159,8 @@ export const CaptionLine: React.FC<{ style: CaptionStyle; chunk: Chunk; t: numbe
 /** The plan's captions over the whole cut. */
 export const Captions: React.FC<{ style: CaptionStyle; chunks: Chunk[]; t: number; m: Motion }> = ({ style, chunks, t, m }) => {
   const { width, height } = useVideoConfig();
-  const family = useFamily(style.font_match, style.weight ?? 800);
-  const lightFamily = useFamily(style.light_font ?? style.font_match, 400);
+  const family = useFamily(style.font_match, style.weight ?? 800, !!style.italic);
+  const lightFamily = useFamily(style.light_font ?? style.font_match, 400, !!style.italic);
   const chunk = chunks.find((c) => t >= c.start && t < c.end);
   // the band stays down across a short gap between pages, so it never flashes on and off between words
   // the nearest page, not the first in range: an earlier page about to drop out would fade the band for a frame

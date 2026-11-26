@@ -104,15 +104,18 @@ export const shadowOf = (look: Look, u: number) =>
 // its name: drawing system-ui, or no captions, in its place would pass unseen.
 const FALLBACK = "Inter";
 const cache = new Map<string, Promise<string>>();
-export const loadFamily = (name: string | undefined, weights: number[]): Promise<string> => {
-  const key = `${name}:${weights.join(",")}`;
+export const loadFamily = (name: string | undefined, weights: number[], style: "normal" | "italic" = "normal"): Promise<string> => {
+  const key = `${name}:${weights.join(",")}:${style}`;
   if (!cache.has(key)) {
     const fonts = getAvailableFonts();
     const entry = fonts.find((f) => f.fontFamily === name) ?? fonts.find((f) => f.fontFamily === FALLBACK)!;
     cache.set(key, entry.load().then(async (font) => {
-      const have = Object.keys(font.getInfo().fonts.normal ?? {}).map(Number);
+      // italic when asked and the family has it (a creator's subtitles in an italic serif), else its upright face
+      const faces = font.getInfo().fonts as Record<string, Record<string, unknown>>;
+      const st = style === "italic" && faces.italic ? "italic" : "normal";
+      const have = Object.keys(faces[st] ?? {}).map(Number);
       const near = (w: number) => (have.length ? have.reduce((a, b) => (Math.abs(b - w) < Math.abs(a - w) ? b : a)) : w);
-      const loaded = font.loadFont("normal", { weights: [...new Set(weights.map((w) => String(near(w))))], subsets: ["latin"] });
+      const loaded = font.loadFont(st, { weights: [...new Set(weights.map((w) => String(near(w))))], subsets: ["latin"] });
       await loaded.waitUntilDone();
       return `'${loaded.fontFamily}', system-ui, sans-serif`;
     }).catch((e) => {

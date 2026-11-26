@@ -246,6 +246,30 @@ def write(path, x, gain, nch=2):
         f.writeframes(y.tobytes())
 
 
+TAKES = (0.94, 1.07)   # two more takes of each cue, played this much slower and faster (a semitone or so)
+
+
+def resampled(x, r):
+    """x played r times as fast (pitch and length change together, as a tape would), by linear interpolation."""
+    n = max(2, int(len(x) / r))
+    out = []
+    for i in range(n):
+        p = i * r
+        j = int(p)
+        if j + 1 >= len(x):
+            out.append(x[-1])
+            continue
+        f = p - j
+        out.append(x[j] * (1 - f) + x[j + 1] * f)
+    return out
+
+
+def take_src(name, k):
+    """The k-th use of a cue (0-based) in a video: its takes in turn, so no cue sounds the same twice running."""
+    i = k % (len(TAKES) + 1)
+    return f".sfx/{name}.wav" if i == 0 else f".sfx/{name}-{i + 1}.wav"
+
+
 def build(edit_dir, speech=None):
     edit_dir = Path(edit_dir)
     cut = edit_dir / "cut.mp4"
@@ -258,7 +282,8 @@ def build(edit_dir, speech=None):
     cues, picked = {}, choices()
     for name, (graph, offset) in KIT.items():
         if picked[name] == "none":   # the user turned this sound off (the Sounds panel): plan.py leaves the moment silent
-            (out / f"{name}.wav").unlink(missing_ok=True)
+            for f in [out / f"{name}.wav"] + [out / f"{name}-{k}.wav" for k in range(2, len(TAKES) + 2)]:
+                f.unlink(missing_ok=True)
             continue
         x = samples(name, picked[name])
         x.extend([0.0] * max(0, int(MIN_S * SR) - len(x)))
@@ -267,7 +292,11 @@ def build(edit_dir, speech=None):
         gain = min(10 ** ((target - loudest50(x)) / 20), 10 ** (-1.1 / 20) / max(abs(v) for v in x))
         target = min(target, loudest50(x) + db(gain))
         write(out / f"{name}.wav", x, gain, nch)
-        cues[name] = {"attack_s": attack(x), "db": round(target, 1)}
+        cues[name] = {"attack_s": attack(x), "db": round(target, 1), "takes": [attack(x)]}
+        for k, r in enumerate(TAKES, 2):   # the same cue pitched and timed a little apart: plan.py rotates them
+            y = resampled(x, r)
+            write(out / f"{name}-{k}.wav", y, gain, nch)
+            cues[name]["takes"].append(attack(y))
     kit = {"speech_db": round(speech, 1), "cut_mtime": cut.stat().st_mtime if cut.exists() else 0, "cues": cues,
            "choices": choice_sig()}
     (out / "kit.json").write_text(json.dumps(kit, indent=1), encoding="utf-8")
@@ -332,6 +361,12 @@ def demo():
             assert old.get("choices") != choice_sig(), "other picks than the kit was built from: kit() builds it again"
             k2 = build(d, speech=-21.0)
             assert "pop" not in k2["cues"] and not (Path(d) / ".sfx" / "pop.wav").exists() and "zoom" in k2["cues"], k2
+            assert not (Path(d) / ".sfx" / "pop-2.wav").exists(), "a cue turned off takes its takes with it"
+            # every cue has three takes, pitched apart, each as loud as the first: a video never repeats one file
+            z = [pcm(Path(d) / ".sfx" / f) for f in ("impact.wav", "impact-2.wav", "impact-3.wav")]
+            assert len(z[1]) > len(z[0]) > len(z[2]) and all(abs(loudest50(y) - loudest50(z[0])) < 1.5 for y in z), [len(y) for y in z]
+            assert len(k2["cues"]["impact"]["takes"]) == 3
+            assert [take_src("impact", k) for k in range(4)] == [".sfx/impact.wav", ".sfx/impact-2.wav", ".sfx/impact-3.wav", ".sfx/impact.wav"]
             assert len(pcm(Path(d) / ".sfx" / "zoom.wav")) <= MAX_OWN_S * SR + 1, "your own sound is cut to 2 s"
             assert kit(d) == k2, "the same picks: the kit is kept"
             src, att = own_cue(d, "ding.mp3")   # a library sound put on the timeline: levelled like the kit
