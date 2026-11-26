@@ -22,7 +22,7 @@ import { Look, Texture, resolveLook, useFonts } from "./look";
 import { Motion, ease, pickMotion, prog, punchAt } from "./motion";
 import { Sfx } from "./Sfx";
 import { TextItem, Texts } from "./Texts";
-import { SceneCard, SceneView, TR_S, Transition, footageX, phases, sceneBox, sceneGrounds } from "./Scene";
+import { SceneCard, SceneView, TR_S, Transition, footageX, fullBleed, phases, sceneBox, sceneGrounds } from "./Scene";
 import { captionFade, groundCovers } from "./ground";
 import { Ground, onGround } from "./look";
 import { BoardFrame, BoardLayout } from "./Board";
@@ -321,7 +321,7 @@ const sceneCaptions = (style: CaptionStyle, chunks: Chunk[], cards: Card[], t: n
     return po <= 0 || groundCovers(tout, true, 1 - po, t - (c.end - T), T, W, H, c.focus ?? [50, 30], W / 2, (capY / 100) * H);
   };
   const sc = scenes.find(inked);
-  if (!sc) return style;
+  if (!sc || fullBleed(sc as SceneCard)) return style;   // over her own footage, edge to edge, captions keep her look
   const said = words(chunks.find((c) => t >= c.start && t < c.end)?.text ?? "");
   const shown = new Set(words(sc.anim?.props ?? {}));
   if (said.length && said.every((w) => shown.has(w))) return { ...style, present: false };

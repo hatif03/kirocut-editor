@@ -39,6 +39,11 @@ export const TR_S = 0.62; // seconds a transition takes at k = 1
 
 /** Where a scene's type lives, % of the frame: clear of the app's top bar and the captions under it. */
 export const sceneBox = (w: number, h: number): [number, number, number, number] => (h > w ? [14, 14, 72, 52] : [6, 9, 88, 70]);   // vertical: inside the app's buttons (plan.py SAFE)
+/** A cut-away to footage (plan.py as_scene: b-roll when the creator cuts away from herself): the clip is the frame. */
+export const fullBleed = (card: SceneCard) => {
+  const a = card.anim as { type?: string; props?: { full?: boolean } } | undefined;
+  return a?.type === "video_card" && !!a.props?.full;
+};
 
 const WIDE_BOX: [number, number, number, number] = [6.5, 14, 80, 54];   // vertical: a scene's content, % of the frame
 
@@ -119,7 +124,8 @@ export const SceneView: React.FC<{ card: SceneCard; t: number; look: Look; m: Mo
       }
     }
     // an animation or capture takes the frame's width inside the reels safe zone (x 6-87%), never a small card in the middle
-    const [bx, by, bw, bh] = card.box[2] === 100 && card.box[3] === 100 ? (H > W ? WIDE_BOX : sceneBox(W, H)) : card.box;
+    const full = fullBleed(card);
+    const [bx, by, bw, bh] = full ? [0, 0, 100, 100] : card.box[2] === 100 && card.box[3] === 100 ? (H > W ? WIDE_BOX : sceneBox(W, H)) : card.box;
     const id = `sc${card.start}`;
     // the scene keeps moving after its entrance: a slow push and pan over its whole life
     const life = prog(lt, 0, Math.max(1, dur), "sine.inOut");
@@ -130,8 +136,8 @@ export const SceneView: React.FC<{ card: SceneCard; t: number; look: Look; m: Mo
           filter: blur > 0.5 ? `url(#mb-${id})` : undefined }}>
           <svg width={0} height={0} style={{ position: "absolute" }}><filter id={`mb-${id}`} x="-5%" width="110%">
             <feGaussianBlur stdDeviation={`${blur} 0`} /></filter></svg>
-          <Decor look={look} w={W} h={H} lt={lt} dur={dur} />
-          <Texture look={look} w={W} h={H} id={id} />
+          {full ? null : <Decor look={look} w={W} h={H} lt={lt} dur={dur} />}
+          {full ? null : <Texture look={look} w={W} h={H} id={id} />}
           <div style={{ position: "absolute", left: `${bx}%`, top: `${by}%`, width: `${bw}%`, height: `${bh}%`, transform: cam,
             display: "flex", alignItems: "center", justifyContent: "center" }}>
             <Sequence from={Math.round(card.start * fps)} layout="none">

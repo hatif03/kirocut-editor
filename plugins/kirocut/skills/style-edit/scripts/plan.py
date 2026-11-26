@@ -2154,6 +2154,9 @@ def as_scene(card, face, style, n):
     and the focus they grow from (the head at the card's start)."""
     cyc = scene_cycle(style)
     card.update({"layout": "scene", "box": list(SCENE_BOX), "focus": card.get("focus") or head_centre(face, card["start"])})
+    if card.get("scene_by") == "creator" and (card.get("anim") or {}).get("type") == "video_card":
+        # she cuts away to footage: the clip is the frame (Scene.tsx fullBleed), not a card on a ground
+        card["anim"]["props"] = {**(card["anim"].get("props") or {}), "full": True}
     card.setdefault("transition_in", cyc[n % len(cyc)] if cyc else TRANSITIONS[0])
     card.setdefault("transition_out", cyc[n % len(cyc)] if cyc else TRANSITIONS[1])
     return card
@@ -3547,6 +3550,11 @@ def demo():
            {"kind": "capture", "word": "c", "url": "https://y.dev"}]
     assert [i["word"] for i in one_per_page([{"word": w, "src": w} for w in "abc"], vis)] == ["a", "c"]
     assert tx[1]["end"] == 5.0 and tx[1]["x_pct"] >= SAFE["9:16"][0] and tx[2]["box"] == [13, 14, 74, 20] and tx[2]["start"] == 4.0, tx
+    # her cut-away to b-roll is the clip edge to edge; a scene a beat asked for keeps its card
+    vb = as_scene({"start": 1, "end": 3, "scene_by": "creator", "anim": {"type": "video_card", "props": {"src": "images/b.mp4"}}}, None, {}, 0)
+    assert vb["anim"]["props"] == {"src": "images/b.mp4", "full": True} and vb["layout"] == "scene", vb
+    vk = as_scene({"start": 1, "end": 3, "anim": {"type": "video_card", "props": {"src": "images/b.mp4"}}}, None, {}, 0)
+    assert "full" not in vk["anim"]["props"], vk
     demo_contrast()
     demo_beats()
     print("demo ok")

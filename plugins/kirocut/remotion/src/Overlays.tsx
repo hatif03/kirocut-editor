@@ -468,6 +468,13 @@ const VideoCard: React.FC<TP> = ({ p, w, h, look, m, fonts, dur }) => {
     const tag = q(".vc-tag")[0];
     if (tag) tl.fromTo(tag, { autoAlpha: 0, y: u * 2 }, { autoAlpha: 1, y: 0, duration: 0.4, ease: m.pop }, L("in", 0.1));
   }, [p.src, w, h, dur, m.name, JSON.stringify([p.enter, p.exit, p.ambient, p.word_at])]);
+  // full (a creator's cut-away to footage, plan.py as_scene): the clip is the whole frame, cut in by the scene's transition
+  if (p.full) return (
+    <div style={{ position: "absolute", left: 0, top: 0, width: w, height: h, overflow: "hidden", background: "#000" }}>
+      {p.src ? <OffthreadVideo src={src_(p.src)!} muted startFrom={Math.round(Number(p.start_s ?? 0) * fps)} playbackRate={Number(p.rate ?? 1)}
+        style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : null}
+    </div>
+  );
   return (
     <div ref={ref} style={center}>
       <div className="cv-in" style={{ opacity: 0 }}><div className="cv-hit">

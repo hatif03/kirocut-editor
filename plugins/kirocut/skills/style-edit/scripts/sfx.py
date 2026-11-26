@@ -304,13 +304,18 @@ def build(edit_dir, speech=None):
     return kit
 
 
+def has_takes(k):
+    """A kit made with every cue's takes (an older one has a single file a cue and is built again)."""
+    return all(len(c.get("takes") or []) == len(TAKES) + 1 for c in (k.get("cues") or {}).values())
+
+
 def kit(edit_dir):
     """kit.json, built first when missing or older than cut.mp4."""
     p, cut = Path(edit_dir) / ".sfx" / "kit.json", Path(edit_dir) / "cut.mp4"
     if p.exists():
         k = json.loads(p.read_text(encoding="utf-8"))
-        if (not cut.exists() or k.get("cut_mtime", 0) >= cut.stat().st_mtime) and k.get("choices") == choice_sig():
-            return k   # a kit from before a cue was added, or from other sound picks, is built again
+        if (not cut.exists() or k.get("cut_mtime", 0) >= cut.stat().st_mtime) and k.get("choices") == choice_sig() and has_takes(k):
+            return k   # a kit from before a cue was added or takes existed, or from other sound picks, is built again
     return build(edit_dir)
 
 
@@ -369,6 +374,8 @@ def demo():
             assert [take_src("impact", k) for k in range(4)] == [".sfx/impact.wav", ".sfx/impact-2.wav", ".sfx/impact-3.wav", ".sfx/impact.wav"]
             assert len(pcm(Path(d) / ".sfx" / "zoom.wav")) <= MAX_OWN_S * SR + 1, "your own sound is cut to 2 s"
             assert kit(d) == k2, "the same picks: the kit is kept"
+            old = {**k2, "cues": {n: {x: v for x, v in c.items() if x != "takes"} for n, c in k2["cues"].items()}}
+            assert has_takes(k2) and not has_takes(old), "a kit made before takes is built again (kit())"
             src, att = own_cue(d, "ding.mp3")   # a library sound put on the timeline: levelled like the kit
             assert src == ".sfx/own-ding.wav" and abs(loudest50(pcm(Path(d) / src)) - (k2["speech_db"] - 4)) < 1.0 and 0 <= att <= MAX_OWN_S, (src, att)
             try:
