@@ -15,8 +15,21 @@ Kiro IDE (the chat-driven editor, see docs/KIRO-COMPAT.md):
 - Run the IDE spike (`py docs/spike/checklist.py`, about 20 minutes) and record the answers. Until then the editor opens in the
   browser and questions use elicitation only if the client advertises it. A recorded `extension_panel=yes` or
   `command_link=yes` + `simple_frame=yes` switches `kirocut_open_editor` to the IDE panel (`checklist.py decide`).
-- Add `.kiro/settings/mcp.json` (Kiro keeps that folder to itself: copy `docs/spike/workspace-mcp.json`). Check the
-  relative path to `launch.mjs` resolves from the workspace folder (spike key `mcp_cwd_root`); if not, write an absolute path.
+- Confirm in a real IDE that the Power's `${PLUGIN_ROOT}` is expanded in its `mcp.json` (an Agent Plugins 1.0 must, but
+  some clients have shipped without it). If not, `launch.mjs` needs a fallback that finds its own folder.
+
+Real footage (the benchmark, tests/bench):
+- Render time on a laptop is still long for long-form: 43 minutes for a 7-minute 1080p edit with 53 cut-aways on a
+  12-core machine, slowest over the 4K-sourced moon footage. Try a lower render concurrency on Windows, proxies at the
+  card's own size, and a draft render for review rounds by default.
+- The graphics measure reads a travel film's own footage as "photo cards at the top of the frame" (graphics.py on a video
+  with no speaker on screen most of the time): style_check then asks for photo cards the edit should not add.
+- The reference's subtitle font cannot be named without a Gemini key (look pass): a free local alternative (the vision
+  model naming the font class) would let an edit take serif and italic without the user picking a font.
+- Zooms reach 2 a minute against the reference's 4.3: a creator who is off screen 61% of the time gets her zoom rate
+  only while her face is up.
+- A match cut is drawn as a window growing from the face; a creator's "match" is a cut on matching content, which a
+  still mistakes for a card on the forehead. Decide whether "match" should become a plain cut for footage cut-aways.
 - The sample take in a real Kiro IDE chat, on a clean Windows and Mac machine. The same steps ran on Windows through the
   MCP server as the chat calls it (a synthetic spoken take: status, transcribe, cut, review round, scene edits, stills,
   render); the IDE's own pieces (hooks between turns, elicitation forms) still need the spike.
