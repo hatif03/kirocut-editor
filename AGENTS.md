@@ -55,8 +55,8 @@ single skill folders.
 
 ## Install
 
-- **Kiro:** open this folder. Steering, skills, agents and hooks in `.kiro/` load with the workspace. For the `kirocut` tools, copy `docs/spike/workspace-mcp.json` to `.kiro/settings/mcp.json` (a Power install brings its own `mcp.json`). Say "edit my video".
-- **Kiro Power:** `kiro-cli powers install` the `plugins/kirocut` folder, then `plugins/style-match`. See the README.
+- **Kiro Power (one click):** Powers, Add Custom Power, Import power from a repository URL: `https://github.com/hatif03/KiroCut/tree/main/plugins/kirocut`, then `.../plugins/style-match`. The power brings the `kirocut` tools; the first `kirocut_status` installs the rest in the background.
+- **Kiro, this folder:** open it. Steering, skills, agents, specs and hooks in `.kiro/` load with the workspace. For the `kirocut` tools the user runs `node plugins/kirocut/mcp/launch.mjs --run plugins/kirocut/skills/setup/scripts/setup.py workspace` once in their own terminal (it writes `.kiro/settings/mcp.json`, which Kiro keeps to the user), then reloads. Say "edit my video".
 - **Cursor and Codex:** this repo ships `.cursor-plugin/plugin.json` and `.codex-plugin/plugin.json`,
   both pointing at the same skill folders.
 

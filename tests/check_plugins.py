@@ -205,6 +205,23 @@ def check_published():
             errors.append(f".kiro/{need}/ is missing or empty")
 
 
+def check_power_mcp():
+    """A power's mcp.json starts its server from the power's own folder wherever Kiro installs it: every path in args and
+    cwd is ${PLUGIN_ROOT}-rooted (a relative one resolves against whatever folder the IDE starts it in) and exists."""
+    for rel in POWERS:
+        f = ROOT / rel / "mcp.json"
+        if not f.exists():
+            continue
+        for name, s in (json.loads(f.read_text(encoding="utf-8")).get("mcpServers") or {}).items():
+            for a in list(s.get("args") or []) + ([s["cwd"]] if s.get("cwd") else []):
+                if "/" not in a and "\\" not in a:
+                    continue
+                if not a.startswith("${PLUGIN_ROOT}"):
+                    errors.append(f"{rel}/mcp.json: {name} uses {a!r}; root it at ${{PLUGIN_ROOT}} so it works where the power is installed")
+                elif not (ROOT / rel / a.replace("${PLUGIN_ROOT}", "").lstrip("/")).exists():
+                    errors.append(f"{rel}/mcp.json: {name} points at {a!r}, which is not in the power")
+
+
 def check_no_other_agent():
     """What the user reads and what the agent is told say Kiro, and ask through kirocut_ask. Skill and reference text, the steering,
     the window's pages and the editor's own scripts are checked; sample data (a creator's or a product's name in a transcript)
@@ -267,6 +284,7 @@ def main():
             load(plugin / "hooks" / "hooks.json")
     check_no_other_agent()
     check_published()
+    check_power_mcp()
     sys.path.insert(0, str(ROOT / "tests"))
     import sync_kiro
     errors.extend(f"{rel}: out of step with plugins/; run python3 tests/sync_kiro.py" for rel in sync_kiro.drift())

@@ -15,11 +15,26 @@ It also makes:
 
 ## Start here
 
-Open the folder in Kiro. Its steering files, skills, agents and hooks load with the workspace, and the `kirocut` tools (an MCP server)
-start with it. Say **edit my video** in the chat.
+You need [Kiro](https://kiro.dev), [Node](https://nodejs.org) 20+, Python 3.10+ and ffmpeg. On Windows:
+`winget install -e --id OpenJS.NodeJS.LTS; winget install -e --id Python.Python.3.12; winget install -e --id Gyan.FFmpeg`.
+On a Mac: `brew install node python ffmpeg`. KiroCut installs everything else itself the first time (5-10 minutes, once).
 
-The tools need one file this repo cannot add for you (Kiro keeps `.kiro/settings/` to itself): copy `docs/spike/workspace-mcp.json` to
-`.kiro/settings/mcp.json`, or install the Power, which brings its own `mcp.json`. Check with **Kiro: MCP servers** that `kirocut` is connected.
+**One click: the Power.** In Kiro open the Powers panel, choose **Add Custom Power**, **Import power from a repository URL**, and paste
+`https://github.com/hatif03/KiroCut/tree/main/plugins/kirocut` (then the same with `plugins/style-match` to match styles).
+Open any folder, say **edit my video**. The `kirocut` tools come with the power, and the first call installs the rest while you
+pick your clip.
+
+**Clone and open.** `git clone https://github.com/hatif03/KiroCut` and open the folder in Kiro: the steering, skills, agents, specs
+and hooks load with it. The tools need one file Kiro keeps to you (`.kiro/settings/`), so run this once in your own terminal, in the
+folder, then reload the window:
+
+```bash
+node plugins/kirocut/mcp/launch.mjs --run plugins/kirocut/skills/setup/scripts/setup.py workspace
+```
+
+Check with **Kiro: MCP servers** that `kirocut` is connected (the session-start hook reminds Kiro if it is not), then say
+**edit my video**. The editor page opens on your raw take while Kiro cuts it: each step ticks off and the words it removes are
+struck through as it decides. After the edit, **replay** shows how it was made as a short time-lapse ("show me how you edited it").
 
 Kiro opens the editor window for you and puts the link in the chat. Press what you need in the window: drop a clip, pick a style,
 **Make my video**, leave notes on a draft, **Approve**. Kiro hears it while it waits for you, and when you next write in the chat.
@@ -42,7 +57,7 @@ Your videos are saved in one folder, wherever you start: `~/Movies/KiroCut` on a
 
 Kiro is the way to open this folder. These also load the same skills:
 
-- Kiro Power: `kiro-cli powers install` the `plugins/kirocut` folder, then `plugins/style-match`. In the IDE: Powers, Add Custom Power, Import power from a folder, and pick each folder.
+- Kiro Power from a folder you have: `kiro-cli powers install` the `plugins/kirocut` folder, then `plugins/style-match`. In the IDE: Powers, Add Custom Power, Import power from a folder, and pick each folder.
 
 ### Way 1: open this folder in Kiro
 

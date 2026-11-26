@@ -4,7 +4,8 @@
     "kirocut": {
       "type": "stdio",
       "command": "node",
-      "args": ["mcp/launch.mjs"]
+      "args": ["${PLUGIN_ROOT}/mcp/launch.mjs"],
+      "cwd": "${PLUGIN_ROOT}"
     }
   }
 }

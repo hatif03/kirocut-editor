@@ -128,6 +128,37 @@ def editor_demo(c, tmp, e):
                                   *e.parent.glob("live-edit/review/server.pid"))
 
 
+def setup_demo(env):
+    """A first run: kirocut_status starts install-all once by itself, or hands back the system tools the user installs."""
+    import jobs
+    import tools
+    old = {k: os.environ.get(k) for k in env}
+    os.environ.update(env)
+    started, real = [], jobs.start
+    jobs.start = lambda kind, cmd, **k: started.append((kind, cmd)) or {"job_id": f"{kind}-abc", "kind": kind, "state": "running"}
+    try:
+        row = lambda n, ok: {"name": n, "ok": ok, "detail": "", "fix": "" if ok else f"install {n}"}   # noqa: E731
+        ready = [row(n, True) for n in tools.SYSTEM + tools.SELF]
+        assert tools.first_run_setup(ready) == {} and not started, "nothing to install"
+        no_node = [row(n, n != "node") for n in tools.SYSTEM] + [row(n, False) for n in tools.SELF]
+        r = tools.first_run_setup(no_node)
+        assert r["setup"] == "needs_you" and "node" in r["next"] and not started, r   # never installs past a missing system tool
+        fresh = [row(n, True) for n in tools.SYSTEM] + [row(n, n == "motion clips") for n in tools.SELF]
+        r = tools.first_run_setup(fresh)
+        assert r["setup"] == "installing" and r["setup_job"] == "setup-abc" and len(started) == 1, r
+        assert started[0][0] == "setup" and started[0][1][-2:] == ["install-all", "--report"], started
+        real_list, jobs.list_jobs = jobs.list_jobs, lambda n=10: [{"job_id": "setup-abc", "kind": "setup", "state": "running"}]
+        try:
+            assert tools.first_run_setup(fresh)["setup_job"] == "setup-abc" and len(started) == 1, "a running setup is reused"
+        finally:
+            jobs.list_jobs = real_list
+    finally:
+        jobs.start = real
+        for k, v in old.items():
+            os.environ.pop(k, None) if v is None else os.environ.__setitem__(k, v)
+    print("setup    ok: a first run installs what KiroCut can by itself, once; system tools go to the user")
+
+
 def jobs_demo(env):
     """Background jobs: progress from a log, a failure with its log tail, a cancel, and Stop from the window."""
     import jobs
@@ -304,6 +335,7 @@ def demo():
             editor_demo(c, tmp, e)
         ask_demo(env)
         jobs_demo(env)
+        setup_demo(env)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     return 0

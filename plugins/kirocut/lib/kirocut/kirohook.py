@@ -83,14 +83,31 @@ def waiting_line():
 def session_line():
     """The SessionStart line: what to fix first, or "" when KiroCut is ready."""
     import importlib.util
-    spec = importlib.util.spec_from_file_location("kirocut_setup", HERE.parents[1] / "skills" / "setup" / "scripts" / "setup.py")
+    setup_py = HERE.parents[1] / "skills" / "setup" / "scripts" / "setup.py"
+    spec = importlib.util.spec_from_file_location("kirocut_setup", setup_py)
     m = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(m)
+    lines = []
+    if workspace_unconnected():
+        lines.append("The kirocut tools are not connected in this workspace. Ask the user to run this once in their own terminal, "
+                     f"then reload the window: node plugins/kirocut/mcp/launch.mjs --run {setup_py.relative_to(HERE.parents[3]).as_posix()} workspace")
     bad = [n for n, ok, _, _ in m.checks() if not ok and n in ("python", "ffmpeg", "node", "python packages", "renderer", "transcription model")]
-    if not bad:
-        return ""
-    return ("KiroCut is not set up yet: " + ", ".join(bad) + " missing. Before editing, call kirocut_status, "
-            "tell the user in one line, and run the setup skill.")
+    if bad:
+        lines.append("KiroCut is not set up yet: " + ", ".join(bad) + " missing. Before editing, call kirocut_status (it starts "
+                     "installing what it can by itself), tell the user in one line, and run the setup skill for the rest.")
+    return " ".join(lines)
+
+
+def workspace_unconnected(repo=None):
+    """True when this is the clone (the repo's .kiro is here) and its .kiro/settings/mcp.json has no kirocut server. A power
+    install brings its own server, so a folder without the repo's .kiro is never flagged."""
+    repo = Path(repo) if repo else HERE.parents[3]
+    if not (repo / ".kiro" / "hooks").is_dir() or os.environ.get("KIROCUT_POWER"):
+        return False
+    try:
+        return "kirocut" not in (json.loads((repo / ".kiro" / "settings" / "mcp.json").read_text(encoding="utf-8")).get("mcpServers") or {})
+    except (OSError, ValueError):
+        return True
 
 
 def main(mode):
@@ -158,6 +175,15 @@ def demo():
         assert main("nonsense") == 0, "an unknown mode and bad input are harmless"
     finally:
         sys.stdin = real_in
+    # the clone with no workspace mcp.json: the session line gives the one command; connected, or a power install: silent on it
+    ws = tmp / "repo"
+    (ws / ".kiro" / "hooks").mkdir(parents=True)
+    assert workspace_unconnected(ws)
+    (ws / ".kiro" / "settings").mkdir()
+    (ws / ".kiro" / "settings" / "mcp.json").write_text(json.dumps({"mcpServers": {"other": {}}}), encoding="utf-8")
+    assert workspace_unconnected(ws), "another server only: still not connected"
+    (ws / ".kiro" / "settings" / "mcp.json").write_text(json.dumps({"mcpServers": {"kirocut": {}}}), encoding="utf-8")
+    assert not workspace_unconnected(ws) and not workspace_unconnected(tmp / "elsewhere")
     print("kirohook demo ok")
 
 

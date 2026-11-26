@@ -1172,6 +1172,27 @@ def bin_dirs(os_name=OS, path_env=None, home=None):
     return ok, cands[0]
 
 
+def connect_workspace(repo=None):
+    """The clone-and-open route's one step: write <repo>/.kiro/settings/mcp.json so Kiro starts the kirocut tools when the
+    folder opens. Kiro keeps that folder to the user, so this runs in their own terminal, once. The launcher's path is
+    absolute: Kiro may start the server from any folder. An mcp.json that is there already keeps its other servers."""
+    repo = Path(repo) if repo else PLUGIN.parents[1]
+    f = repo / ".kiro" / "settings" / "mcp.json"
+    try:
+        d = json.loads(f.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        d = {}
+    servers = d.setdefault("mcpServers", {})
+    launch = (PLUGIN / "mcp" / "launch.mjs").resolve().as_posix()
+    was = servers.get("kirocut")
+    servers["kirocut"] = {**(was or {}), "command": "node", "args": [launch], "disabled": False,
+                          "autoApprove": sorted(set((was or {}).get("autoApprove") or []) | {"kirocut_status"})}
+    f.parent.mkdir(parents=True, exist_ok=True)
+    f.write_text(json.dumps(d, indent=2) + "\n", encoding="utf-8")
+    print(f"{f}: the kirocut tools start with this folder. Open it in Kiro (or reload the window) and say \"edit my video\".")
+    return 0
+
+
 def install_launcher(os_name=OS, path_env=None, home=None):
     name = "kirocut.cmd" if os_name == "Windows" else "kirocut"
     ok, fallback = bin_dirs(os_name, path_env, home)
@@ -1265,6 +1286,18 @@ def demo_launcher():
 def demo():
     import contextlib
     import io
+    import tempfile as _tf
+    with _tf.TemporaryDirectory() as ws:   # the clone route: the workspace mcp.json, other servers kept, run twice the same
+        wf = Path(ws) / ".kiro" / "settings" / "mcp.json"
+        wf.parent.mkdir(parents=True)
+        wf.write_text(json.dumps({"mcpServers": {"other": {"command": "x"}}}), encoding="utf-8")
+        with contextlib.redirect_stdout(io.StringIO()):
+            connect_workspace(ws)
+            connect_workspace(ws)
+        m = json.loads(wf.read_text(encoding="utf-8"))["mcpServers"]
+        assert m["other"] == {"command": "x"} and m["kirocut"]["command"] == "node", m
+        assert Path(m["kirocut"]["args"][0]).is_file() and m["kirocut"]["args"][0].endswith("mcp/launch.mjs"), m
+        assert m["kirocut"]["autoApprove"] == ["kirocut_status"] and m["kirocut"]["disabled"] is False, m
     out = io.StringIO()
     with contextlib.redirect_stdout(out):     # a tool's chatter is kept back on success...
         quiet([sys.executable, "-c", "print('added 369 packages in 3s')"], ".", "x")
@@ -1491,7 +1524,7 @@ if __name__ == "__main__":
             "motion": step_motion, "bootstrap": bootstrap, "repair": repair, "awskey": save_aws_key,
             "lambda": check_lambda, "modal": connect_modal, "modal-connect": connect_modal, "modal-check": connect_modal, "modal-test": test_modal, "matte": step_matte, "warm": step_warm,
             "demo": demo, "keys": test_keys, "certs": step_certs, "todo": todo, "crisper": install_crisper,
-            "install-launcher": install_launcher, "uninstall-launcher": uninstall_launcher}
+            "install-launcher": install_launcher, "uninstall-launcher": uninstall_launcher, "workspace": connect_workspace}
     if sys.argv[1:] == ["doctor", "--quiet"]:
         sys.exit(doctor_quiet())
     if sys.argv[1:2] == ["install-all"] and set(sys.argv[2:]) <= {"--report"}:
