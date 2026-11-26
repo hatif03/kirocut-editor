@@ -181,10 +181,43 @@ def prepare_public(edit, plan, tag):
         if not src.exists():
             sys.exit(f"ERROR: {src} missing" + (" (run sfx.py build, then plan.py)" if rel.startswith(".sfx/") else ""))
         (pub / rel).parent.mkdir(parents=True, exist_ok=True)
+        if Path(rel).suffix.lower() in CLIP_EXT and not rel.startswith(".sfx/"):
+            clip_proxy(src, pub / rel, plan["width"], plan["height"])
+            continue
         a, b = src.stat(), (pub / rel).stat() if (pub / rel).exists() else None
         if not b or (a.st_size, a.st_mtime_ns) != (b.st_size, b.st_mtime_ns):   # copied already (copy2 keeps the time):
             shutil.copy2(src, pub / rel)   # never rewritten under a background render that is reading it
     return pub
+
+
+CLIP_EXT = (".mp4", ".mov", ".m4v", ".webm", ".mkv")
+
+
+def clip_filter(w, h):
+    """A card's clip at most the output size (never scaled up), even dimensions, 30 fps."""
+    return f"scale='min({w},iw)':'min({h},ih)':force_original_aspect_ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2,fps=30"
+
+
+def clip_proxy(src, out, w, h):
+    """A clip a card plays (b-roll, a sourced quote), as the renderer reads it best: no larger than the output, no sound
+    (cards play muted), a keyframe every 15 frames. A phone's 4K clip or a download with a keyframe every 8 s otherwise
+    makes every frame of the card decode seconds of video (a 7-minute edit with 53 b-roll cut-aways drew a frame a
+    second). Made once per source; the stamp beside it says from what."""
+    st = src.stat()
+    stamp, want = out.with_name(out.name + ".src"), f"{st.st_size}|{st.st_mtime_ns}|{w}x{h}"
+    if out.exists() and stamp.exists() and stamp.read_text(encoding="utf-8") == want:
+        return out
+    tmp = out.with_name(out.stem + ".part" + out.suffix)
+    r = subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(src), "-an", "-vf", clip_filter(w, h), "-c:v", "libx264",
+                        "-preset", "veryfast", "-crf", "20", "-g", "15", "-keyint_min", "15", "-sc_threshold", "0",
+                        "-pix_fmt", "yuv420p", str(tmp)], capture_output=True, text=True)
+    if r.returncode:   # not something ffmpeg reads as video: the file as it is, as before
+        tmp.unlink(missing_ok=True)
+        shutil.copy2(src, out)
+    else:
+        os.replace(tmp, out)
+    stamp.write_text(want, encoding="utf-8")
+    return out
 
 
 EXIT_S = 0.7   # motion.ts: calm leaves in 0.6 s, plus a frame or two
@@ -1249,6 +1282,27 @@ def demo():
     assert footage_filter(lb, 1920, 1080) == "scale=1080:608,setsar=1,pad=1080:1920:0:656:black", footage_filter(lb, 1920, 1080)
     gp = {"width": 1080, "height": 1920, "grade": {"brightness": 0.8, "saturate": 1.5}}
     assert footage_filter(gp, 1080, 1920).endswith(",colorchannelmixer=rr=0.8:gg=0.8:bb=0.8,hue=s=1.5"), footage_filter(gp, 1080, 1920)
+    # a card's clip goes to the render as a proxy: no bigger than the output, muted, a keyframe every 15 frames, made once
+    import tempfile as _tf
+    with _tf.TemporaryDirectory() as ct:
+        src, out = Path(ct) / "b.mp4", Path(ct) / "pub" / "b.mp4"
+        out.parent.mkdir()
+        subprocess.run(["ffmpeg", "-v", "error", "-f", "lavfi", "-i", "testsrc2=size=1280x720:rate=30:duration=4", "-f", "lavfi",
+                        "-i", "sine=frequency=300:duration=4", "-shortest", "-g", "250", "-c:v", "libx264", "-pix_fmt", "yuv420p",
+                        "-c:a", "aac", str(src)], check=True)
+        clip_proxy(src, out, 640, 360)
+        pr = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "stream=codec_type,width,height", "-of", "csv=p=0", str(out)],
+                            capture_output=True, text=True).stdout.split()
+        assert pr == ["video,640,360"], pr   # muted, at the output size
+        keys = subprocess.run(["ffprobe", "-v", "error", "-skip_frame", "nokey", "-select_streams", "v", "-show_entries",
+                               "frame=pts_time", "-of", "csv=p=0", str(out)], capture_output=True, text=True).stdout.split()
+        assert len(keys) >= 7, keys   # 120 frames, a keyframe every 15
+        t0 = out.stat().st_mtime_ns
+        clip_proxy(src, out, 640, 360)
+        assert out.stat().st_mtime_ns == t0, "the same source: the proxy is kept"
+        clip_proxy(src, out, 2560, 1440)
+        assert "1280,720" in subprocess.run(["ffprobe", "-v", "error", "-show_entries", "stream=width,height", "-of", "csv=p=0",
+                                             str(out)], capture_output=True, text=True).stdout, "never scaled up"
     # her film look: ffmpeg really warms the highlights and tints the shadows teal (measured on a grey ramp)
     film = grade_filter({"brightness": 1.0, "saturate": 1.0, "warm": 0.2, "shadows": 0.2, "contrast": 1.2})
     assert ",eq=contrast=1.2," in film and "colorbalance=rs=-0.2:gs=0.1:bs=0.2:rm=0.12:bm=-0.12:rh=0.2:bh=-0.2" in film, film
