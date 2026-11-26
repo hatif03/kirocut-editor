@@ -87,14 +87,33 @@ def is_wide(src):
     return w > h
 
 
-def pause_target(explicit, cut, wide):
+CREATOR_PAUSE_MAX = 2.0   # a copied creator's measured pause is followed up to this, never further
+
+
+def creator_pause(style):
+    """The longest pause the copied creator leaves (style.json pace.max_pause_s, measured by style-match), when this edit
+    copies her pace; else None. A blend that leaves pace out ("blend": {"take": [...]}) keeps the default."""
+    take = (style.get("blend") or {}).get("take") if isinstance(style.get("blend"), dict) else None
+    if take is not None and "pace" not in take:
+        return None
+    v = (style.get("pace") or {}).get("max_pause_s")
+    return float(v) if isinstance(v, (int, float)) and v > 0 else None
+
+
+def pause_target(explicit, cut, wide, style=None):
     """The pause target: --max-pause, else the taste's (cut.max_pause_wide for a wide take, never under the wide
-    default unless set; cut.max_pause for a tall one), else the default for the shape."""
+    default unless set; cut.max_pause for a tall one), else the copied creator's measured pause (edits/<name>/style.json,
+    held between the shape's default and CREATOR_PAUSE_MAX: a film that lets its lines breathe 2 s is cut that way),
+    else the default for the shape."""
     if explicit:
         return explicit
-    if wide:
+    base = WIDE_MAX_PAUSE if wide else DEFAULT_MAX_PAUSE
+    if wide and (cut.get("max_pause_wide") or cut.get("max_pause")):
         return cut.get("max_pause_wide") or max(WIDE_MAX_PAUSE, cut.get("max_pause") or 0)
-    return cut.get("max_pause") or DEFAULT_MAX_PAUSE
+    if not wide and cut.get("max_pause"):
+        return cut["max_pause"]
+    her = creator_pause(style or {})
+    return round(min(max(her, base), CREATOR_PAUSE_MAX), 2) if her else base
 
 
 def probe(src):
@@ -735,7 +754,11 @@ def main():
     sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "lib"))
     from kirocut import taste    # the user's own pause setting (taste skill) beats the default
     wide = is_wide(a.source)
-    max_pause = pause_target(a.max_pause, taste.load_json().get("cut", {}), wide)
+    try:   # the style this video is made in (start writes it before the cut): its creator's pace
+        edit_style = json.loads((Path(a.edit_dir) / "style.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        edit_style = {}
+    max_pause = pause_target(a.max_pause, taste.load_json().get("cut", {}), wide, edit_style)
     gap_max, gap_keep, splice_max = max_pause, round(2 / 3 * max_pause, 3), max_pause
 
     fps, dur, nframes = probe(a.source)

@@ -34,6 +34,15 @@ def test_pause_target():
     assert B.pause_target(None, {"max_pause": 0.12}, True) == 0.30, "a reel's tight taste never tightens a YouTube cut"
     assert B.pause_target(None, {"max_pause": 0.5}, True) == 0.5
     assert B.pause_target(None, {"max_pause": 0.12, "max_pause_wide": 0.22}, True) == 0.22
+    # the copied creator's pace: her measured pause when no taste is set, held between the default and 2 s
+    film = {"pace": {"max_pause_s": 2.06}}
+    assert B.pause_target(None, {}, True, film) == 2.0, "a film that breathes is cut that way"
+    assert B.pause_target(None, {}, False, {"pace": {"max_pause_s": 0.62}}) == 0.62
+    assert B.pause_target(None, {}, False, {"pace": {"max_pause_s": 0.05}}) == 0.15, "never tighter than the default"
+    assert B.pause_target(None, {"max_pause_wide": 0.5}, True, film) == 0.5, "the user's taste wins over the creator"
+    assert B.pause_target(0.4, {}, True, film) == 0.4
+    assert B.pause_target(None, {}, True, {**film, "blend": {"take": ["captions"]}}) == 0.30, "pace not copied: the default"
+    assert B.pause_target(None, {}, True, {**film, "blend": {"take": ["pace", "captions"]}}) == 2.0
 
 
 def test_audible_end():
