@@ -54,6 +54,12 @@ const concurrency = () => flags.concurrency === "max" ? CORES : Number(flags.con
 // Every delayRender (the video frame, fonts, Lottie) may take this long; Remotion's default is 30 s,
 // which a still fetching cut.mp4 under heavy load once missed.
 const TIMEOUT_MS = 120000;
+// The frame cache OffthreadVideo serves from. Remotion sizes it from the memory free when the render starts; on a
+// 16 GB laptop with 3 GB free, an edit cutting away to full-frame 1080p b-roll over 1080p footage evicted frames as
+// soon as they were made ("No frame found at position", the NASA benchmark's v2). 40% of the machine's memory, between
+// 1.5 and 8 GB; KIROCUT_VIDEO_CACHE_MB sets it.
+const cacheBytes = () => Number(process.env.KIROCUT_VIDEO_CACHE_MB) * 1024 * 1024 ||
+  Math.round(Math.min(8 * 1024 ** 3, Math.max(1.5 * 1024 ** 3, os.totalmem() * 0.4)));
 // Drafts on a Mac encode with VideoToolbox (hardware). It takes a bitrate, not a quality level:
 // 12 Mbit/s at 1080p, scaled with the pixel count. Finals stay on x264, the encoder Modal and GitHub
 // use, so a final looks the same wherever it renders.
@@ -97,7 +103,7 @@ async function stills(publicDir, planPath, outDir, ...pairs) {
     const [name, frame] = pair.split("=");
     const output = path.join(outDir, `${name}.png`);
     const once = () => renderStill({ serveUrl, composition, inputProps, output, frame: Number(frame),
-      timeoutInMilliseconds: TIMEOUT_MS });
+      timeoutInMilliseconds: TIMEOUT_MS, offthreadVideoCacheSizeInBytes: cacheBytes() });
     try {
       await once();
     } catch (e) {
@@ -120,7 +126,7 @@ async function many(publicDir, jobsPath) {
       try {
         const composition = await selectComposition({ serveUrl, id: j.plan.composition || ID, inputProps: j.plan });
         await renderStill({ serveUrl, composition, inputProps: j.plan, output: j.out, frame: j.frame, imageFormat: "jpeg",
-          jpegQuality: 88, timeoutInMilliseconds: TIMEOUT_MS });
+          jpegQuality: 88, timeoutInMilliseconds: TIMEOUT_MS, offthreadVideoCacheSizeInBytes: cacheBytes() });
         console.log(`ok ${j.out}`);
       } catch (e) {
         failed++;
@@ -144,7 +150,7 @@ async function bench(publicDir, planPath) {
   const t0 = Date.now(), q = Math.floor(n / 4);
   let a = 0, b = 0;
   await renderMedia({ serveUrl, composition, inputProps, codec: "h264", outputLocation: out,
-    frameRange: [from, from + n - 1], concurrency: concurrency(), timeoutInMilliseconds: TIMEOUT_MS,
+    frameRange: [from, from + n - 1], concurrency: concurrency(), timeoutInMilliseconds: TIMEOUT_MS, offthreadVideoCacheSizeInBytes: cacheBytes(),
     onProgress: ({ renderedFrames }) => {
       if (renderedFrames >= q && !a) a = Date.now();
       if (renderedFrames >= n && !b) b = Date.now();
@@ -164,7 +170,7 @@ async function local(publicDir, planPath, out) {
   // to the video: the same path the GitHub join takes, sample-aligned with the cut.
   const tmp = out.replace(/\.mp4$/i, "") + ".tmp.mkv";
   await renderMedia({ serveUrl, composition, inputProps, codec: "h264-mkv", outputLocation: tmp,
-    enforceAudioTrack: true, concurrency: concurrency(), scale, ...hwOpts(composition, scale), timeoutInMilliseconds: TIMEOUT_MS,
+    enforceAudioTrack: true, concurrency: concurrency(), scale, ...hwOpts(composition, scale), timeoutInMilliseconds: TIMEOUT_MS, offthreadVideoCacheSizeInBytes: cacheBytes(),
     onProgress: progress(composition.durationInFrames) });
   const r = spawnSync("ffmpeg", ["-v", "error", "-y", "-i", tmp, "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
     "-t", (composition.durationInFrames / composition.fps).toFixed(6), "-movflags", "+faststart", out], { stdio: "inherit" });   // -shortest dropped the last B-frames
@@ -181,7 +187,7 @@ async function chunk(publicDir, planPath, out, from, to) {
   // gap. The join encodes the audio to AAC once.
   await renderMedia({ serveUrl, composition, inputProps, codec: "h264-mkv", outputLocation: out,
     frameRange: [Number(from), Number(to)], enforceAudioTrack: true, concurrency: concurrency(),
-    scale: flags.draft ? 2 / 3 : 1, timeoutInMilliseconds: TIMEOUT_MS, onProgress: progress(Number(to) - Number(from) + 1) });
+    scale: flags.draft ? 2 / 3 : 1, timeoutInMilliseconds: TIMEOUT_MS, offthreadVideoCacheSizeInBytes: cacheBytes(), onProgress: progress(Number(to) - Number(from) + 1) });
   console.log(`rendered ${out} (frames ${from}-${to}) in ${((Date.now() - t0) / 1000).toFixed(1)} s`);
 }
 
