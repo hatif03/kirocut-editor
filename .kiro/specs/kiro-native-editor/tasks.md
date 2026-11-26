@@ -1,0 +1,35 @@
+# Tasks: KiroCut, a Kiro-native video editor
+
+- [x] 1. MCP server and tools (Requirement 1)
+  - [x] 1.1 stdio JSON-RPC server, tool registry, coded errors (`mcp/server.py`; `server.py demo`)
+  - [x] 1.2 scene, editor, events, ask, jobs, review tools (`tools_*.py`; `test_tools.py`)
+  - [x] 1.3 hooks: session check, turn end, window events, window Stop (`.kiro/hooks`, `kirohook.py demo`)
+  - [x] 1.4 questions as an elicitation form, numbered chat text as the fallback (`tools_ask.py`)
+  - [x] 1.5 child processes get an empty stdin and stderr for stdout (found when `kirocut_status` hung on Windows)
+  - [x] 1.6 "undo that" undoes the newest change (`kirocut_scene_undo` with no number)
+- [x] 2. One editor for Kiro only (Requirement 1)
+  - [x] 2.1 remove the other agent's question cards, Stop hook, session buttons and routes
+  - [x] 2.2 migrate older edits' names once (`legacy.py demo`)
+  - [x] 2.3 evals on the Kiro CLI (`tests/run_evals.py demo`)
+- [x] 3. Watch Kiro edit (Requirement 2)
+  - [x] 3.1 open the page on the raw take (`kirocut_open_editor` `source`)
+  - [x] 3.2 the cut's steps with no home job (`progress.local_step`, `review.cut_steps`)
+  - [x] 3.3 the live paper edit (`/live/paper`, `review.html` `paperHtml`)
+  - [x] 3.4 the time-lapse replay (`replay.py demo`, `kirocut_replay`)
+  - [ ] 3.5 confirm the Simple Browser and the panel in a real IDE session (`docs/spike/checklist.py`)
+- [x] 4. One-step install (Requirement 3)
+  - [x] 4.1 `${PLUGIN_ROOT}` in the power's `mcp.json` (`check_plugins.py` `check_power_mcp`)
+  - [x] 4.2 first `kirocut_status` starts install-all once; system tools go to the person (`test_tools.py setup_demo`)
+  - [x] 4.3 `setup.py workspace` and the session hook's reminder for a clone
+- [ ] 5. Real footage against a real reference (Requirement 4)
+  - [x] 5.1 the benchmark (`tests/bench/bench.py demo`), the footage record (`tests/bench/takes.json`)
+  - [x] 5.2 the film grade (`look.py`, `plan.py`, `edit.py` demos)
+  - [x] 5.3 long references read in windows (`look.py windows`)
+  - [x] 5.4 sound cues rotate takes (`sfx.py`, `plan.py` demos)
+  - [x] 5.5 italic captions (`Captions.tsx`, `look.tsx`)
+  - [x] 5.6 clip proxies for card videos (`edit.py demo`)
+  - [ ] 5.7 render the baseline and the improved edit, measure both, close the gaps to within 25%
+- [x] 6. Examples (Requirement 5)
+  - [x] 6.1 `examples.py` with the publishing rule (`examples.py demo`)
+  - [x] 6.2 Home's Examples shelf and the README gallery
+- [ ] 7. Hackathon package: the submission text, the demo video, the logo
