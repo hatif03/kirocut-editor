@@ -5,6 +5,7 @@
 """
 import contextlib
 import io
+import json
 import math
 import sys
 from pathlib import Path
@@ -267,7 +268,21 @@ def test_zero_length_word_inside_a_cut_is_removed():
     assert B.is_kept({"text": "I", "start": 64.5, "end": 64.5, "type": "word"}, spans)
 
 
+def test_style_edit_sentences_are_not_beats():
+    """route.py writes beats.json too: the styled edit's sentences, timed on the cut. A cut made again after the edit
+    was styled stopped on every sentence ('no match'); it is ignored instead."""
+    import tempfile
+    toks = [{"text": "so", "start": 0.0, "end": 0.3, "type": "word"}, {"text": "it", "start": 1.5, "end": 1.7, "type": "word"}]
+    with tempfile.TemporaryDirectory() as d:
+        (Path(d) / "beats.json").write_text(json.dumps([{"text": "Sentence one.", "start": 0.0, "end": 2.1, "names": []},
+                                                        {"text": "Another one.", "start": 2.1, "end": 3.0}]), encoding="utf-8")
+        assert B.beat_ranges(d, toks) == []
+        (Path(d) / "beats.json").write_text(json.dumps([{"text": "so"}]), encoding="utf-8")   # Kiro's quoted beat still holds
+        assert B.beat_ranges(d, toks) == [(0.3, min(1.5, 0.3 + B.BEAT_MAX_S))], B.beat_ranges(d, toks)
+
+
 if __name__ == "__main__":
+    test_style_edit_sentences_are_not_beats()
     test_derive()
     test_audible_end()
     test_splice_budget()

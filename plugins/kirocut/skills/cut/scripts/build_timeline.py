@@ -634,9 +634,16 @@ def beat_ranges(d, toks):
     f = Path(d) / "beats.json"
     if not f.exists():
         return []
+    beats = json.loads(f.read_text(encoding="utf-8"))
+    if isinstance(beats, list) and beats and all(isinstance(b, dict) and isinstance(b.get("start"), (int, float))
+                                                 and isinstance(b.get("end"), (int, float)) for b in beats):
+        # style-edit's route.py beats: the edit's sentences, timed on the cut (the same file name). Not pauses to keep:
+        # a cut made again after the edit was styled (a note on the cut) used to stop here on every sentence.
+        print("beats      beats.json is the style edit's sentence list (route.py), not pauses to keep: ignored")
+        return []
     out, errs = [], []
     words = [i for i, t in enumerate(toks) if t.get("type") == "word"]
-    for i, bt in enumerate(json.loads(f.read_text(encoding="utf-8"))):
+    for i, bt in enumerate(beats):
         text = str(bt.get("text", ""))
         hits = locate(text, toks)
         if "from" in bt:

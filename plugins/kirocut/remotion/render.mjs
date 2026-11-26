@@ -49,8 +49,17 @@ const CORES = RenderInternals.getMaxConcurrency();
 // delayRender deadline while it fetches the video. Windows reports no load average (0).
 // --concurrency=max: every core whatever the load (edit.py's background render: the tab count changes the video's
 // pixels, so it renders with the count an idle laptop's render uses, and a render it stands in for matches it).
-const concurrency = () => flags.concurrency === "max" ? CORES : Number(flags.concurrency) ||
-  (os.loadavg()[0] > CORES * 0.7 ? Math.max(1, Math.floor(CORES / 2)) : CORES);
+// An edit with many clips on screen (8 or more video cards: b-roll cut-aways) gets a tab per 2.5 GB of memory at most:
+// every tab decodes full frames of the footage and the clips at once, and twelve of them on a 16 GB laptop made
+// OffthreadVideo miss frames under memory pressure ("No frame found at position", the NASA benchmark's v2, three times).
+const clipHeavy = (props) => ((props && props.cards) || []).filter((c) => c.anim && c.anim.type === "video_card").length >= 8;
+const memTabs = () => Math.max(2, Math.floor(os.totalmem() / (2.5 * 1024 ** 3)));
+const concurrency = (props) => {
+  if (flags.concurrency === "max") return CORES;
+  if (Number(flags.concurrency)) return Number(flags.concurrency);
+  const n = os.loadavg()[0] > CORES * 0.7 ? Math.max(1, Math.floor(CORES / 2)) : CORES;
+  return clipHeavy(props) ? Math.min(n, memTabs()) : n;
+};
 // Every delayRender (the video frame, fonts, Lottie) may take this long; Remotion's default is 30 s,
 // which a still fetching cut.mp4 under heavy load once missed.
 const TIMEOUT_MS = 120000;
@@ -150,7 +159,7 @@ async function bench(publicDir, planPath) {
   const t0 = Date.now(), q = Math.floor(n / 4);
   let a = 0, b = 0;
   await renderMedia({ serveUrl, composition, inputProps, codec: "h264", outputLocation: out,
-    frameRange: [from, from + n - 1], concurrency: concurrency(), timeoutInMilliseconds: TIMEOUT_MS, offthreadVideoCacheSizeInBytes: cacheBytes(),
+    frameRange: [from, from + n - 1], concurrency: concurrency(inputProps), timeoutInMilliseconds: TIMEOUT_MS, offthreadVideoCacheSizeInBytes: cacheBytes(),
     onProgress: ({ renderedFrames }) => {
       if (renderedFrames >= q && !a) a = Date.now();
       if (renderedFrames >= n && !b) b = Date.now();
@@ -170,7 +179,7 @@ async function local(publicDir, planPath, out) {
   // to the video: the same path the GitHub join takes, sample-aligned with the cut.
   const tmp = out.replace(/\.mp4$/i, "") + ".tmp.mkv";
   await renderMedia({ serveUrl, composition, inputProps, codec: "h264-mkv", outputLocation: tmp,
-    enforceAudioTrack: true, concurrency: concurrency(), scale, ...hwOpts(composition, scale), timeoutInMilliseconds: TIMEOUT_MS, offthreadVideoCacheSizeInBytes: cacheBytes(),
+    enforceAudioTrack: true, concurrency: concurrency(inputProps), scale, ...hwOpts(composition, scale), timeoutInMilliseconds: TIMEOUT_MS, offthreadVideoCacheSizeInBytes: cacheBytes(),
     onProgress: progress(composition.durationInFrames) });
   const r = spawnSync("ffmpeg", ["-v", "error", "-y", "-i", tmp, "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
     "-t", (composition.durationInFrames / composition.fps).toFixed(6), "-movflags", "+faststart", out], { stdio: "inherit" });   // -shortest dropped the last B-frames
@@ -186,7 +195,7 @@ async function chunk(publicDir, planPath, out, from, to) {
   // h264-mkv carries PCM audio: sample-exact to the frame, no AAC padding, so pieces join without a
   // gap. The join encodes the audio to AAC once.
   await renderMedia({ serveUrl, composition, inputProps, codec: "h264-mkv", outputLocation: out,
-    frameRange: [Number(from), Number(to)], enforceAudioTrack: true, concurrency: concurrency(),
+    frameRange: [Number(from), Number(to)], enforceAudioTrack: true, concurrency: concurrency(inputProps),
     scale: flags.draft ? 2 / 3 : 1, timeoutInMilliseconds: TIMEOUT_MS, offthreadVideoCacheSizeInBytes: cacheBytes(), onProgress: progress(Number(to) - Number(from) + 1) });
   console.log(`rendered ${out} (frames ${from}-${to}) in ${((Date.now() - t0) / 1000).toFixed(1)} s`);
 }
