@@ -285,6 +285,11 @@ def main():
     check_no_other_agent()
     check_published()
     check_power_mcp()
+    import io, contextlib, logo_sync   # noqa: E401  the pages draw the same mark as docs/logo.svg
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        if logo_sync.main(["--check"]):
+            errors.extend(buf.getvalue().strip().splitlines())
     sys.path.insert(0, str(ROOT / "tests"))
     import sync_kiro
     errors.extend(f"{rel}: out of step with plugins/; run python3 tests/sync_kiro.py" for rel in sync_kiro.drift())
