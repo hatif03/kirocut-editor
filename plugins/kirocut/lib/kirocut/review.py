@@ -2419,9 +2419,15 @@ def cut_steps(folder, d):
         j = next((j for j in reversed(jobs) if j.get("type") == "video" and (j.get("args") or {}).get("edit")
                   and Path(j["args"]["edit"]).resolve() == folder.resolve()), None)
     except (OSError, ValueError, AttributeError, TypeError):
-        return None
-    if not j:
-        return None
+        j = None
+    if not j:   # started from the chat: the scripts' own steps in review/steps.json (progress.local_step)
+        try:
+            own = json.loads((folder / "review" / "steps.json").read_text(encoding="utf-8")).get("steps") or []
+        except (OSError, ValueError):
+            own = []
+        if not own and not d.get("raw"):
+            return None
+        j = {"state": "taken", "steps": own, "args": {"takes": (folder / "takes.txt").is_file()}}
     keys = [k for k, _ in CUT_STEPS if k != "join" or (j.get("args") or {}).get("takes")]
     by_text = {t: k for k, t in CUT_STEPS} | CUT_ALIASES
     seen = [by_text[s["text"]] for s in j.get("steps") or [] if s.get("text") in by_text]
@@ -2431,7 +2437,56 @@ def cut_steps(folder, d):
             for i, t in enumerate(dict(CUT_STEPS)[k] for k in keys)]
     if at < 0 and j.get("state") == "taken":   # Kiro has it, no script has reported yet: the first step is under way
         rows[0]["state"] = "now"
-    return {"steps": rows, "state": j.get("state"), "error": j.get("error")}
+    return {"steps": rows, "state": j.get("state"), "error": j.get("error"), "paper_v": paper_version(folder)}
+
+
+def paper_version(folder):
+    """Changes whenever the paper edit could (the words heard, Kiro's spans, the kept spans): the page refetches
+    /live/paper only then. None before there are words."""
+    try:
+        return "-".join(str(int((folder / n).stat().st_mtime * 1000)) if (folder / n).exists() else "0"
+                        for n in ("words.raw.json", "spans.json", "decisions.json")) \
+            if (folder / "words.raw.json").exists() else None
+    except OSError:
+        return None
+
+
+def live_paper(folder, limit=6000):
+    """The cut as it is being made, as text: every word heard in the take, struck once the cut removes it.
+    {words: [[text, struck]], removed, kept_s, source_s, decided}. Before build_timeline has kept spans
+    (decisions.json), the words Kiro quoted in spans.json are struck by text, so the page moves while it decides."""
+    try:
+        words = [w for w in json.loads((folder / "words.raw.json").read_text(encoding="utf-8")) if w.get("type", "word") == "word"]
+    except (OSError, ValueError):
+        return {"words": [], "removed": 0, "decided": False}
+    try:
+        keep = json.loads((folder / "decisions.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        keep = None
+    if keep:
+        def kept(w):
+            m = (w["start"] + w["end"]) / 2
+            return any(k["start"] <= m <= k["end"] for k in keep)
+        struck = [not kept(w) for w in words]
+    else:   # Kiro's quoted removals so far, matched at the first place each is said after its "after"
+        struck = [False] * len(words)
+        try:
+            spans = json.loads((folder / "spans.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            spans = []
+        norm = lambda s: re.sub(r"[^\w']+", "", s.lower())   # noqa: E731
+        toks = [norm(w["text"]) for w in words]
+        for s in spans if isinstance(spans, list) else []:
+            q = [t for t in (norm(x) for x in str(s.get("text") or "").split()) if t]
+            after = float(s.get("after") or 0)
+            for i in range(len(words) - len(q) + 1):
+                if q and words[i]["start"] >= after and toks[i:i + len(q)] == q:
+                    struck[i:i + len(q)] = [True] * len(q)
+                    break
+    src = words[-1]["end"] if words else 0
+    kept_s = sum(k["end"] - k["start"] for k in keep) if keep else None
+    return {"words": [[w["text"], s] for w, s in zip(words[:limit], struck[:limit])], "removed": sum(struck),
+            "kept_s": round(kept_s, 1) if kept_s is not None else None, "source_s": round(src, 1), "decided": bool(keep)}
 
 
 def listening(folder):
@@ -2925,6 +2980,8 @@ def make_handler(folder, token):
                 return self.send(200, d)
             if path == "/alerts.js":   # the chime and notifications (alerts.js)
                 return self.send(200, HTML.with_name("alerts.js").read_bytes(), "text/javascript; charset=utf-8")
+            if path == "/live/paper":   # round 0: the cut as text while Kiro makes it, removed words struck
+                return self.send(200, live_paper(folder))
             if path == "/review-scene.js":   # the edit page on a scene (review-scene.js)
                 return self.send(200, HTML.with_name("review-scene.js").read_bytes(), "text/javascript; charset=utf-8")
             if path == "/live/plan":   # the live player's plan (live_plan), or why the page plays the MP4
@@ -2979,6 +3036,9 @@ def make_handler(folder, token):
                 d = load(rj)
                 p = Path(alt_of(d, q.get("alt", ""), d)["video"])
                 return self.file(p, "video/mp4", download_name(folder, d)) if p.exists() else self.send(404, {})
+            if path == "/replay.mp4":   # the time-lapse of how Kiro made this edit (replay.py build)
+                p = folder / "review" / "replay.mp4"
+                return self.file(p, "video/mp4") if p.is_file() else self.send(404, {"error": "no replay yet"})
             if path == "/export/file":   # the last export, saved as "<video name> - <style name>.mp4"
                 p = Path((EXPORT.get(str(folder)) or {}).get("file") or last_export(folder) or "-")
                 return self.file(p, "video/mp4", p.name) if p.is_file() else self.send(404, {})
@@ -4424,6 +4484,8 @@ def step(folder, key, log=None):
             return False
         if not update(rj, lambda d: making_edit(d) and (add_step(d, None, log, key) or True)):
             return False
+        import replay
+        replay.note(folder, "step", EDIT_STEPS[key])
         mark_path(folder, write=True).touch()   # the agent is working on it: the page shows the bar, not "not listening"
         return True
     except Exception:
@@ -4695,6 +4757,9 @@ def cmd_status(a, folder):
     if not (a.text or key or a.done):
         sys.exit("status takes a text, --step or --done")
     update(folder / "review.json", lambda d: add_step(d, a.text, a.log, key, a.done))
+    if not a.done:
+        import replay   # a moment of the edit's time-lapse
+        replay.note(folder, "status", a.text or EDIT_STEPS[key])
     print("done" if a.done else f"status: {a.text or EDIT_STEPS[key]}")
 
 
@@ -6318,6 +6383,27 @@ def demo():
     hsf.write_text(keep_hs, encoding="utf-8") if keep_hs is not None else hsf.unlink()
     hs.shutdown()
     hs.server_close()
+    # an edit started from the chat (no home job): round 0 ticks off the scripts' own steps (review/steps.json)
+    solo = tmp / "edits" / "solo"
+    (solo / "review").mkdir(parents=True)
+    assert cut_steps(solo, {"raw": True})["steps"][0]["state"] == "now", "raw, nothing reported yet: the first step is under way"
+    (solo / "review" / "steps.json").write_text(json.dumps({"steps": [{"text": "Writing down every word", "done": True},
+                                                                      {"text": "Cutting out the mistakes"}]}), encoding="utf-8")
+    cs = cut_steps(solo, {"raw": True})
+    assert [x["state"] for x in cs["steps"]] == ["done", "done", "now", "todo", "todo", "todo"] and cs["state"] == "taken", cs
+    assert cs["paper_v"] is None, "no words yet: nothing to show"
+    # the live paper edit: Kiro's quoted removals struck as it writes spans.json, then the kept spans once cut
+    (solo / "words.raw.json").write_text(json.dumps([{"text": t, "start": i, "end": i + 0.8, "type": "word"} for i, t in
+                                                     enumerate("so this is this is our Apollo really".split())]), encoding="utf-8")
+    assert live_paper(solo)["removed"] == 0 and cut_steps(solo, {"raw": True})["paper_v"]
+    (solo / "spans.json").write_text(json.dumps([{"text": "this is", "after": 3}, {"text": "really"}]), encoding="utf-8")
+    lp = live_paper(solo)
+    assert [w for w, s in lp["words"] if s] == ["this", "is", "really"] and not lp["decided"], lp   # the second "this is"
+    assert [s for _, s in lp["words"]][1:5] == [False, False, True, True], lp
+    (solo / "decisions.json").write_text(json.dumps([{"start": 0, "end": 2.9}, {"start": 5, "end": 6.9}]), encoding="utf-8")
+    lp = live_paper(solo)
+    assert lp["decided"] and lp["removed"] == 3 and lp["kept_s"] == 4.8 and lp["source_s"] == 7.8, lp
+    shutil.rmtree(solo)
     # the cut's transcript: kept words on the cut's timeline, the cut word struck, the removed pause a chip
     (folder / "words.raw.json").write_text(json.dumps([
         {"text": "hello", "start": 0.0, "end": 0.4, "type": "word"}, {"text": "um,", "start": 0.5, "end": 0.8, "type": "word"},

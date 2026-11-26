@@ -84,6 +84,10 @@ def editor_demo(c, tmp, e):
         err, rd = c.call("kirocut_review_round", edit="demo-edit", stage="cut", scene=False, video=str(e / "take.mp4"), note="Pause removed")
         assert not err and "round 2" in rd["round"], rd
         assert json.loads(web(rv["url"], "/state").read())["round"] == 2, "the user's page is on round 2"
+        # the time-lapse of how it was made: two drafts and a status line, served on the review page
+        err, rp = c.call("kirocut_replay", edit="demo-edit", each=0.3)
+        assert not err and Path(rp["file"]).is_file() and rp["url"].split("?")[0].endswith("/replay.mp4"), rp
+        assert web(rv["url"], "/replay.mp4").read()[4:8] == b"ftyp", "the page plays the replay"
         # while kirocut_events waits the pages say Kiro is listening, and stop saying so when it returns
         import threading
         seen = []
@@ -95,10 +99,33 @@ def editor_demo(c, tmp, e):
         assert json.loads(web(rv["url"], "/state").read())["agent_ui"]["state"] != "waiting"
         err, bad = c.call("kirocut_open_editor", edit="nope")
         assert err and bad["code"] == "no_such_edit"
+        # watching Kiro cut: a new edit opens on its raw take at once; a script's step and Kiro's quoted cut reach the page
+        err, lv = c.call("kirocut_open_editor", edit="live-edit", source=str(e / "take.mp4"))
+        assert not err and lv["kind"] == "edit" and Path(lv["edit"]).name == "live-edit", lv
+        live = Path(lv["edit"])
+        st = json.loads(web(lv["url"], "/state").read())
+        assert st.get("raw") and st["cut_steps"]["steps"][0]["state"] == "now", st.get("cut_steps")
+        sys.path.insert(0, str(HERE.parent / "lib" / "kirocut"))
+        import progress
+        (live / "words.raw.json").write_text(json.dumps([{"text": t, "start": i, "end": i + 0.5, "type": "word"}
+                                                         for i, t in enumerate("um so here we go".split())]), encoding="utf-8")
+        old_home, os.environ["KIROCUT_HOME"] = os.environ.get("KIROCUT_HOME"), str(tmp / "home")
+        try:   # no home-window job for this edit: the step goes to its own review/steps.json
+            progress.step("Finding retakes and pauses", job="video", key=live)
+        finally:
+            os.environ.pop("KIROCUT_HOME") if old_home is None else os.environ.__setitem__("KIROCUT_HOME", old_home)
+        (live / "spans.json").write_text(json.dumps([{"text": "um"}]), encoding="utf-8")
+        st = json.loads(web(lv["url"], "/state").read())["cut_steps"]
+        assert [x["state"] for x in st["steps"]][:2] == ["done", "now"] and st["paper_v"], st
+        paper = json.loads(web(lv["url"], "/live/paper").read())
+        assert paper["words"][0] == ["um", True] and paper["removed"] == 1 and not paper["decided"], paper
+        err, nos = c.call("kirocut_open_editor", edit="other-edit", source=str(e / "missing.mp4"))
+        assert err and nos["code"] == "no_source", nos
         print("editor   ok: window and review page started once, jobs and notes arrive exactly once, listening light")
     finally:   # the servers the tools started live on their own: end exactly those
         import tools_editor
-        tools_editor.stop_servers(tmp / "home" / "home" / "server.pid", tmp / "home" / "server.pid", e / "review" / "server.pid")
+        tools_editor.stop_servers(tmp / "home" / "home" / "server.pid", tmp / "home" / "server.pid", e / "review" / "server.pid",
+                                  *e.parent.glob("live-edit/review/server.pid"))
 
 
 def jobs_demo(env):

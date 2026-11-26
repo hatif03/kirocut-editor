@@ -23,11 +23,56 @@ def state_file():
     return Path(h) / "home" / "state.json"
 
 
+def edit_dir(key):
+    """The edit folder a video step's key names (the folder, or a file inside it), or None: it holds review.json or
+    sits in an `edits` folder."""
+    try:
+        p = Path(key).resolve()
+        if p.suffix:
+            p = p.parent
+        return p if (p / "review.json").is_file() or p.parent.name == "edits" else None
+    except (OSError, TypeError, ValueError):
+        return None
+
+
+def local_step(text, detail=None, progress=None, key=None):
+    """The step in the edit's own review/steps.json too, so its review page ticks it off with no home-window job
+    (an edit started from the chat). The same text as the newest step updates it in place. Never raises."""
+    d = edit_dir(key) if key else None
+    if not d:
+        return False
+    try:
+        f = d / "review" / "steps.json"
+        f.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            steps = json.loads(f.read_text(encoding="utf-8")).get("steps") or []
+        except (OSError, ValueError):
+            steps = []
+        row = {"text": text, "detail": detail, "progress": progress, "done": False}
+        if steps and steps[-1].get("text") == text:
+            steps[-1].update(row)
+        else:
+            for s in steps:
+                s["done"] = True
+            steps.append(row)
+            import time   # a new step is a moment of the edit's replay (replay.py reads review/replay.jsonl)
+            with (f.parent / "replay.jsonl").open("a", encoding="utf-8") as fh:
+                fh.write(json.dumps({"at": time.time(), "kind": "step", "text": text}) + "\n")
+        tmp = f.with_name(f"steps.{os.getpid()}.json")
+        tmp.write_text(json.dumps({"steps": steps[-30:]}), encoding="utf-8")
+        os.replace(tmp, f)
+        return True
+    except Exception:   # the page is a nicety
+        return False
+
+
 def step(text, detail=None, progress=None, job="teardown", key=None, timeout=5):
-    """True when the page's taken `job` (the one `key` names) got the step. Never raises.
-    KIROCUT_NO_PROGRESS=1: a no-op (format_check.py's re-merges, which are not new steps)."""
+    """True when the page's taken `job` (the one `key` names) got the step. Never raises. A video step also goes to
+    the edit's own review/steps.json (local_step). KIROCUT_NO_PROGRESS=1: a no-op (format_check.py's re-merges)."""
     if os.environ.get("KIROCUT_NO_PROGRESS"):
         return False
+    if job == "video" and key:
+        local_step(text, detail, progress, key)
     try:
         d = json.loads(state_file().read_text(encoding="utf-8"))
         sid = os.environ.get("KIROCUT_SESSION", "").strip()
@@ -119,6 +164,19 @@ def demo():
         os.environ["KIROCUT_SESSION"] = "sess-A"
         assert step("Rendering", job="video", key=ed[1])
         os.environ.pop("KIROCUT_SESSION")
+        # an edit started from the chat (no home job): its own review/steps.json still gets every step, in order
+        solo = Path(tmp) / "lib" / "edits" / "solo"
+        solo.mkdir(parents=True)
+        f.write_text(json.dumps({"root": tmp, "jobs": [], "home_py": home_py.as_posix()}), encoding="utf-8")
+        assert step("Writing down every word", job="video", key=solo / "words.raw.json") is False   # no home job
+        step("Writing down every word", detail="40%", progress=0.4, job="video", key=solo / "words.raw.json")
+        step("Finding retakes and pauses", job="video", key=solo)
+        s = json.loads((solo / "review" / "steps.json").read_text(encoding="utf-8"))["steps"]
+        assert [(x["text"], x["done"]) for x in s] == [("Writing down every word", True), ("Finding retakes and pauses", False)], s
+        assert s[0]["progress"] == 0.4 and s[0]["detail"] == "40%", "the same step again updates it in place"
+        rp = [json.loads(x)["text"] for x in (solo / "review" / "replay.jsonl").read_text(encoding="utf-8").splitlines()]
+        assert rp == ["Writing down every word", "Finding retakes and pauses"], "each new step once in the replay journal"
+        assert edit_dir(Path(tmp) / "elsewhere" / "x.json") is None and not local_step("x", key=Path(tmp) / "nowhere")
     print("progress demo ok")
 
 

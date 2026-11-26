@@ -6,6 +6,7 @@ or an extension panel). kirocut_events hands the chat what the user pressed in t
 """
 import json
 import os
+import subprocess
 import sys
 import time
 import urllib.parse
@@ -79,11 +80,26 @@ def ensure_home():
     return url, True
 
 
-def ensure_review(folder):
-    """(address of the edit's review page, started now)."""
+def start_raw(folder, source):
+    """Round 0 on the raw take: the page opens at once and plays it while Kiro cuts (review.py start --raw)."""
+    src = Path(source).expanduser()
+    if not src.is_file():
+        raise ToolError("no_source", f"no video at {source}", "pass the raw take's path as source")
+    folder.mkdir(parents=True, exist_ok=True)
+    r = subprocess.run([sys.executable, str(LIB / "review.py"), str(folder), "start", "--raw", "--stage", "cut",
+                        "--video", str(src.resolve())], capture_output=True, text=True, timeout=120)
+    if r.returncode:
+        raise ToolError("no_review", (r.stderr or r.stdout).strip()[-300:] or "review.py start failed", "")
+
+
+def ensure_review(folder, source=None):
+    """(address of the edit's review page, started now). With `source` and no page yet: round 0 on the raw take."""
     review = lazy("review")
+    if not (folder / "review.json").is_file() and source:
+        start_raw(folder, source)
     if not (folder / "review.json").is_file():
-        raise ToolError("no_review", f"{folder.name} has no review page yet", "the cut or edit skill opens it with review.py start")
+        raise ToolError("no_review", f"{folder.name} has no review page yet",
+                        "pass source (the raw take) to open it while you cut, or open it after review.py start")
     url = review.running(folder)
     if url:
         return url, False
@@ -127,11 +143,19 @@ def register(s):
             "address, and a markdown link to show the user in your reply. Call kirocut_events afterwards to hear what they do there.",
             {"type": "object", "properties": {
                 "edit": {"type": "string", "description": "An edit folder or name for its review page. Omit for the home window."},
+                "source": {"type": "string", "description": "The raw take, for an edit with no page yet: the page opens now and plays "
+                                                            "it while you cut, ticking off each step and striking the words you cut"},
                 "open_browser": {"type": "boolean", "description": "Open the system browser when the IDE has no panel for it (default true)"}}})
-    def kirocut_open_editor(ctx, edit=None, open_browser=True):
+    def kirocut_open_editor(ctx, edit=None, source=None, open_browser=True):
         if edit:
-            folder = resolve_edit(edit)
-            url, started = ensure_review(folder)
+            try:
+                folder = resolve_edit(edit)
+            except ToolError:
+                if not source:
+                    raise
+                p = Path(str(edit)).expanduser()   # a new edit: its folder, or edits/<name> in the library
+                folder = (p if p.is_absolute() else lazy("library").path() / "edits" / p.name).resolve()
+            url, started = ensure_review(folder, source)
             kind = "edit"
         else:
             url, started = ensure_home()
@@ -157,3 +181,27 @@ def register(s):
         return {"events": got, "count": len(got), "waited_s": round(time.time() - t0, 1),
                 "next": ("Act on each event, then call kirocut_events again." if got else
                          "Nothing yet. Tell the user you are waiting only if they expect something, and call kirocut_events again when they say they sent it.")}
+
+    @s.tool("kirocut_replay",
+            "Make a time-lapse of how Kiro made an edit: every step and every change, about a second each, labelled, over a frame of the "
+            "video as it was then. Use when the user asks to see how the edit was made, or for a demo. Returns the file and its address on "
+            "the review page.",
+            {"type": "object", "required": ["edit"], "properties": {
+                "edit": {"type": "string", "description": "The edit: its folder, or its name in the library"},
+                "each": {"type": "number", "description": "Seconds per moment (0.3 to 4, default 1.4)"}}})
+    def kirocut_replay(ctx, edit, each=1.4):
+        folder = resolve_edit(edit)
+        each = min(max(float(each), 0.3), 4.0)
+        r = subprocess.run([sys.executable, str(LIB / "replay.py"), "build", str(folder), "--each", str(each)],
+                           capture_output=True, text=True, timeout=900)
+        if r.returncode:
+            msg = (r.stderr or r.stdout).strip().splitlines()
+            raise ToolError("replay_failed", (msg[-1] if msg else "replay.py build failed")[:300],
+                            "it needs steps, changes or drafts recorded: make or change the edit first")
+        out = folder / "review" / "replay.mp4"
+        url = lazy("review").running(folder)
+        res = {"file": str(out), "summary": r.stdout.strip().splitlines()[-1] if r.stdout.strip() else ""}
+        if url:
+            base, _, q = url.partition("?")
+            res["url"] = base.rstrip("/") + "/replay.mp4?" + q
+        return res

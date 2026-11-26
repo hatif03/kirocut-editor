@@ -826,6 +826,10 @@ body.trtab #box,body.trtab #adds{display:none}body.trtab .pfoot{padding-top:0;bo
 /* the edit being made: the player dims and a card at its foot says the step */
 #making{position:absolute;inset:0;z-index:3;display:none;align-items:flex-end;justify-content:center;background:var(--dim);padding:12px}
 body.making #making{display:flex}
+.paper{margin-top:12px;max-height:260px;overflow:auto;border-top:1px solid var(--line,#3332);padding-top:10px}
+.paper .ph{font-weight:600;margin:0 0 6px}
+.paper .pw{margin:0;line-height:1.7;font-size:14px;color:var(--t2,inherit)}
+.paper s{color:#e5484d;text-decoration-thickness:2px;opacity:.75}
 .mk{width:100%;max-width:440px;background:var(--raise);border-radius:12px;padding:14px;box-shadow:var(--pop);display:flex;flex-direction:column;gap:10px}
 .mk>div:first-child{display:flex;flex-direction:column;gap:2px}
 .mk b{font-size:14px;line-height:18px;font-weight:600;color:var(--strong)}
@@ -1872,7 +1876,19 @@ function cutHtml(c){
     :c.state==='queued'?'Waiting for Kiro to pick this up in the chat.'
     :'Kiro is making the cut. Your clip plays meanwhile. Notes you leave now go on the cut.';
   const li=c.steps.map(x=>`<li class="${x.state==='done'?'ok':x.state}"><span class="ic">${x.state==='done'?TICK:x.state==='now'&&c.state==='taken'?SPIN:'<i></i>'}</span>${esc(x.text)}</li>`).join('');
-  return `<div class="agent"><div><b>Kiro</b><p>${esc(head)}</p></div><ol class="steps">${li}</ol></div>`;
+  livePaper(c.paper_v);
+  return `<div class="agent"><div><b>Kiro</b><p>${esc(head)}</p></div><ol class="steps">${li}</ol>${paperHtml()}</div>`;
+}
+// the cut as it is made: every word heard, struck as Kiro decides to remove it (review.py live_paper)
+let paper=null,paperV=null;
+function livePaper(v){
+  if(!v||v===paperV)return;paperV=v;
+  fetch('/live/paper'+location.search).then(r=>r.json()).then(p=>{paper=p;const el=$('paper');if(el)el.outerHTML=paperHtml()}).catch(()=>{});
+}
+function paperHtml(){
+  if(!paper||!paper.words.length)return '<div id="paper" hidden></div>';
+  const head=paper.decided?`${paper.removed} words cut: ${dur(paper.source_s)} becomes ${dur(paper.kept_s)}.`:`Kiro is choosing the cuts: ${paper.removed} words so far.`;
+  return `<div id="paper" class="paper"><p class="ph">${esc(head)}</p><p class="pw">${paper.words.map(([w,s])=>s?`<s>${esc(w)}</s>`:esc(w)).join(' ')}</p></div>`;
 }
 // a rule Kiro saved from a note or the Teach panel: "Saved to <style>: <rule>. Undo" (Undo only for a rule this save added)
 function rcptHtml(id){

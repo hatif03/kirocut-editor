@@ -98,3 +98,4 @@ node tests/test_alerts.mjs
 node tests/test_record.mjs
 tests/check_extension.py
 tests/sync_kiro.py --check
+plugins/kirocut/lib/kirocut/replay.py demo
