@@ -813,12 +813,13 @@ def measure_video(path, words, ocr=None, faces=None, engine="vision", fps=SAMPLE
     em_k = EM_PER_BOX.get(engine, 1.0)
     samples, thumbs = [], []
     dark = np.zeros(H)
-    for i, f in enumerate(decode(path, W, H, fps)):
-        dark += (f.max(axis=2) < 28).mean(axis=1)
-        t = round(i / fps, 3)
-        lines = [{"text": tx, "box": [round(v, 4) for v in b]} for tx, b in (ocr(f, t) if ocr else [])]
-        samples.append({"t": t, "lines": lines, "face": faces(f) if faces else None})
-        thumbs.append(f[::max(1, H // 96), ::max(1, W // 54)].reshape(-1, 3))
+    for t0, span in windows(dur):   # a long video is read in evenly spread stretches, times kept as the video's own
+        for i, f in enumerate(decode(path, W, H, fps, t0=t0 or None, dur=span)):
+            dark += (f.max(axis=2) < 28).mean(axis=1)
+            t = round(t0 + i / fps, 3)
+            lines = [{"text": tx, "box": [round(v, 4) for v in b]} for tx, b in (ocr(f, t) if ocr else [])]
+            samples.append({"t": t, "lines": lines, "face": faces(f) if faces else None})
+            thumbs.append(f[::max(1, H // 96), ::max(1, W // 54)].reshape(-1, 3))
     n = len(samples)
     if not n:
         raise SystemExit(f"no frames decoded from {path}")
@@ -928,7 +929,7 @@ def measure_video(path, words, ocr=None, faces=None, engine="vision", fps=SAMPLE
         palette = [{"hex": hexc(cen[j]), "pct": round(100 * cnt[j] / len(lab))} for j in np.argsort(-cnt)]
     graphics = {
         "share_pct": round(100 * sum(flags) / n),
-        "per_min": round(len(runs) / dur * 60, 1),
+        "per_min": round(len(runs) / (n / fps if len(windows(dur)) > 1 else dur) * 60, 1),   # per minute read
         "hold_s": round(statistics.median((b - a + 1) / fps for a, b in runs), 2) if runs else None,
         "ease_in_s": round(statistics.median(eases) / src_fps, 3) if eases else None,
         "palette": palette,
@@ -939,6 +940,19 @@ def measure_video(path, words, ocr=None, faces=None, engine="vision", fps=SAMPLE
             "samples": [{"t": s["t"], "face": s["face"],
                          "lines": [[ln["text"], ln["box"], bool(ln.get("cap"))] for ln in s["lines"]]}
                         for s in samples]}
+
+
+LONG_S, WINDOWS, WINDOW_S = 240, 4, 45   # a video over 4 min is read in 4 stretches of 45 s, spread from start to end
+
+
+def windows(dur):
+    """[(start, length or None)] to read: the whole video when it is short (a reel), else WINDOWS stretches of WINDOW_S
+    spread evenly from the start to the end, so a 15-minute video takes 3 minutes of reading, not 15, and still shows
+    how it opens, how it carries on and how it ends."""
+    if not dur or dur <= LONG_S:
+        return [(0.0, None)]
+    gap = (dur - WINDOW_S) / (WINDOWS - 1)
+    return [(round(k * gap, 2), WINDOW_S) for k in range(WINDOWS)]
 
 
 def grade_of(px):
@@ -1441,6 +1455,8 @@ def demo():
         assert {k: gr[k] for k in ("luma", "sat", "contrast")} == {"luma": 91.1, "sat": 0.5, "contrast": 36.9}, gr   # (0.2126 x 255 + 128) / 2
         film = grade_of(np.array([[255, 200, 150]] * 7 + [[20, 40, 60]] * 3, np.uint8))   # warm highlights, teal shadows
         assert film["warm"] == 105.0 and film["shadows"] == 40.0 and film["contrast"] > 50, film
+        assert windows(60) == [(0.0, None)] and windows(None) == [(0.0, None)], "a reel is read whole"
+        assert windows(894) == [(0.0, 45), (283.0, 45), (566.0, 45), (849.0, 45)], windows(894)   # ends at the video's end
         flat = grade_of(np.array([[128, 128, 128]] * 10, np.uint8))
         assert flat["warm"] == 0 and flat["shadows"] == 0 and flat["contrast"] == 0, flat
         assert m["motion"]["personality"] == "punchy", m["motion"]
