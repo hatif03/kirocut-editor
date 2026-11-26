@@ -497,12 +497,24 @@ def eleven_music(prompt, seconds, out, key):
     return out
 
 
+def speech_gate(rms):
+    """The level (linear) above which a 50 ms window is speech: halfway in dB between the take's floor (10th percentile)
+    and its voice (80th), never under -40 dBFS's old floor of -50 dB; a take with no clear floor keeps -40 dBFS."""
+    lv = 20 * np.log10(np.maximum(rms, 1e-9))
+    floor, voice = np.percentile(lv, 10), np.percentile(lv, 80)
+    if voice - floor < 6:
+        return 10 ** (-40 / 20)
+    return 10 ** (max(-50.0, floor + (voice - floor) / 2) / 20)
+
+
 def duck(music, vo, depth_db=-9, attack=0.08, release=0.35):
-    """Music down by depth_db wherever the voice speaks, smooth both ways."""
+    """Music down by depth_db wherever the voice speaks, smooth both ways. Speaking is louder than halfway (in dB) between
+    the take's own floor and its voice, so room tone, a fan or a mic's hiss between phrases lets the bed come back up
+    (a fixed -40 dBFS took a real interview's -36 dB room tone for speech and held the bed down the whole video)."""
     m = np.abs(vo).mean(0)
     win = int(0.05 * SR)
     rms = np.sqrt(np.convolve(m ** 2, np.ones(win) / win, "same"))
-    speaking = (rms > 10 ** (-40 / 20)).astype(float)
+    speaking = (rms > speech_gate(rms)).astype(float)
     g = np.empty_like(speaking)
     a, r = 1 / (attack * SR), 1 / (release * SR)
     level = 0.0
@@ -605,8 +617,26 @@ def score(out, length, mood="linear", music="generated", sfx="subtle", cues=(), 
 
 # ---------------------------------------------------------------- self-check
 
+def demo_duck():
+    """A real take's room tone (-36 dB) between phrases: the bed comes back up there and dips under the words."""
+    rng = np.random.default_rng(3)
+    n = 6 * SR
+    vo = rng.normal(0, 10 ** (-36 / 20), (2, n))
+    for a in (0.5, 2.5, 4.5):   # three 1 s phrases at about -18 dB, gaps of room tone between
+        i = int(a * SR)
+        vo[:, i:i + SR] += 10 ** (-18 / 20) * np.sin(2 * np.pi * 220 * np.arange(SR) / SR)
+    bed = duck(np.full((2, n), 0.1), vo, -9)
+    lv = lambda t: 20 * np.log10(bed[0, int(t * SR)] / 0.1)   # noqa: E731
+    assert lv(1.0) < -8 and lv(3.0) < -8, (lv(1.0), lv(3.0))          # under a word
+    assert lv(2.2) > -2 and lv(4.2) > -2, (lv(2.2), lv(4.2))          # in the gap, over the room tone: back up
+    quiet = rng.normal(0, 1e-5, (2, n))
+    assert 10 ** (-40 / 20) == speech_gate(np.full(n, 1e-3)), "no floor to tell apart: the old -40 dBFS"
+    assert duck(np.full((2, n), 0.1), quiet, -9)[0, SR] == 0.1, "silence: never ducked"
+
+
 def demo():
     import tempfile
+    demo_duck()
     with tempfile.TemporaryDirectory() as d:
         for mood in MOODS:
             out = Path(d) / f"{mood}.wav"
