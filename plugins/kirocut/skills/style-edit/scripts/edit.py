@@ -91,13 +91,29 @@ def proxy_filter(sw, sh, w, h):
             f"[bg][fg]overlay=(W-w)/2:0,setsar=1")
 
 
+def grade_filter(g):
+    """plan.json "grade" as ffmpeg filters (each starting with a comma): brightness and saturation, then her film
+    look when plan.py measured one: contrast (eq), warm highlights and mids, and the shadows' tint (colorbalance;
+    teal shadows lift blue and a little green and pull red)."""
+    if not g:
+        return ""
+    out = f",colorchannelmixer=rr={g['brightness']}:gg={g['brightness']}:bb={g['brightness']},hue=s={g['saturate']}"
+    if g.get("contrast"):
+        out += f",eq=contrast={g['contrast']}"
+    w, s = g.get("warm") or 0, g.get("shadows") or 0
+    if w or s:
+        r = lambda v: round(v, 3)   # noqa: E731
+        out += (f",colorbalance=rs={r(-s)}:gs={r(s / 2)}:bs={r(s)}:rm={r(w * 0.6)}:bm={r(-w * 0.6)}"
+                f":rh={r(w)}:bh={r(-w)}")
+    return out
+
+
 def footage_filter(plan, sw, sh):
     """The cut as the render draws it under everything: proxy_filter, or for the letterbox layout the cut
     scaled into its band on black (the render proxy is that frame; the checks read the same)."""
     w, h = plan["width"], plan["height"]
     lay = plan.get("layout") or {}
-    g = plan.get("grade")   # the creator's grade (plan.py grade_for), burned into the copy so every check reads it
-    grade = f",colorchannelmixer=rr={g['brightness']}:gg={g['brightness']}:bb={g['brightness']},hue=s={g['saturate']}" if g else ""
+    grade = grade_filter(plan.get("grade"))   # the creator's grade (plan.py grade_for), burned into the copy so every check reads it
     if lay.get("mode") != "letterbox":
         return proxy_filter(sw, sh, w, h) + grade
     y, bh = (round(v / 100 * h / 2) * 2 for v in lay["band"][1::2])
@@ -1233,6 +1249,16 @@ def demo():
     assert footage_filter(lb, 1920, 1080) == "scale=1080:608,setsar=1,pad=1080:1920:0:656:black", footage_filter(lb, 1920, 1080)
     gp = {"width": 1080, "height": 1920, "grade": {"brightness": 0.8, "saturate": 1.5}}
     assert footage_filter(gp, 1080, 1920).endswith(",colorchannelmixer=rr=0.8:gg=0.8:bb=0.8,hue=s=1.5"), footage_filter(gp, 1080, 1920)
+    # her film look: ffmpeg really warms the highlights and tints the shadows teal (measured on a grey ramp)
+    film = grade_filter({"brightness": 1.0, "saturate": 1.0, "warm": 0.2, "shadows": 0.2, "contrast": 1.2})
+    assert ",eq=contrast=1.2," in film and "colorbalance=rs=-0.2:gs=0.1:bs=0.2:rm=0.12:bm=-0.12:rh=0.2:bh=-0.2" in film, film
+    px = subprocess.run(["ffmpeg", "-v", "error", "-f", "lavfi", "-i", "gradients=s=64x64:c0=0x202020:c1=0xE0E0E0:d=1",
+                         "-vf", "format=rgb24" + film + ",format=rgb24", "-frames:v", "1", "-f", "rawvideo", "-pix_fmt", "rgb24", "-"],
+                        capture_output=True, check=True).stdout
+    trip = [px[k:k + 3] for k in range(0, len(px), 3)]
+    lum = sorted(trip, key=lambda p: sum(p))
+    dark, bright = lum[: len(lum) // 5], lum[-len(lum) // 5:]
+    assert sum(p[2] - p[0] for p in dark) > 0 and sum(p[0] - p[2] for p in bright) > 0, "teal shadows, warm highlights"
     import tempfile, zipfile
     with tempfile.TemporaryDirectory() as t:
         edit, pub = Path(t) / "fake", Path(t) / "fake" / ".render"

@@ -41,6 +41,7 @@ import inspect
 import json
 import math
 import re
+import statistics
 import subprocess
 import sys
 import tempfile
@@ -2721,19 +2722,57 @@ def footage_grade(video, w=48):
 
 
 GRADE_B, GRADE_S = (0.7, 1.3), (0.5, 1.8)   # how far the footage is pushed towards her grade (CSS brightness, saturate)
+GRADE_TINT = 0.25        # colour balance shift at most, either way (ffmpeg colorbalance runs -1 to 1)
+GRADE_C = (0.85, 1.35)   # contrast, as a factor (ffmpeg eq)
+
+
+def tone(video, w=48):
+    """The cut's warm, shadows and contrast, measured as style-match look.py grade_of does (red minus blue in the
+    brighter half, blue minus red in the darkest 30%, the luma's standard deviation), on one small frame a second."""
+    m = probe(video)
+    h = max(2, round(w * m["height"] / m["width"] / 2) * 2)
+    raw = subprocess.run(["ffmpeg", "-v", "error", "-i", str(video), "-vf", f"fps=1,scale={w}:{h}", "-f", "rawvideo",
+                          "-pix_fmt", "rgb24", "-"], capture_output=True).stdout
+    return tone_of([raw[k:k + 3] for k in range(0, len(raw) - 2, 3)]) if raw else None
+
+
+def tone_of(px):
+    ys = [0.2126 * p[0] + 0.7152 * p[1] + 0.0722 * p[2] for p in px]
+    if not ys:
+        return None
+    s = sorted(ys)
+    med_y = statistics.median(s)
+    k = 0.3 * (len(s) - 1)
+    p30 = s[int(k)] + (s[min(int(k) + 1, len(s) - 1)] - s[int(k)]) * (k - int(k))
+    hi = [p[0] - p[2] for p, y in zip(px, ys) if y >= med_y]
+    lo = [p[2] - p[0] for p, y in zip(px, ys) if y <= p30]
+    return {"warm": round(sum(hi) / len(hi), 1) if hi else 0.0, "shadows": round(sum(lo) / len(lo), 1) if lo else 0.0,
+            "contrast": round(statistics.pstdev(ys), 1)}
 
 
 def grade_for(style, video):
     """plan.json "grade": the CSS brightness and saturate that take the cut's mean luma and saturation to the
-    creator's (look.py style.json "grade"), held inside GRADE_B / GRADE_S; None when hers is not measured or ours
-    is already within 3%."""
+    creator's (look.py style.json "grade"), held inside GRADE_B / GRADE_S, plus her film look when it is measured:
+    `warm` and `shadows` (colour balance shifts for the highlights and the shadows, within GRADE_TINT) and `contrast`
+    (a factor within GRADE_C). None when hers is not measured or ours is already within 3% on all of them."""
     want = style.get("grade") if took(style, "graphics") else None
     have = want and Path(video).exists() and footage_grade(video)
-    if not have or not want.get("luma") or not want.get("sat") or not have[0]:
+    if not have or not want.get("luma") or want.get("sat") is None or not have[0]:
         return None
     b = round(min(max(want["luma"] / have[0], GRADE_B[0]), GRADE_B[1]), 2)
     s = round(min(max(want["sat"] / have[1], GRADE_S[0]), GRADE_S[1]), 2) if have[1] > 0.01 else 1.0   # grey stays grey
-    return None if abs(b - 1) < 0.03 and abs(s - 1) < 0.03 else {"brightness": b, "saturate": s}
+    out = {"brightness": b, "saturate": s}
+    if all(k in want for k in ("warm", "shadows", "contrast")):
+        t = tone(video) or {}
+        clamp = lambda v, lo, hi: round(min(max(v, lo), hi), 3)   # noqa: E731
+        if t:
+            out["warm"] = clamp((want["warm"] - t["warm"]) / 255, -GRADE_TINT, GRADE_TINT)
+            out["shadows"] = clamp((want["shadows"] - t["shadows"]) / 255, -GRADE_TINT, GRADE_TINT)
+            out["contrast"] = clamp(want["contrast"] / t["contrast"], *GRADE_C) if t["contrast"] > 1 else 1.0
+        for k, flat in (("warm", 0), ("shadows", 0), ("contrast", 1)):
+            if k in out and abs(out[k] - flat) < 0.03:
+                del out[k]
+    return None if abs(b - 1) < 0.03 and abs(s - 1) < 0.03 and len(out) == 2 else out
 
 
 # --- caption contrast: the footage behind each caption page, measured on the cut --------------------------
@@ -3460,6 +3499,13 @@ def demo():
         assert 150 < lu < 170 and sa < 0.02, (lu, sa)
         assert grade_for({"grade": {"luma": 120, "sat": 0.3}}, gv) == {"brightness": 0.76, "saturate": 1.0}
         assert grade_for({"grade": {"luma": lu, "sat": sa}}, gv) is None and grade_for({}, gv) is None
+        # her film look on a flat grey cut: warm highlights and teal shadows are added; a flat cut's contrast cannot be scaled
+        film = grade_for({"grade": {"luma": lu, "sat": sa, "warm": 30, "shadows": 20, "contrast": 60}}, gv)
+        assert film == {"brightness": 1.0, "saturate": 1.0, "warm": 0.118, "shadows": 0.078}, film
+        hot = grade_for({"grade": {"luma": lu, "sat": sa, "warm": 200, "shadows": -200, "contrast": 60}}, gv)
+        assert hot["warm"] == GRADE_TINT and hot["shadows"] == -GRADE_TINT, hot   # held inside the limit
+        assert tone_of([b"\xff\xc8\x96"] * 7 + [b"\x14\x28\x3c"] * 3) == {"warm": 105.0, "shadows": 40.0, "contrast": 78.3}, \
+            tone_of([b"\xff\xc8\x96"] * 7 + [b"\x14\x28\x3c"] * 3)   # the numbers look.py grade_of gives the same pixels
     ws = [{"text": t, "start": i, "end": i + 0.8} for i, t in enumerate("one two three. four five six seven eight nine ten eleven twelve.".split())]
     hs = hold_scenes([{"start": 0.5, "end": 1.5, "layout": "scene", "scene_by": "creator"}, {"start": 4.0, "end": 5.0, "layout": "scene",
                       "scene_by": "creator"}, {"start": 13.0, "end": 14.0}], ws, 14.0, 0.9)

@@ -942,11 +942,19 @@ def measure_video(path, words, ocr=None, faces=None, engine="vision", fps=SAMPLE
 
 
 def grade_of(px):
-    """The colour grade: mean luma (Rec. 709, 0-255) and mean HSV saturation (0-1) of RGB pixels."""
-    a = px.astype(np.float32) / 255
+    """The colour grade of RGB pixels: mean luma (Rec. 709, 0-255), mean HSV saturation (0-1), and the three a film
+    look is made of: `warm` (red minus blue in the brighter half, 0-255 units; a warm grade is positive), `shadows`
+    (blue minus red in the darkest 30%; teal shadows are positive) and `contrast` (the luma's standard deviation).
+    plan.py tone() measures the user's cut the same way."""
+    a = px.reshape(-1, 3).astype(np.float32)
     mx, mn = a.max(-1), a.min(-1)
     sat = np.where(mx > 0, (mx - mn) / np.maximum(mx, 1e-6), 0)
-    return {"luma": round(float((a @ np.float32([0.2126, 0.7152, 0.0722])).mean() * 255), 1), "sat": round(float(sat.mean()), 3)}
+    y = a @ np.float32([0.2126, 0.7152, 0.0722])
+    hi, lo = y >= np.median(y), y <= np.percentile(y, 30)
+    rb = a[:, 0] - a[:, 2]
+    return {"luma": round(float(y.mean()), 1), "sat": round(float(sat.mean()), 3),
+            "warm": round(float(rb[hi].mean()) if hi.any() else 0.0, 1),
+            "shadows": round(float(-rb[lo].mean()) if lo.any() else 0.0, 1), "contrast": round(float(y.std()), 1)}
 
 
 # ---------- one creator ----------
@@ -1084,6 +1092,9 @@ def merge(rows, visuals, style):
     grades = [r["grade"] for r in rows if r.get("grade")]
     if grades:   # style-edit grades the user's footage towards it (plan.py "grade")
         out["grade"] = {"luma": med([g["luma"] for g in grades], 1), "sat": med([g["sat"] for g in grades], 3)}
+        for k in ("warm", "shadows", "contrast"):   # older look.json rows have only luma and sat
+            if all(k in g for g in grades):
+                out["grade"][k] = med([g[k] for g in grades], 1)
     bands = [r["letterbox"] for r in rows if r.get("letterbox")]
     if bands and len(bands) > len(rows) / 2:   # most videos are a 16:9 band between black bars: style-edit's letterbox
         out["layout"] = {"mode": "letterbox", "band_pct": [med([b[0] for b in bands], 1), med([b[1] for b in bands], 1)],
@@ -1427,7 +1438,11 @@ def demo():
         assert m["motion"]["cuts_per_min"] == 30.0, m
         assert 0 < m["grade"]["luma"] < 255 and 0 <= m["grade"]["sat"] <= 1, m["grade"]
         gr = grade_of(np.array([[255, 0, 0], [128, 128, 128]], np.uint8))
-        assert gr == {"luma": 91.1, "sat": 0.5}, gr   # (0.2126 x 255 + 128) / 2
+        assert {k: gr[k] for k in ("luma", "sat", "contrast")} == {"luma": 91.1, "sat": 0.5, "contrast": 36.9}, gr   # (0.2126 x 255 + 128) / 2
+        film = grade_of(np.array([[255, 200, 150]] * 7 + [[20, 40, 60]] * 3, np.uint8))   # warm highlights, teal shadows
+        assert film["warm"] == 105.0 and film["shadows"] == 40.0 and film["contrast"] > 50, film
+        flat = grade_of(np.array([[128, 128, 128]] * 10, np.uint8))
+        assert flat["warm"] == 0 and flat["shadows"] == 0 and flat["contrast"] == 0, flat
         assert m["motion"]["personality"] == "punchy", m["motion"]
         assert personality(4, 0.05, 4, 0) == "calm" and personality(20, 0.4, 1, 0) == "smooth"
         assert weight_of(0.15) == 700 and weight_of(0.09) == 400 and weight_of(0.5) == 900
@@ -1458,6 +1473,37 @@ def demo():
     print("ok")
 
 
+def grade_frames(path, w=96):
+    """A small frame a second of a video, as one array of RGB pixels (what grade_of reads)."""
+    raw = subprocess.run(["ffmpeg", "-v", "error", "-i", str(path), "-vf", f"fps=1,scale={w}:-2", "-f", "rawvideo",
+                          "-pix_fmt", "rgb24", "-"], capture_output=True).stdout
+    return np.frombuffer(raw, np.uint8).reshape(-1, 3) if raw else None
+
+
+def cmd_grade(a):
+    outdir = OUT_ROOT / slug(a.handle)
+    sp = outdir / "style.json"
+    grades = []
+    for p in sorted((outdir / "video").glob("*.mp4")):
+        px = grade_frames(p)
+        if px is None or not len(px):
+            continue
+        g = grade_of(px)
+        grades.append(g)
+        lj = p.with_suffix(".look.json")
+        if lj.exists():   # the cached row keeps it, so a later measure's aggregate reads the same numbers
+            row = json.loads(lj.read_text(encoding="utf-8"))
+            row["grade"] = g
+            lj.write_text(json.dumps(row, default=float), encoding="utf-8")
+    if not grades:
+        sys.exit(f"no videos in {outdir / 'video'}")
+    style = json.loads(sp.read_text(encoding="utf-8")) if sp.exists() else {"handle": slug(a.handle)}
+    style["grade"] = {k: med([g[k] for g in grades], 3 if k == "sat" else 1) for k in grades[0]}
+    sp.write_text(json.dumps(style, indent=2, default=float), encoding="utf-8")
+    print(f"grade: luma {style['grade']['luma']}, sat {style['grade']['sat']}, warm {style['grade']['warm']}, "
+          f"shadows {style['grade']['shadows']}, contrast {style['grade']['contrast']} -> {sp}")
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -1466,6 +1512,10 @@ def main():
     p.add_argument("--fps", type=float, default=SAMPLE_FPS)
     p.add_argument("--force", action="store_true", help="re-measure cached videos")
     p.set_defaults(fn=cmd_measure)
+    p = sub.add_parser("grade", help="re-measure only the colour grade (a frame a second): a style made before warm, "
+                                     "shadows and contrast were measured gets them in seconds")
+    p.add_argument("handle")
+    p.set_defaults(fn=cmd_grade)
     p = sub.add_parser("summary")
     p.add_argument("handle")
     p.set_defaults(fn=lambda a: print(write_summary(OUT_ROOT / slug(a.handle))))
